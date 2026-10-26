@@ -244,19 +244,24 @@ const ION = {
   Cu:{html:'Cu', u:'Cu', q:2, name:'copper(II)'},
   Ca:{html:'Ca', u:'Ca', q:2, name:'calcium'},
   Fe:{html:'Fe', u:'Fe', q:3, name:'iron(III)'},
+  Sr:{html:'Sr', u:'Sr', q:2, name:'strontium'},
+  Zn:{html:'Zn', u:'Zn', q:2, name:'zinc'},
+  Mg:{html:'Mg', u:'Mg', q:2, name:'magnesium'},
+  Al:{html:'Al', u:'Al', q:3, name:'aluminium'},
   K:{html:'K', u:'K', q:1, grp:1, name:'potassium'},
   Na:{html:'Na', u:'Na', q:1, grp:1, name:'sodium'},
   NH4:{html:'NH<sub>4</sub>', u:'NH₄', q:1, poly:true, grp:'NH4', name:'ammonium'},
   NO3:{html:'NO<sub>3</sub>', u:'NO₃', q:-1, poly:true, name:'nitrate'},
   Cl:{html:'Cl', u:'Cl', q:-1, name:'chloride'},
   I:{html:'I', u:'I', q:-1, name:'iodide'},
+  Br:{html:'Br', u:'Br', q:-1, name:'bromide'},
   SO4:{html:'SO<sub>4</sub>', u:'SO₄', q:-2, poly:true, name:'sulfate'},
   OH:{html:'OH', u:'OH', q:-1, poly:true, name:'hydroxide'},
   CO3:{html:'CO<sub>3</sub>', u:'CO₃', q:-2, poly:true, name:'carbonate'},
   PO4:{html:'PO<sub>4</sub>', u:'PO₄', q:-3, poly:true, name:'phosphate'},
   S:{html:'S', u:'S', q:-2, name:'sulfide'},
 };
-const GROUP2 = ['Ba','Ca','Sr'];
+const GROUP2 = ['Ba','Ca','Sr','Mg'];
 
 const SOL1 = [
   {cat:'Pb', an:'NO3', name:'lead(II) nitrate'},
@@ -265,6 +270,10 @@ const SOL1 = [
   {cat:'Cu', an:'SO4', name:'copper(II) sulfate', tint:'rgba(50,130,230,0.30)'},
   {cat:'Ca', an:'NO3', name:'calcium nitrate'},
   {cat:'Fe', an:'Cl',  name:'iron(III) chloride', tint:'rgba(215,140,25,0.32)'},
+  {cat:'Sr', an:'NO3', name:'strontium nitrate'},
+  {cat:'Zn', an:'NO3', name:'zinc nitrate'},
+  {cat:'Mg', an:'NO3', name:'magnesium nitrate'},
+  {cat:'Al', an:'NO3', name:'aluminium nitrate'},
 ];
 const SOL2 = [
   {cat:'K',   an:'I',   name:'potassium iodide'},
@@ -272,6 +281,7 @@ const SOL2 = [
   {cat:'Na',  an:'OH',  name:'sodium hydroxide'},
   {cat:'Na',  an:'CO3', name:'sodium carbonate'},
   {cat:'Na',  an:'Cl',  name:'sodium chloride'},
+  {cat:'Na',  an:'Br',  name:'sodium bromide'},
   {cat:'K',   an:'PO4', name:'potassium phosphate'},
   {cat:'NH4', an:'S',   name:'ammonium sulfide'},
 ];
@@ -286,6 +296,11 @@ const PRECIP = {
   'Ba|SO4':[W_,'white'], 'Ba|CO3':[W_,'white'], 'Ba|PO4':[W_,'white'],
   'Cu|OH':['#5aa9e6','pale blue gel'], 'Cu|CO3':['#6cc4a8','blue-green'], 'Cu|PO4':['#4f9fd8','blue'], 'Cu|S':['#1d1d1f','black'],
   'Ca|SO4':[W_,'white'], 'Ca|OH':[W_,'white'], 'Ca|CO3':[W_,'white'], 'Ca|PO4':[W_,'white'],
+  'Pb|Br':[W_,'white'], 'Ag|Br':['#eee2b0','cream'],
+  'Sr|SO4':[W_,'white'], 'Sr|CO3':[W_,'white'], 'Sr|PO4':[W_,'white'],
+  'Zn|OH':[W_,'white gel'], 'Zn|CO3':[W_,'white'], 'Zn|PO4':[W_,'white'], 'Zn|S':[W_,'white'],
+  'Mg|OH':[W_,'white'], 'Mg|CO3':[W_,'white'], 'Mg|PO4':[W_,'white'],
+  'Al|OH':[W_,'white gel'], 'Al|CO3':[W_,'white'], 'Al|PO4':[W_,'white'], 'Al|S':[W_,'white'],
   'Fe|OH':['#9a4a1c','rust-brown'], 'Fe|CO3':['#9a4a1c','rust-brown'], 'Fe|PO4':['#eee2a2','pale yellow'], 'Fe|S':['#1d1d1f','black'],
 };
 
@@ -300,6 +315,12 @@ const LABNOTE = {
   'Ca|SO4':'CaSO₄ is only slightly soluble (about 0.015 mol/L). A visible solid forms only with concentrated solutions.',
   'Ca|OH':'Ca(OH)₂ is only slightly soluble (about 0.02 mol/L, limewater). It shows up as a cloudy white solid.',
   'Pb|Cl':'PbCl₂ is only slightly soluble (about 0.04 mol/L). The solid forms best in cold or concentrated solutions.',
+  'Pb|Br':'PbBr₂ is only slightly soluble (about 0.03 mol/L). The solid forms best in cold or concentrated solutions.',
+  'Zn|OH':'Zn(OH)₂ redissolves if you keep adding NaOH, because zinc hydroxide is amphoteric.',
+  'Al|OH':'Al(OH)₃ redissolves if you keep adding NaOH, because aluminium hydroxide is amphoteric.',
+  'Al|CO3':'Aluminium carbonate is not stable in water. The white solid is Al(OH)₃, and CO₂ bubbles form.',
+  'Al|S':'Aluminium sulfide is not stable in water. The white solid is Al(OH)₃, and H₂S gas (rotten-egg smell) forms.',
+  'Sr|OH':'Sr(OH)₂ is one of the few hydroxides listed as high solubility. Compare with Ca(NO₃)₂ + NaOH.',
 };
 
 // Booklet columns. def = what "most" means in that column; ex = listed exceptions.
@@ -451,7 +472,7 @@ function cardHTML(cat, an, rc, ra, L){
 function renderCards(){
   const R = state.R;
   if (!state.mixed){
-    $('cards').innerHTML = `<div class="placeholder">Press <b>Mix Solutions</b>. The two new partner pairs, ${cmpH(R.A,R.D,'A','D')} and ${cmpH(R.C,R.B,'C','B')}, will be checked against the table here, one step at a time.</div>`;
+    $('cards').innerHTML = `<div class="placeholder"><b>Predict first.</b> The table shows where to look for the two new partner pairs, ${cmpH(R.A,R.D,'A','D')} and ${cmpH(R.C,R.B,'C','B')}. Will each one be (s) or (aq)? Then press <b>Mix Solutions</b> to check, step by step.</div>`;
     return;
   }
   $('cards').innerHTML = `<div class="cards">${cardHTML(R.A,R.D,'A','D',R.AD)}${cardHTML(R.C,R.B,'C','B',R.CB)}</div>`;
@@ -889,6 +910,9 @@ function resetAll(){
   state.R = computeReaction(state.i1, state.i2);
   state.mixed = false; state.revealed = false;
   clearHighlights(); renderChips(); renderCards(); renderEquations(); renderGuide();
+  // Show where to look in the table as soon as the solutions are chosen, so students can predict before mixing.
+  highlightPair(state.R.AD, 'A', 'D', 150);
+  highlightPair(state.R.CB, 'C', 'B', 1100);
   $('mixBtn').disabled = false; $('mixBtn').textContent = 'Mix Solutions';
   buildScene();
 }
@@ -897,9 +921,6 @@ function mix(){
   state.mixed = true; $('mixBtn').disabled = true; $('mixBtn').textContent = 'Mixed';
   sim.phase = 'pour'; sim.t = 0;
   renderCards(); renderGuide();
-  const R = state.R;
-  highlightPair(R.AD, 'A', 'D', 250);
-  highlightPair(R.CB, 'C', 'B', 1700);
 }
 function setMode(m){
   state.mode = m;
