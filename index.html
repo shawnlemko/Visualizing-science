@@ -41,8 +41,8 @@ body { background: var(--paper); color: var(--ink); font-family: var(--font-body
 .wrap { max-width: 1180px; margin: 0 auto; padding-inline: 16px; padding-block: 16px 40px; }
 h1 { font-family: var(--font-display); font-weight: 800; letter-spacing: -0.01em; margin: 0; text-wrap: balance; }
 
-/* Master page: a title band, two tab rows (course, topic), then a grid of tool tiles.
-   Add a tool by copying one <li> in .concepts: set data-courses, data-cat, href, picture, name and note. */
+/* Master page: a title band, two tab rows (grade band, topic), then a grid of tool tiles.
+   Add a tool by copying one <li> in .concepts: set data-bands, data-cat, href, picture, name and note. */
 .hero { padding-block: 28px 8px; display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
 .hero-text { flex: 1 1 320px; min-width: 0; }
 .hero h1 { font-size: clamp(2rem, 5vw, 3.2rem); line-height: 1.05; }
@@ -63,12 +63,13 @@ h1 { font-family: var(--font-display); font-weight: 800; letter-spacing: -0.01em
 .search button { position: absolute; right: 4px; width: 28px; height: 28px; border: 0; border-radius: 6px; background: none; color: var(--muted); font-size: 1.2rem; line-height: 1; cursor: pointer; }
 .search button:hover { color: var(--ink); background: var(--paper); }
 
-/* Topics: each has a colour on its tab and along the top edge of its tiles. */
-:root { --c-chem: #2f5fd0; --c-phys: #c2571a; --c-bio: #1f7a5a; --c-earth: #7a3fb8; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --c-chem: #7aa2ff; --c-phys: #f08a4b; --c-bio: #4cc49a; --c-earth: #b98cf0; } }
-:root[data-theme="dark"] { --c-chem: #7aa2ff; --c-phys: #f08a4b; --c-bio: #4cc49a; --c-earth: #b98cf0; }
-[data-cat="chem"] { --cat: var(--c-chem); } [data-cat="phys"] { --cat: var(--c-phys); }
-[data-cat="bio"] { --cat: var(--c-bio); } [data-cat="earth"] { --cat: var(--c-earth); }
+/* Topics = the organizing ideas of Alberta's K-9 science curriculum (Shawn).
+   Each has a colour on its tab and along the top edge of its tiles; colours follow the math site's topic palette. */
+:root { --c-mat: #2f5fd0; --c-ene: #c2571a; --c-ear: #8a6400; --c-liv: #1f7a5a; --c-spa: #7a3fb8; --c-cs: #a3263c; --c-sm: #4a5868; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --c-mat: #7aa2ff; --c-ene: #f08a4b; --c-ear: #e0b44a; --c-liv: #4cc49a; --c-spa: #b98cf0; --c-cs: #ff7d93; --c-sm: #a9b6c4; } }
+:root[data-theme="dark"] { --c-mat: #7aa2ff; --c-ene: #f08a4b; --c-ear: #e0b44a; --c-liv: #4cc49a; --c-spa: #b98cf0; --c-cs: #ff7d93; --c-sm: #a9b6c4; }
+[data-cat="mat"] { --cat: var(--c-mat); } [data-cat="ene"] { --cat: var(--c-ene); } [data-cat="ear"] { --cat: var(--c-ear); }
+[data-cat="liv"] { --cat: var(--c-liv); } [data-cat="spa"] { --cat: var(--c-spa); } [data-cat="cs"] { --cat: var(--c-cs); } [data-cat="sm"] { --cat: var(--c-sm); }
 .cats { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
 .cats button { font: inherit; font-weight: 700; font-size: 1rem; min-height: 44px; padding: 6px 14px; border: 2px solid var(--grid-major); border-radius: 10px; background: var(--sheet); color: var(--ink); cursor: pointer; display: inline-flex; align-items: center; gap: 8px; }
 .cats button:hover { border-color: var(--cat, var(--pt)); }
@@ -130,23 +131,27 @@ body.scroll .concepts { flex: none; grid-template-rows: none; grid-auto-rows: 25
     </div>
     <div class="gradebar">
       <div class="search"><input type="search" id="q" placeholder="Search tools" aria-label="Search tools" autocomplete="off"><button type="button" id="qClear" aria-label="Clear search" hidden>×</button></div>
-      <div class="tabs" role="tablist" aria-label="Courses">
+      <div class="tabs" role="tablist" aria-label="Grades">
         <button type="button" role="tab" data-band="all" aria-selected="true">All</button>
-        <button type="button" role="tab" data-band="Sci 10" aria-selected="false">Science 10</button>
-        <button type="button" role="tab" data-band="Chem 20" aria-selected="false">Chemistry 20</button>
+        <button type="button" role="tab" data-band="K-6" aria-selected="false">K-6</button>
+        <button type="button" role="tab" data-band="7-9" aria-selected="false">7-9</button>
+        <button type="button" role="tab" data-band="10-12" aria-selected="false">10-12</button>
       </div>
     </div>
   </header>
   <div class="cats" role="tablist" aria-label="Topics">
     <button type="button" role="tab" data-cat="all" aria-selected="true">All topics</button>
-    <button type="button" role="tab" data-cat="chem" aria-selected="false"><span class="dot" aria-hidden="true"></span>Chemistry</button>
-    <button type="button" role="tab" data-cat="phys" aria-selected="false"><span class="dot" aria-hidden="true"></span>Physics/Energy</button>
-    <button type="button" role="tab" data-cat="bio" aria-selected="false"><span class="dot" aria-hidden="true"></span>Biology</button>
-    <button type="button" role="tab" data-cat="earth" aria-selected="false"><span class="dot" aria-hidden="true"></span>Earth/Climate</button>
+    <button type="button" role="tab" data-cat="mat" aria-selected="false"><span class="dot" aria-hidden="true"></span>Matter</button>
+    <button type="button" role="tab" data-cat="ene" aria-selected="false"><span class="dot" aria-hidden="true"></span>Energy</button>
+    <button type="button" role="tab" data-cat="ear" aria-selected="false"><span class="dot" aria-hidden="true"></span>Earth Systems</button>
+    <button type="button" role="tab" data-cat="liv" aria-selected="false"><span class="dot" aria-hidden="true"></span>Living Systems</button>
+    <button type="button" role="tab" data-cat="spa" aria-selected="false"><span class="dot" aria-hidden="true"></span>Space</button>
+    <button type="button" role="tab" data-cat="cs" aria-selected="false"><span class="dot" aria-hidden="true"></span>Computer Science</button>
+    <button type="button" role="tab" data-cat="sm" aria-selected="false"><span class="dot" aria-hidden="true"></span>Scientific Methods</button>
   </div>
 
   <ul class="concepts">
-    <li data-bands="Sci 10 Chem 20" data-cat="chem">
+    <li data-bands="10-12" data-cat="mat">
       <a class="concept" href="solubility.html">
         <svg viewBox="0 0 240 120" aria-hidden="true">
           <!-- Beaker with mixed ions in solution and a precipitate on the bottom. -->
@@ -162,13 +167,13 @@ body.scroll .concepts { flex: none; grid-template-rows: none; grid-auto-rows: 25
           <text x="196" y="66" text-anchor="middle" style="fill: var(--ink); font: 700 20px var(--font-num)">(s)</text>
           <path d="M184 84L172 98" style="stroke: var(--ink); stroke-width: 2"/>
         </svg>
-        <span class="sr">Chemistry: </span><span class="name">Solubility and Precipitates</span>
+        <span class="sr">Matter: </span><span class="name">Solubility and Precipitates</span>
         <span class="what">Mix two solutions and see which ions form a solid.</span>
-        <span class="bands"><span class="band">Sci 10</span><span class="band">Chem 20</span></span>
+        <span class="bands"><span class="band">10-12</span></span>
       </a>
     </li>
   </ul>
-  <p class="empty" hidden>No tools for this course in this topic yet. Pick another course or topic.</p>
+  <p class="empty" hidden>No tools for this grade in this topic yet. Pick another grade or topic.</p>
   <p class="credit">Curated by shawn.lemko@eips.ca</p>
 </div>
 
@@ -203,7 +208,7 @@ body.scroll .concepts { flex: none; grid-template-rows: none; grid-auto-rows: 25
     grid.style.setProperty("--cols", best.cols);
     grid.style.setProperty("--rows", best.rows || 1);
   };
-  // A tile shows when it is in the chosen course, the chosen topic, and matches the search words.
+  // A tile shows when it is in the chosen grade band, the chosen topic, and matches the search words.
   const show = (v, c) => {
     band = tabs.some(t => t.dataset.band === v) ? v : "all";
     cat = cats.some(t => t.dataset.cat === c) ? c : "all";
@@ -213,8 +218,7 @@ body.scroll .concepts { flex: none; grid-template-rows: none; grid-auto-rows: 25
     qClear.hidden = !qBox.value;
     tiles.forEach(li => {
       const txt = (li.querySelector(".name").textContent + " " + li.querySelector(".what").textContent).toLowerCase();
-      const courses = li.dataset.bands.match(/[A-Za-z]+ \d+/g) || [];
-      li.hidden = (band !== "all" && !courses.includes(band)) || (cat !== "all" && li.dataset.cat !== cat) || !words.every(w => txt.includes(w));
+      li.hidden = (band !== "all" && !li.dataset.bands.split(" ").includes(band)) || (cat !== "all" && li.dataset.cat !== cat) || !words.every(w => txt.includes(w));
     });
     empty.hidden = tiles.some(li => !li.hidden);
     try { localStorage.setItem("vsc-band", band); localStorage.setItem("vsc-cat", cat); } catch (e) {}
