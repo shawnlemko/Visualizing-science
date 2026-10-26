@@ -1,0 +1,940 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<script data-goatcounter="https://shawnlemko.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
+</head>
+<body>
+<title>Solubility &amp; Precipitate Simulator</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Atkinson+Hyperlegible:wght@400;700&family=Spline+Sans+Mono:wght@500;700&display=swap">
+<style>
+/* MathBoard look (shared with the math visuals site), plus ion role colours A/B/C/D.
+   Layout: one-screen lab bench. Left 45% = beaker canvas + equation bar, right 55% = Data Booklet table + reading steps. */
+:root{
+  --bg:#f5f8fb; --surface:#ffffff; --surface-2:#eaf0f6; --ink:#1b2733; --muted:#5b6b7a; --line:#dbe5ee; --line-strong:#b9c9d8; --pt:#2f5fd0;
+  --ionA:#2160e0; --ionB:#0c8a7f; --ionC:#c46a00; --ionD:#d61f4b; --on-ion:#ffffff;
+  --glass:#7d93a2; --glass-fill:rgba(140,170,190,.07); --water:rgba(120,180,225,.20);
+  --water-o:#d1495b; --water-h:#a9bac6; --btn:#2f5fd0; --btn-ink:#ffffff; --solid:#3d2a14; --solid-bg:#f6ead8;
+  --font-ui:'Atkinson Hyperlegible', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-display:'Bricolage Grotesque', 'Segoe UI', system-ui, sans-serif;
+  --font-num:'Spline Sans Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0f161d; --surface:#151f29; --surface-2:#1d2935; --ink:#e6edf3; --muted:#9aabbb; --line:#1f2c38; --line-strong:#2e3f50; --pt:#7aa2ff;
+  --ionA:#6ea4ff; --ionB:#35cfbd; --ionC:#f3b13f; --ionD:#ff7192; --on-ion:#0b141a;
+  --glass:#8ea5b5; --glass-fill:rgba(140,170,190,.06); --water:rgba(90,160,215,.16);
+  --water-o:#ef6f7f; --water-h:#71879a; --btn:#7aa2ff; --btn-ink:#0f161d; --solid:#f6ead8; --solid-bg:#3a2a18; color-scheme:dark; } }
+:root[data-theme="dark"]{
+  --bg:#0f161d; --surface:#151f29; --surface-2:#1d2935; --ink:#e6edf3; --muted:#9aabbb; --line:#1f2c38; --line-strong:#2e3f50; --pt:#7aa2ff;
+  --ionA:#6ea4ff; --ionB:#35cfbd; --ionC:#f3b13f; --ionD:#ff7192; --on-ion:#0b141a;
+  --glass:#8ea5b5; --glass-fill:rgba(140,170,190,.06); --water:rgba(90,160,215,.16);
+  --water-o:#ef6f7f; --water-h:#71879a; --btn:#7aa2ff; --btn-ink:#0f161d; --solid:#f6ead8; --solid-bg:#3a2a18; color-scheme:dark; }
+
+*,*::before,*::after{box-sizing:border-box}
+h1,h2,p,ol{margin:0} ol{padding:0; list-style:none}
+button,select,input{font:inherit; color:inherit}
+button{border:0; background:none; cursor:pointer}
+html,body{height:100%}
+body{background:var(--bg); color:var(--ink); font-family:var(--font-ui); font-size:14px;
+  padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); padding-block:0}
+#app{display:flex; flex-direction:column; gap:8px; min-height:100%; padding-block:8px}
+@media (min-width:1024px){ #app{height:100%} }
+
+/* Header */
+.topbar{display:flex; flex-wrap:wrap; align-items:center; gap:12px 20px; justify-content:space-between}
+.brand{display:flex; flex-wrap:wrap; align-items:center; gap:8px 20px}
+.brand h1{font-family:var(--font-display); font-weight:800; font-size:clamp(20px, 2vw, 26px); line-height:1.1; letter-spacing:-.01em; text-wrap:balance}
+a.main-btn{display:inline-flex; align-items:center; gap:8px; padding:8px 16px; min-height:42px; background:var(--pt); color:#fff; font-family:var(--font-display); font-weight:800; font-size:16px; text-decoration:none; border-radius:10px; border:2px solid var(--pt); flex:none}
+a.main-btn span{font-size:19px; line-height:1}
+a.main-btn:hover{background:var(--surface); color:var(--pt)}
+a.main-btn:focus-visible{outline:3px solid var(--pt); outline-offset:3px}
+.brand p{color:var(--muted); font-size:11.5px; letter-spacing:.06em; text-transform:uppercase; margin-top:1px}
+.mode{display:flex; align-items:center; gap:4px; background:var(--surface); border:1px solid var(--line); border-radius:999px; padding:4px}
+.mode-label{font-size:12px; color:var(--muted); padding:0 6px 0 10px; letter-spacing:.04em; text-transform:uppercase}
+.mode button{border-radius:999px; padding:6px 14px; font-weight:700; font-size:14px; color:var(--muted); line-height:1.1}
+.mode button small{font-weight:400; font-size:12px; margin-left:4px}
+.mode button[aria-checked="true"]{background:var(--btn); color:var(--btn-ink)}
+.guide-wrap{position:relative}
+.btn-outline{border:1.5px solid var(--ink); border-radius:8px; padding:7px 12px; font-weight:700; font-size:14px; background:var(--surface)}
+.pop{position:absolute; right:0; top:calc(100% + 8px); width:min(380px, calc(100vw - 32px)); z-index:20; background:var(--surface);
+  border:1px solid var(--line); border-radius:10px; box-shadow:0 12px 32px rgba(10,20,30,.18); padding:14px 16px}
+.pop h2{font-weight:700; font-size:15px; margin-bottom:8px}
+.pop ol{display:flex; flex-direction:column; gap:10px}
+.pop li{display:grid; grid-template-columns:24px 1fr; gap:8px; line-height:1.4}
+.pop .num{width:22px; height:22px; border-radius:50%; background:var(--btn); color:var(--btn-ink); font-weight:700; font-size:12px; display:grid; place-items:center}
+.pop .yours{margin-top:4px; color:var(--muted); font-size:13px}
+
+/* Main split */
+.layout{display:grid; grid-template-columns:1fr; gap:12px; flex:1; min-height:0}
+@media (min-width:1024px){ .layout{grid-template-columns:45fr 55fr; grid-template-rows:minmax(0,1fr)} }
+.panel{background:var(--surface); border:1px solid var(--line-strong); border-radius:10px; min-width:0}
+.left{display:flex; flex-direction:column; gap:10px; min-height:0; min-width:0}
+.right > *{flex-shrink:0}
+.right{display:flex; flex-direction:column; gap:10px; min-height:0; min-width:0; padding:14px 16px; overflow:auto}
+
+/* Reactant controls */
+.controls{display:grid; grid-template-columns:1fr auto 1fr auto; gap:6px 10px; align-items:start; padding:8px 12px}
+.pick{display:flex; flex-direction:column; gap:5px; min-width:0}
+.pick label{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.07em; font-weight:700}
+.pick select{width:100%; border:1px solid var(--line); background:var(--surface-2); border-radius:8px; padding:7px 8px; font-size:14px; font-weight:700; color:var(--ink)}
+.chips{display:flex; gap:5px; flex-wrap:wrap}
+.chip{display:inline-flex; align-items:center; border-radius:999px; padding:1px 9px; font-size:12px; font-weight:700; color:var(--on-ion)}
+.plus{align-self:center; font-size:20px; color:var(--muted); padding-top:14px}
+.actions{display:flex; flex-direction:column; gap:6px; padding-top:18px}
+.btn-primary{background:var(--btn); color:var(--btn-ink); border-radius:8px; padding:8px 14px; font-weight:700; font-size:14px; white-space:nowrap}
+.btn-primary:disabled{opacity:.45; cursor:not-allowed}
+.btn-ghost{border:1px solid var(--line); border-radius:8px; padding:5px 10px; font-size:13px; color:var(--ink); background:var(--surface-2); white-space:nowrap}
+button:focus-visible, select:focus-visible, input:focus-visible{outline:2.5px solid var(--ionA); outline-offset:2px}
+@media (max-width:560px){ .mode-label{display:none} .mode button{padding:6px 10px} .mode button small{display:block; margin-left:0} .controls{grid-template-columns:1fr} .plus{display:none} .actions{flex-direction:row; padding-top:0} }
+
+/* Stage */
+.stage{position:relative; flex:1; min-height:340px; overflow:hidden}
+@media (min-width:1024px){ .stage{min-height:0} }
+.stage canvas{position:absolute; inset:0; width:100%; height:100%; display:block}
+.water-toggle{position:absolute; bottom:8px; right:10px; display:flex; align-items:center; gap:6px; font-size:12px; color:var(--muted); background:var(--surface); padding:3px 8px; border-radius:999px; border:1px solid var(--line); cursor:pointer}
+.stage-hint{position:absolute; left:12px; top:8px; font-size:12px; color:var(--muted)}
+
+/* Equation bar */
+.eqbar{padding:8px 14px 10px; display:flex; flex-direction:column; gap:4px}
+.eq-head{display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap}
+.eq-title{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.07em; font-weight:700}
+.slider{display:flex; align-items:center; gap:8px; font-size:12px; color:var(--muted)}
+.slider input{width:130px; accent-color:var(--pt)}
+.slider output{font-family:var(--font-num); font-variant-numeric:tabular-nums; min-width:3.2em; color:var(--ink); font-weight:700}
+.eq-sci{position:relative; font-size:20px; line-height:1.5; padding:22px 0 20px; text-align:center}
+.eq-sci svg{position:absolute; inset:0; width:100%; height:100%; pointer-events:none; overflow:visible}
+.eq-chem{display:grid; grid-template-columns:auto 1fr; gap:2px 12px; align-items:baseline; font-size:16px; line-height:1.4}
+.eq-chem .tier{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; font-weight:700; white-space:nowrap}
+.eq-chem .tier-row{min-width:0}
+.c-A{color:var(--ionA)} .c-B{color:var(--ionB)} .c-C{color:var(--ionC)} .c-D{color:var(--ionD)}
+.ion, .cmp{font-weight:700; white-space:nowrap}
+.coef{color:var(--ink); font-weight:700; margin-right:.15em}
+.op{color:var(--muted); margin:0 .05em}
+.st{font-weight:400; color:var(--muted); font-size:.82em; margin-left:.05em}
+.st.s{color:var(--solid); background:var(--solid-bg); border-radius:4px; padding:0 .25em; font-weight:700}
+.q{color:var(--muted); font-weight:700}
+.nr{display:inline-block; font-size:.72em; font-weight:700; border:1.5px solid var(--muted); color:var(--muted); border-radius:999px; padding:0 .6em; margin-left:.4em; vertical-align:.15em}
+.spect{opacity:var(--spec,1); transition:opacity .15s}
+.dimmed .spect{text-decoration:line-through; text-decoration-thickness:2px}
+.labnote{font-size:12px; color:var(--muted); line-height:1.4}
+.labnote b{color:var(--ink)}
+
+/* Solubility table */
+.tbl-head h2{font-weight:700; font-size:15px; line-height:1.25; text-wrap:balance}
+.tbl-head p{font-size:12px; color:var(--muted); margin-top:2px}
+.tbl-wrap{overflow-x:auto}
+table.sol{width:100%; border-collapse:separate; border-spacing:0; font-size:13px; min-width:640px; table-layout:fixed}
+.sol th, .sol td{border-right:1px solid var(--line); border-bottom:1px solid var(--line); padding:6px 5px; vertical-align:top; text-align:center; transition:box-shadow .25s, background .25s}
+.sol tr > :first-child{border-left:1px solid var(--line); text-align:left}
+.sol thead th{border-top:1px solid var(--line); background:var(--surface-2); font-weight:700}
+.sol thead th:first-child{border-top-left-radius:8px} .sol thead th:last-child{border-top-right-radius:8px}
+.sol tbody tr:last-child td:last-child{border-bottom-right-radius:8px} .sol tbody tr:last-child th{border-bottom-left-radius:8px}
+.sol tbody th{font-weight:700; font-size:12.5px; line-height:1.3; background:var(--surface-2)}
+.sol tbody th small{display:block; font-weight:400; color:var(--muted); font-size:11.5px}
+.sol col.rowhead{width:116px}
+.tok{display:inline-block; border-radius:5px; padding:0 2px; margin:1px 0; line-height:1.45; white-space:nowrap; transition:background .25s, color .25s, box-shadow .25s}
+.tok.word{color:var(--muted); font-style:italic}
+.sol .hl-col{box-shadow:inset 0 0 0 2.5px var(--hl), 0 0 14px -2px var(--hl); position:relative; z-index:1}
+.sol .hl-cell{box-shadow:inset 0 0 0 2.5px var(--hl), 0 0 16px -2px var(--hl); position:relative; z-index:1}
+.tok.hl-tok{background:var(--hl); color:var(--on-ion); font-style:normal; font-weight:700}
+
+/* Reading steps */
+.read-title{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.07em; font-weight:700}
+.cards{display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:10px}
+.card{border:1px solid var(--line); border-radius:10px; padding:10px 12px; background:var(--surface-2); min-width:0}
+.card-top{display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:6px}
+.card-top .cmp{font-size:18px}
+.pill{font-size:12px; font-weight:700; border-radius:999px; padding:2px 9px; white-space:nowrap; display:inline-flex; align-items:center; gap:6px}
+.pill.s{background:var(--solid-bg); color:var(--solid)}
+.pill.aq{background:var(--surface); color:var(--muted); border:1px solid var(--line)}
+.swatch{width:10px; height:10px; border-radius:50%; border:1px solid rgba(0,0,0,.25); display:inline-block}
+.card ol{display:flex; flex-direction:column; gap:4px; font-size:13px; line-height:1.4}
+.card li{display:grid; grid-template-columns:18px 1fr; gap:6px}
+.card .n{font-weight:700; color:var(--muted)}
+.placeholder{border:1px dashed var(--line); border-radius:10px; padding:14px; color:var(--muted); font-size:13px; line-height:1.5}
+.foot{font-size:11.5px; color:var(--muted); line-height:1.45}
+@media (prefers-reduced-motion: reduce){ *{transition:none !important} }
+</style>
+
+<div id="app">
+  <header class="topbar">
+    <div class="brand">
+      <a class="main-btn" href="index.html"><span aria-hidden="true">←</span> Return to Main Page</a>
+      <h1>Solubility &amp; Precipitates</h1>
+    </div>
+    <div class="mode" role="radiogroup" aria-label="Mode">
+      <span class="mode-label">Mode</span>
+      <button type="button" id="modeSci" role="radio" aria-checked="true">Science 10<small>Molecular</small></button>
+      <button type="button" id="modeChem" role="radio" aria-checked="false">Chemistry 20<small>Net Ionic</small></button>
+    </div>
+    <div class="guide-wrap">
+      <button type="button" id="guideBtn" class="btn-outline" aria-expanded="false" aria-controls="guidePop">Step-by-Step Guide</button>
+      <div id="guidePop" class="pop" hidden></div>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="left">
+      <div class="panel controls">
+        <div class="pick">
+          <label for="sol1">Solution 1</label>
+          <select id="sol1"></select>
+          <div class="chips" id="chips1"></div>
+        </div>
+        <div class="plus" aria-hidden="true">+</div>
+        <div class="pick">
+          <label for="sol2">Solution 2</label>
+          <select id="sol2"></select>
+          <div class="chips" id="chips2"></div>
+        </div>
+        <div class="actions">
+          <button type="button" id="mixBtn" class="btn-primary">Mix Solutions</button>
+          <button type="button" id="resetBtn" class="btn-ghost">Reset Beaker</button>
+        </div>
+      </div>
+
+      <div class="panel stage" id="stage">
+        <canvas id="beaker" aria-label="Particle view of the beakers"></canvas>
+        <label class="water-toggle" for="waterTgl"><input type="checkbox" id="waterTgl" checked> Water molecules</label>
+      </div>
+
+      <div class="panel eqbar" id="eqbar">
+        <div class="eq-head">
+          <span class="eq-title" id="eqTitle">Molecular equation</span>
+          <label class="slider" id="sliderWrap" for="specSlider" hidden>Spectator ions
+            <input type="range" id="specSlider" min="10" max="100" step="1" value="100">
+            <output id="specOut" for="specSlider">100%</output>
+          </label>
+        </div>
+        <div class="eq-sci" id="eqSci"></div>
+        <div class="eq-chem" id="eqChem" hidden></div>
+        <div class="labnote" id="labnote" hidden></div>
+      </div>
+    </section>
+
+    <section class="panel right">
+      <div class="tbl-head">
+        <h2>Solubility of Some Common Ionic Compounds in Water at 298.15 K</h2>
+        <p>From the Alberta Chemistry Data Booklet (columns used in this simulator)</p>
+      </div>
+      <div class="tbl-wrap"><table class="sol" id="solTable"></table></div>
+      <div class="read-title">Reading the table</div>
+      <div id="cards"></div>
+      <p class="foot">Read the column first (find the anion, or Group 1 / NH₄⁺ for the cation), then find the row that lists the cation. If the cation is not listed, it follows the word <i>most</i>. Columns for CH₃COO⁻, IO₃⁻ and C₂O₄²⁻ are not shown.</p>
+    </section>
+  </main>
+</div>
+
+<script>
+/* =========================================================
+   CHEMISTRY DATA
+   ========================================================= */
+// Cut-off used by the Alberta Data Booklet for both rows. Change here if your booklet differs.
+const CUTOFF = '0.1 mol/L';
+
+const ION = {
+  Pb:{html:'Pb', u:'Pb', q:2, name:'lead(II)'},
+  Ag:{html:'Ag', u:'Ag', q:1, name:'silver'},
+  Ba:{html:'Ba', u:'Ba', q:2, name:'barium'},
+  Cu:{html:'Cu', u:'Cu', q:2, name:'copper(II)'},
+  Ca:{html:'Ca', u:'Ca', q:2, name:'calcium'},
+  Fe:{html:'Fe', u:'Fe', q:3, name:'iron(III)'},
+  K:{html:'K', u:'K', q:1, grp:1, name:'potassium'},
+  Na:{html:'Na', u:'Na', q:1, grp:1, name:'sodium'},
+  NH4:{html:'NH<sub>4</sub>', u:'NH₄', q:1, poly:true, grp:'NH4', name:'ammonium'},
+  NO3:{html:'NO<sub>3</sub>', u:'NO₃', q:-1, poly:true, name:'nitrate'},
+  Cl:{html:'Cl', u:'Cl', q:-1, name:'chloride'},
+  I:{html:'I', u:'I', q:-1, name:'iodide'},
+  SO4:{html:'SO<sub>4</sub>', u:'SO₄', q:-2, poly:true, name:'sulfate'},
+  OH:{html:'OH', u:'OH', q:-1, poly:true, name:'hydroxide'},
+  CO3:{html:'CO<sub>3</sub>', u:'CO₃', q:-2, poly:true, name:'carbonate'},
+  PO4:{html:'PO<sub>4</sub>', u:'PO₄', q:-3, poly:true, name:'phosphate'},
+  S:{html:'S', u:'S', q:-2, name:'sulfide'},
+};
+const GROUP2 = ['Ba','Ca','Sr'];
+
+const SOL1 = [
+  {cat:'Pb', an:'NO3', name:'lead(II) nitrate'},
+  {cat:'Ag', an:'NO3', name:'silver nitrate'},
+  {cat:'Ba', an:'Cl',  name:'barium chloride'},
+  {cat:'Cu', an:'SO4', name:'copper(II) sulfate', tint:'rgba(50,130,230,0.30)'},
+  {cat:'Ca', an:'NO3', name:'calcium nitrate'},
+  {cat:'Fe', an:'Cl',  name:'iron(III) chloride', tint:'rgba(215,140,25,0.32)'},
+];
+const SOL2 = [
+  {cat:'K',   an:'I',   name:'potassium iodide'},
+  {cat:'Na',  an:'SO4', name:'sodium sulfate'},
+  {cat:'Na',  an:'OH',  name:'sodium hydroxide'},
+  {cat:'Na',  an:'CO3', name:'sodium carbonate'},
+  {cat:'Na',  an:'Cl',  name:'sodium chloride'},
+  {cat:'K',   an:'PO4', name:'potassium phosphate'},
+  {cat:'NH4', an:'S',   name:'ammonium sulfide'},
+];
+
+// Authentic precipitate colours (only low-solubility pairs need one)
+const W_ = '#f4f6f8';
+const PRECIP = {
+  'Pb|I':['#f5c518','bright yellow'], 'Pb|SO4':[W_,'white'], 'Pb|OH':[W_,'white'], 'Pb|CO3':[W_,'white'],
+  'Pb|Cl':[W_,'white'], 'Pb|PO4':[W_,'white'], 'Pb|S':['#1d1d1f','black'],
+  'Ag|I':['#f1df86','pale yellow'], 'Ag|SO4':[W_,'white'], 'Ag|OH':['#6b4226','brown'], 'Ag|CO3':['#efe5c0','pale yellow-white'],
+  'Ag|Cl':[W_,'white'], 'Ag|PO4':['#e6bd2a','yellow'], 'Ag|S':['#1d1d1f','black'],
+  'Ba|SO4':[W_,'white'], 'Ba|CO3':[W_,'white'], 'Ba|PO4':[W_,'white'],
+  'Cu|OH':['#5aa9e6','pale blue gel'], 'Cu|CO3':['#6cc4a8','blue-green'], 'Cu|PO4':['#4f9fd8','blue'], 'Cu|S':['#1d1d1f','black'],
+  'Ca|SO4':[W_,'white'], 'Ca|OH':[W_,'white'], 'Ca|CO3':[W_,'white'], 'Ca|PO4':[W_,'white'],
+  'Fe|OH':['#9a4a1c','rust-brown'], 'Fe|CO3':['#9a4a1c','rust-brown'], 'Fe|PO4':['#eee2a2','pale yellow'], 'Fe|S':['#1d1d1f','black'],
+};
+
+// Notes where the lab differs from a pure table prediction
+const LABNOTE = {
+  'Ag|OH':'Silver hydroxide changes almost immediately into brown silver oxide, Ag₂O.',
+  'Fe|CO3':'Iron(III) carbonate is not stable in water. The rust-brown solid is mostly Fe(OH)₃, and CO₂ bubbles form.',
+  'Fe|S':'In the lab this gives a black solid that is a mixture of iron sulfides and sulfur.',
+  'Cu|I':'The table predicts no precipitate, but in the lab Cu²⁺ oxidizes I⁻: you would see white CuI and brown I₂.',
+  'Fe|I':'The table predicts no precipitate, but in the lab Fe³⁺ oxidizes I⁻ to brown I₂.',
+  'Ag|SO4':'Ag₂SO₄ is only slightly soluble (about 0.03 mol/L), so it is below the 0.1 mol/L line. A visible solid forms only with concentrated solutions.',
+  'Ca|SO4':'CaSO₄ is only slightly soluble (about 0.015 mol/L). A visible solid forms only with concentrated solutions.',
+  'Ca|OH':'Ca(OH)₂ is only slightly soluble (about 0.02 mol/L, limewater). It shows up as a cloudy white solid.',
+  'Pb|Cl':'PbCl₂ is only slightly soluble (about 0.04 mol/L). The solid forms best in cold or concentrated solutions.',
+};
+
+// Booklet columns. def = what "most" means in that column; ex = listed exceptions.
+const COLS = [
+  {id:'g1',  head:['G1','NH4','H3O'], cation:true},
+  {id:'no3', head:['NO3'],            def:'high', ex:[]},
+  {id:'hal', head:['Cl','Br','I'],    def:'high', ex:['Ag','Pb','Tl','Hg','Cu+']},
+  {id:'so4', head:['SO4'],            def:'high', ex:['Ag','Pb','Ca','Ba','Sr','Ra']},
+  {id:'co3', head:['CO3','PO4','SO3'],def:'low',  ex:['G1','NH4']},
+  {id:'oh',  head:['OH'],             def:'low',  ex:['G1','NH4','Sr','Ba','Tl']},
+  {id:'s',   head:['S'],              def:'low',  ex:['G1','NH4','G2']},
+];
+const TOK = {G1:'Group 1', NH4:'NH₄⁺', H3O:'H₃O⁺ (H⁺)', NO3:'NO₃⁻', Cl:'Cl⁻', Br:'Br⁻', I:'I⁻', SO4:'SO₄²⁻', CO3:'CO₃²⁻',
+  PO4:'PO₄³⁻', SO3:'SO₃²⁻', OH:'OH⁻', S:'S²⁻', Ag:'Ag⁺', Pb:'Pb²⁺', Tl:'Tl⁺', Hg:'Hg₂²⁺ (Hg⁺)', 'Cu+':'Cu⁺',
+  Ca:'Ca²⁺', Ba:'Ba²⁺', Sr:'Sr²⁺', Ra:'Ra²⁺', G2:'Group 2', most:'most', all:'all', none:'none'};
+
+/* =========================================================
+   CHEMISTRY HELPERS
+   ========================================================= */
+const gcd = (a,b) => b ? gcd(b, a % b) : a;
+const lcm = (a,b) => a*b/gcd(a,b);
+const SUB = '₀₁₂₃₄₅₆₇₈₉', SUP = '⁰¹²³⁴⁵⁶⁷⁸⁹';
+const subU = n => String(n).split('').map(d => SUB[d]).join('');
+const chargeU = q => (Math.abs(q) > 1 ? SUP[Math.abs(q)] : '') + (q > 0 ? '⁺' : '⁻');
+const chargeH = q => `<sup>${Math.abs(q) > 1 ? Math.abs(q) : ''}${q > 0 ? '+' : '−'}</sup>`;
+const ionU = k => ION[k].u + chargeU(ION[k].q);
+function ratio(cat, an){ const a = ION[cat].q, b = -ION[an].q, l = lcm(a,b); return [l/a, l/b]; }
+function partH(k, n){ const io = ION[k]; return n === 1 ? io.html : io.poly ? `(${io.html})<sub>${n}</sub>` : `${io.html}<sub>${n}</sub>`; }
+function partU(k, n){ const io = ION[k]; return n === 1 ? io.u : io.poly ? `(${io.u})${subU(n)}` : io.u + subU(n); }
+function cmpH(cat, an, rc, ra, attrs = ['','']){ const [x,y] = ratio(cat, an);
+  return `<span class="cmp"><span class="c-${rc}"${attrs[0]}>${partH(cat,x)}</span><span class="c-${ra}"${attrs[1]}>${partH(an,y)}</span></span>`; }
+function cmpU(cat, an){ const [x,y] = ratio(cat, an); return partU(cat,x) + partU(an,y); }
+const ionChip = (k, role) => `<span class="ion c-${role}">${ION[k].html}${chargeH(ION[k].q)}</span>`;
+
+function tokMatches(t, cat){
+  return t === cat || (t === 'G1' && ION[cat].grp === 1) || (t === 'G2' && GROUP2.includes(cat));
+}
+// Look a compound up in the table: column first, then the row.
+function lookup(cat, an){
+  if (ION[cat].grp) return {col:'g1', headTok: cat === 'NH4' ? 'NH4' : 'G1', row:'high', cellTok:'all', g1:true};
+  const col = COLS.find(c => !c.cation && c.head.includes(an));
+  const hit = col.ex.find(t => tokMatches(t, cat));
+  const row = hit ? (col.def === 'high' ? 'low' : 'high') : col.def;
+  return {col:col.id, headTok:an, row, cellTok: hit || 'most', listed: !!hit};
+}
+
+function computeReaction(i1, i2){
+  const s1 = SOL1[i1], s2 = SOL2[i2];
+  const A = s1.cat, B = s1.an, C = s2.cat, D = s2.an;
+  const [x1,y1] = ratio(A,B), [x2,y2] = ratio(C,D), [p,q] = ratio(A,D), [r,s] = ratio(C,B);
+  const same = B === D;
+  let n1 = 1, n2 = 1, n3 = 1, n4 = 1;
+  if (!same){
+    for (let a = 1; a <= 12; a++){
+      const c3 = a*x1/p, c4 = a*y1/s; if (c3 % 1 || c4 % 1) continue;
+      const c2 = c3*q/y2; if (c2 % 1) continue;
+      if (c2*x2 === c4*r){ n1 = a; n2 = c2; n3 = c3; n4 = c4; break; }
+    }
+  }
+  const AD = lookup(A,D), CB = lookup(C,B);
+  const precip = !same && AD.row === 'low';
+  const key = A + '|' + D;
+  return {s1, s2, A, B, C, D, x1, y1, x2, y2, p, q, r, s, n1, n2, n3, n4, same, AD, CB, precip,
+          color: precip ? PRECIP[key] : null, note: LABNOTE[key] || null};
+}
+
+/* =========================================================
+   STATE + DOM
+   ========================================================= */
+const $ = id => document.getElementById(id);
+const state = { i1:0, i2:0, mode:'sci', mixed:false, revealed:false, spec:1, water:true, R:null, timers:[] };
+
+function fillSelects(){
+  $('sol1').innerHTML = SOL1.map((s,i) => `<option value="${i}">${cmpU(s.cat,s.an)}  ·  ${s.name}</option>`).join('');
+  $('sol2').innerHTML = SOL2.map((s,i) => `<option value="${i}">${cmpU(s.cat,s.an)}  ·  ${s.name}</option>`).join('');
+}
+function renderChips(){
+  const R = state.R;
+  const chip = (k, role) => `<span class="chip" style="background:var(--ion${role})" title="${role === 'A' || role === 'C' ? 'cation' : 'anion'}: ${ION[k].name}">${ionU(k)}</span>`;
+  $('chips1').innerHTML = chip(R.A,'A') + chip(R.B,'B');
+  $('chips2').innerHTML = chip(R.C,'C') + chip(R.D,'D');
+}
+
+/* ---------- Solubility table ---------- */
+function renderTable(){
+  const tok = (col, row, t, extra = '') => `<span class="tok${['most','all','none'].includes(t) ? ' word' : ''}" data-col="${col}" data-row="${row}" data-tok="${t}"${extra}>${TOK[t]}</span>`;
+  const join = (col, row, list) => list.map(t => tok(col,row,t)).join(', ');
+  let h = '<colgroup><col class="rowhead">' + COLS.map(() => '<col>').join('') + '</colgroup>';
+  h += '<thead><tr><th scope="col">Ion</th>' + COLS.map(c => `<th scope="col" data-col="${c.id}" data-row="head">${join(c.id,'head',c.head)}</th>`).join('') + '</tr></thead><tbody>';
+  const rows = [['high', `High solubility <span class="st">(aq)</span><small>≥ ${CUTOFF}</small>`], ['low', `Low solubility <span class="st s">(s)</span><small>&lt; ${CUTOFF}</small>`]];
+  for (const [row, label] of rows){
+    h += `<tr><th scope="row">${label}</th>`;
+    for (const c of COLS){
+      let list;
+      if (c.cation) list = row === 'high' ? ['all'] : ['none'];
+      else if (c.def === row) list = ['most'];
+      else list = c.ex.length ? c.ex : ['none'];
+      h += `<td data-col="${c.id}" data-row="${row}">${join(c.id,row,list)}</td>`;
+    }
+    h += '</tr>';
+  }
+  $('solTable').innerHTML = h + '</tbody>';
+}
+function clearHighlights(){
+  state.timers.forEach(clearTimeout); state.timers = [];
+  document.querySelectorAll('#solTable .hl-col, #solTable .hl-cell, #solTable .hl-tok').forEach(el => {
+    el.classList.remove('hl-col','hl-cell','hl-tok'); el.style.removeProperty('--hl');
+  });
+}
+function mark(el, cls, role){ if (!el) return; el.style.setProperty('--hl', `var(--ion${role})`); el.classList.add(cls); }
+// Column first (anion colour), then the cell + the cation's name in it (cation colour).
+function highlightPair(L, catRole, anRole, delay){
+  const colRole = L.g1 ? catRole : anRole;
+  const later = (ms, fn) => state.timers.push(setTimeout(fn, ms));
+  later(delay, () => {
+    mark(document.querySelector(`#solTable th[data-col="${L.col}"][data-row="head"]`), 'hl-col', colRole);
+    mark(document.querySelector(`#solTable .tok[data-col="${L.col}"][data-row="head"][data-tok="${L.headTok}"]`), 'hl-tok', colRole);
+  });
+  later(delay + 650, () => {
+    mark(document.querySelector(`#solTable td[data-col="${L.col}"][data-row="${L.row}"]`), 'hl-cell', anRole === colRole ? anRole : catRole);
+    mark(document.querySelector(`#solTable .tok[data-col="${L.col}"][data-row="${L.row}"][data-tok="${L.cellTok}"]`), 'hl-tok', catRole);
+  });
+}
+
+/* ---------- Reading cards ---------- */
+function colName(id){ return COLS.find(c => c.id === id).head.map(t => TOK[t]).join(', '); }
+function cardHTML(cat, an, rc, ra, L){
+  const R = state.R;
+  const solid = L.row === 'low';
+  const colour = solid ? PRECIP[cat + '|' + an] : null;
+  const pill = solid
+    ? `<span class="pill s"><span class="swatch" style="background:${colour[0]}"></span>(s) ${colour[1]} precipitate</span>`
+    : `<span class="pill aq">(aq) stays dissolved</span>`;
+  const step2 = L.g1
+    ? `${ionChip(cat,rc)} is ${cat === 'NH4' ? 'ammonium' : 'a Group 1 ion'}, so use the first column.`
+    : `Find ${ionChip(an,ra)} in the top row: the <b>${colName(L.col)}</b> column.`;
+  let step3;
+  if (L.g1) step3 = `Group 1 and NH₄⁺ compounds: <b>all</b> are high solubility → <b>(aq)</b>.`;
+  else if (L.listed) step3 = `${ionChip(cat,rc)} is listed in the <b>${solid ? 'Low' : 'High'}</b> row${L.cellTok === 'G2' ? ' (as Group 2)' : ''} → <b>${solid ? '(s)' : '(aq)'}</b>.`;
+  else step3 = `${ionChip(cat,rc)} is not listed, so it follows <i>most</i>: <b>${solid ? 'Low' : 'High'}</b> → <b>${solid ? '(s)' : '(aq)'}</b>.`;
+  return `<div class="card">
+    <div class="card-top">${cmpH(cat,an,rc,ra)}${pill}</div>
+    <ol>
+      <li><span class="n">1</span><span>Swap partners: ${ionChip(cat,rc)} + ${ionChip(an,ra)} → ${cmpH(cat,an,rc,ra)}</span></li>
+      <li><span class="n">2</span><span>${step2}</span></li>
+      <li><span class="n">3</span><span>${step3}</span></li>
+    </ol></div>`;
+}
+function renderCards(){
+  const R = state.R;
+  if (!state.mixed){
+    $('cards').innerHTML = `<div class="placeholder">Press <b>Mix Solutions</b>. The two new partner pairs, ${cmpH(R.A,R.D,'A','D')} and ${cmpH(R.C,R.B,'C','B')}, will be checked against the table here, one step at a time.</div>`;
+    return;
+  }
+  $('cards').innerHTML = `<div class="cards">${cardHTML(R.A,R.D,'A','D',R.AD)}${cardHTML(R.C,R.B,'C','B',R.CB)}</div>`;
+}
+
+/* ---------- Equations ---------- */
+const co = n => n > 1 ? `<span class="coef">${n}</span>` : '';
+const st = s => `<span class="st${s === 's' ? ' s' : ''}">(${s})</span>`;
+const PLUS = ' <span class="op">+</span> ', ARROW = ' <span class="op">→</span> ';
+function ionEq(k, role, n, spect){ return `<span class="ion c-${role}${spect ? ' spect' : ''}">${co(n)}${ION[k].html}${chargeH(ION[k].q)}</span>`; }
+
+function molecularHTML(withArcIds){
+  const R = state.R, show = state.revealed;
+  const ids = withArcIds ? [[' data-arc="A"',' data-arc="B"'],[' data-arc="C"',' data-arc="D"']] : [['',''],['','']];
+  let h = `${co(R.n1)}${cmpH(R.A,R.B,'A','B',ids[0])}${st('aq')}${PLUS}${co(R.n2)}${cmpH(R.C,R.D,'C','D',ids[1])}${st('aq')}${ARROW}`;
+  if (!show) return h + '<span class="q">?</span>';
+  if (R.same) return h + '<span class="nr" style="margin-left:0">no reaction</span>';
+  h += `${co(R.n3)}${cmpH(R.A,R.D,'A','D')}${st(R.precip ? 's' : 'aq')}${PLUS}${co(R.n4)}${cmpH(R.C,R.B,'C','B')}${st('aq')}`;
+  if (!R.precip) h += '<span class="nr">no reaction</span>';
+  return h;
+}
+function totalIonicHTML(){
+  const R = state.R, show = state.revealed, allSpect = !R.precip;
+  const left = [ionEq(R.A,'A',R.n1*R.x1, allSpect && show), ionEq(R.B,'B',R.n1*R.y1, show), ionEq(R.C,'C',R.n2*R.x2, show), ionEq(R.D,'D',R.n2*R.y2, allSpect && show)].join(PLUS);
+  if (!show) return left + ARROW + '<span class="q">?</span>';
+  let right;
+  if (R.precip) right = `${co(R.n3)}${cmpH(R.A,R.D,'A','D')}${st('s')}`;
+  else right = [ionEq(R.A,'A',R.n3*R.p,true), ionEq(R.D,'D',R.n3*R.q,true)].join(PLUS);
+  right += PLUS + [ionEq(R.C,'C',R.n4*R.r,true), ionEq(R.B,'B',R.n4*R.s,true)].join(PLUS);
+  return left + ARROW + right;
+}
+function netIonicHTML(){
+  const R = state.R;
+  if (!state.revealed) return '<span class="q">?</span>';
+  if (!R.precip) return `<span class="q">None.</span> <span class="labnote">Every ion is a spectator, so there is no net ionic equation.</span>`;
+  return `${ionEq(R.A,'A',R.p)}${PLUS}${ionEq(R.D,'D',R.q)}${ARROW}${cmpH(R.A,R.D,'A','D')}${st('s')}`;
+}
+function renderEquations(){
+  const R = state.R, chem = state.mode === 'chem';
+  $('eqTitle').textContent = chem ? 'Molecular → total ionic → net ionic' : 'Molecular equation';
+  $('sliderWrap').hidden = !chem;
+  $('eqSci').hidden = chem; $('eqChem').hidden = !chem;
+  if (chem){
+    $('eqChem').innerHTML =
+      `<span class="tier">Molecular</span><div class="tier-row">${molecularHTML(false)}</div>
+       <span class="tier">Total ionic</span><div class="tier-row">${totalIonicHTML()}</div>
+       <span class="tier">Net ionic</span><div class="tier-row">${netIonicHTML()}</div>`;
+  } else {
+    $('eqSci').innerHTML = `<span class="eq-line">${molecularHTML(true)}</span><svg aria-hidden="true"></svg>`;
+    requestAnimationFrame(drawArcs);
+  }
+  let note = '';
+  if (state.revealed){
+    if (R.same) note = `<b>No new partners.</b> Both solutions contain ${ionU(R.B)}, so swapping partners makes the same compounds again.`;
+    else if (R.note) note = `<b>Lab note.</b> ${R.note}`;
+  }
+  $('labnote').innerHTML = note; $('labnote').hidden = !note;
+  applySpec();
+}
+// Partner Swap Arc: outside ions (A, D) above the line, inside ions (B, C) below it.
+function drawArcs(){
+  const box = $('eqSci'), svg = box.querySelector('svg'); if (!svg || box.hidden) return;
+  const b = box.getBoundingClientRect(), get = r => box.querySelector(`[data-arc="${r}"]`).getBoundingClientRect();
+  const A = get('A'), B = get('B'), C = get('C'), D = get('D');
+  if (Math.abs(A.top - D.top) > 4){ svg.innerHTML = ''; return; } // equation wrapped: skip arcs
+  const cx = r => r.left + r.width/2 - b.left;
+  const yTop = A.top - b.top + 3, yBot = A.bottom - b.top - 1;
+  const arc = (x1, x2, y, up, c1, c2, label, id) => {
+    const h = up ? -18 : 18, mid = (x1 + x2)/2;
+    return `<defs><linearGradient id="${id}" x1="0" x2="1"><stop offset="0" stop-color="var(--ion${c1})"/><stop offset="1" stop-color="var(--ion${c2})"/></linearGradient></defs>
+      <path d="M${x1},${y} C${x1},${y + h} ${x2},${y + h} ${x2},${y}" fill="none" stroke="url(#${id})" stroke-width="2" stroke-linecap="round"/>
+      <circle cx="${x1}" cy="${y}" r="2.5" fill="var(--ion${c1})"/><circle cx="${x2}" cy="${y}" r="2.5" fill="var(--ion${c2})"/>
+      <text x="${mid}" y="${y + h + (up ? -3 : 11)}" text-anchor="middle" font-size="11" fill="var(--muted)" font-family="var(--font-ui)">${label}</text>`;
+  };
+  svg.innerHTML = arc(cx(A), cx(D), yTop, true, 'A', 'D', 'outside ions swap partners', 'gAD') + arc(cx(B), cx(C), yBot, false, 'B', 'C', 'inside ions', 'gBC');
+}
+function applySpec(){
+  const v = state.mode === 'chem' ? state.spec : 1;
+  $('eqbar').style.setProperty('--spec', v);
+  $('eqbar').classList.toggle('dimmed', state.mode === 'chem' && v < 0.995);
+}
+
+/* ---------- Step-by-step guide ---------- */
+function renderGuide(){
+  const R = state.R;
+  $('guidePop').innerHTML = `<h2>Predicting a precipitate in 3 steps</h2><ol>
+    <li><span class="num">1</span><span><b>Swap partners.</b> The outside ions pair up and the inside ions pair up.
+      <div class="yours">Here: ${ionChip(R.A,'A')} + ${ionChip(R.D,'D')} and ${ionChip(R.C,'C')} + ${ionChip(R.B,'B')}</div></span></li>
+    <li><span class="num">2</span><span><b>Check the anion column.</b> Find the anion in the top row of the table. Group 1 and NH₄⁺ compounds use the first column.
+      <div class="yours">Here: ${R.AD.g1 ? 'first column' : ionChip(R.D,'D') + ' column'} and ${R.CB.g1 ? 'first column for ' + ionChip(R.C,'C') : ionChip(R.B,'B') + ' column'}</div></span></li>
+    <li><span class="num">3</span><span><b>Assign the state.</b> Find the row that lists the cation. Low solubility means <span class="st s">(s)</span>, a precipitate. High means <span class="st">(aq)</span>.
+      <div class="yours">${state.mixed ? `Here: ${cmpU(R.A,R.D)}${R.AD.row === 'low' ? '(s)' : '(aq)'} and ${cmpU(R.C,R.B)}(aq)` : 'Press Mix Solutions to check your answer.'}</div></span></li>
+  </ol>`;
+}
+
+/* =========================================================
+   PARTICLE CANVAS
+   ========================================================= */
+const cv = $('beaker'), ctx = cv.getContext('2d');
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+let W = 0, H = 0, DPR = 1, G = null, TOKS = {};
+const sim = { phase:'ready', t:0, parts:[], units:[], waterMini:[[],[]], waterMain:[], level:0, tilt:0, raise:0,
+  cols:[], colW:0, spawnT:0, order:[[],[]], released:[0,0], total:0, revealAt:2.7 };
+
+function readTokens(){
+  const cs = getComputedStyle(document.documentElement), g = n => cs.getPropertyValue(n).trim();
+  TOKS = {A:g('--ionA'), B:g('--ionB'), C:g('--ionC'), D:g('--ionD'), onIon:g('--on-ion'), ink:g('--ink'), muted:g('--muted'),
+    glass:g('--glass'), glassFill:g('--glass-fill'), water:g('--water'), wo:g('--water-o'), wh:g('--water-h'), surface:g('--surface'), line:g('--line')};
+}
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const ease = t => t < 0.5 ? 2*t*t : 1 - Math.pow(-2*t + 2, 2)/2;
+const rand = (a, b) => a + Math.random()*(b - a);
+function hexRgb(h){ h = h.replace('#',''); if (h.length === 3) h = h.split('').map(c => c + c).join(''); const n = parseInt(h,16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; }
+function mixHex(a, b, t){ const x = hexRgb(a), y = hexRgb(b); return `rgb(${x.map((v,i) => Math.round(v + (y[i] - v)*t)).join(',')})`; }
+function lum(h){ const [r,g,b] = hexRgb(h); return (0.299*r + 0.587*g + 0.114*b)/255; }
+
+function geometry(){
+  const topH = H*0.42;
+  const mh = Math.max(56, topH - 46);
+  const mw = Math.min(W*0.27, mh*1.4);
+  const mainTop = topH + 28;
+  const Mh = Math.max(80, H - mainTop - 26);
+  const Mw = Math.min(W*0.72, Mh*1.9);
+  const base = clamp(Math.min(W, H*1.2)/38, 7.5, 13);
+  return { mini:[{cx:W*0.27, by:topH - 4, w:mw, h:mh}, {cx:W*0.73, by:topH - 4, w:mw, h:mh}],
+           main:{cx:W/2, by:H - 24, w:Mw, h:Mh}, base, fill:0.7, mainFill:0.8 };
+}
+function resize(){
+  const r = cv.getBoundingClientRect(); if (!r.width || !r.height) return;
+  const oldW = W, oldH = H;
+  DPR = Math.min(2, window.devicePixelRatio || 1); W = r.width; H = r.height;
+  cv.width = Math.round(W*DPR); cv.height = Math.round(H*DPR);
+  const oldG = G; G = geometry();
+  if (!oldG || !sim.parts.length){ buildScene(); return; }
+  // rescale anything that lives in world coordinates
+  const sx = W/oldW, sy = H/oldH, ss = G.base/oldG.base;
+  for (const p of sim.parts){ p.r *= ss; if (p.loc === 'main' || p.loc === 'air'){ p.x *= sx; p.y *= sy; } else { p.x *= G.mini[0].w/oldG.mini[0].w; p.y *= G.mini[0].h/oldG.mini[0].h; } }
+  for (const u of sim.units){ u.cx *= sx; u.cy *= sy; u.ty *= sy; u.tx *= sx; u.offs.forEach(o => { o.ox *= ss; o.oy *= ss; }); u.hw *= ss; u.hh *= ss; }
+  for (const w of sim.waterMain){ w.x *= sx; w.y *= sy; }
+  sim.waterMini.forEach(arr => arr.forEach(w => { w.x *= G.mini[0].w/oldG.mini[0].w; w.y *= G.mini[0].h/oldG.mini[0].h; }));
+  sim.cols = sim.cols.map(c => c*sy); sim.colW *= sx; sim.level *= sy;
+}
+
+function makeIon(key, role, b){
+  const io = ION[key];
+  return { key, role, label: ionU(key), r: G.base*(io.poly ? 1.32 : 1), loc:b, x:0, y:0, vx:rand(-20,20), vy:rand(-20,20), unit:null };
+}
+function buildScene(){
+  if (!G) return;
+  const R = state.R;
+  Object.assign(sim, {phase:'ready', t:0, parts:[], units:[], level:0, tilt:0, raise:0, cols:[], spawnT:0, released:[0,0]});
+  const perSet = R.n1*(R.x1 + R.y1) + R.n2*(R.x2 + R.y2);
+  const k = Math.max(1, Math.floor(28/perSet));
+  for (let i = 0; i < k*R.n1; i++){ for (let j = 0; j < R.x1; j++) sim.parts.push(makeIon(R.A,'A',0)); for (let j = 0; j < R.y1; j++) sim.parts.push(makeIon(R.B,'B',0)); }
+  for (let i = 0; i < k*R.n2; i++){ for (let j = 0; j < R.x2; j++) sim.parts.push(makeIon(R.C,'C',1)); for (let j = 0; j < R.y2; j++) sim.parts.push(makeIon(R.D,'D',1)); }
+  sim.total = sim.parts.length;
+  for (const p of sim.parts){ const m = G.mini[p.loc]; p.x = rand(-m.w/2 + p.r + 3, m.w/2 - p.r - 3); p.y = rand(-m.h*G.fill + p.r, -p.r - 3); }
+  sim.order = [0,1].map(b => sim.parts.filter(p => p.loc === b).sort(() => Math.random() - 0.5));
+  sim.waterMini = [0,1].map(b => Array.from({length:14}, () => ({x:rand(-G.mini[b].w/2 + 4, G.mini[b].w/2 - 4), y:rand(-G.mini[b].h*G.fill + 4, -4), a:rand(0,6.28), va:rand(-1,1), vx:rand(-8,8), vy:rand(-8,8)})));
+  const M = G.main;
+  sim.waterMain = Array.from({length:40}, () => ({x:rand(M.cx - M.w/2 + 5, M.cx + M.w/2 - 5), y:rand(M.by - M.h*G.mainFill + 5, M.by - 5), a:rand(0,6.28), va:rand(-1,1), vx:rand(-8,8), vy:rand(-8,8)}));
+}
+
+/* ---- motion helpers ---- */
+const JIT = reduceMotion ? 250 : 900, VMAX = reduceMotion ? 14 : 38;
+function brown(p, dt){
+  p.vx += (Math.random() - 0.5)*JIT*dt; p.vy += (Math.random() - 0.5)*JIT*dt;
+  const sp = Math.hypot(p.vx, p.vy); if (sp > VMAX){ p.vx *= VMAX/sp; p.vy *= VMAX/sp; }
+  p.x += p.vx*dt; p.y += p.vy*dt;
+}
+function bounce(p, x0, x1, y0, y1){
+  if (p.x < x0){ p.x = x0; p.vx = Math.abs(p.vx); } if (p.x > x1){ p.x = x1; p.vx = -Math.abs(p.vx); }
+  if (y1 < y0) y1 = y0;
+  if (p.y < y0){ p.y = y0; p.vy = Math.abs(p.vy); } if (p.y > y1){ p.y = y1; p.vy = -Math.abs(p.vy); }
+}
+function lipWorld(b){
+  const m = G.mini[b], s = b === 0 ? 1 : -1, th = s*sim.tilt;
+  const lx = s*m.w/2, ly = -m.h;
+  return { x: m.cx + lx*Math.cos(th) - ly*Math.sin(th), y: m.by - sim.raise + lx*Math.sin(th) + ly*Math.cos(th) };
+}
+function surfaceY(){ return G.main.by - sim.level; }
+function colIndex(x){ const M = G.main, x0 = M.cx - M.w/2 + 6; return clamp(Math.floor((x - x0)/sim.colW), 0, sim.cols.length - 1); }
+function pileTop(x){ return sim.cols.length ? sim.cols[colIndex(x)] : 0; }
+
+/* ---- precipitate units: p cations + q anions in a compact lattice ---- */
+function unitLayout(p, q, rA, rD){
+  const d = rA + rD - 1, out = [];
+  const put = (role, ox, oy) => out.push({role, ox, oy});
+  if (p === 1 && q === 1){ put('A', -d/2, 0); put('D', d/2, 0); }
+  else if (p === 1 && q === 2){ put('A', 0, 0); put('D', -d, 0); put('D', d, 0); }
+  else if (p === 2 && q === 1){ put('D', 0, 0); put('A', -d, 0); put('A', d, 0); }
+  else if (p === 1 && q === 3){ put('A', 0, 0); [-90, 30, 150].forEach(a => put('D', d*Math.cos(a*Math.PI/180), d*Math.sin(a*Math.PI/180))); }
+  else if (p === 3 && q === 1){ put('D', 0, 0); [-90, 30, 150].forEach(a => put('A', d*Math.cos(a*Math.PI/180), d*Math.sin(a*Math.PI/180))); }
+  else {
+    // zigzag chain, majority ion at both ends (e.g. Ca3(PO4)2, Fe2S3)
+    const n = p + q, first = p >= q ? 'A' : 'D', second = first === 'A' ? 'D' : 'A';
+    for (let i = 0; i < n; i++) put(i % 2 ? second : first, (i - (n - 1)/2)*d*0.8, (i % 2 ? 0.3 : -0.3)*d);
+  }
+  return out;
+}
+function spawnUnit(){
+  const R = state.R, free = r => sim.parts.filter(p => p.loc === 'main' && !p.unit && p.role === r);
+  const As = free('A'); if (!As.length) return false;
+  const lead = As[Math.floor(Math.random()*As.length)];
+  const near = (list, n) => list.filter(p => p !== lead).sort((a, b) => Math.hypot(a.x - lead.x, a.y - lead.y) - Math.hypot(b.x - lead.x, b.y - lead.y)).slice(0, n);
+  const mA = [lead, ...near(As, R.p - 1)], mD = near(free('D'), R.q);
+  if (mA.length < R.p || mD.length < R.q) return false;
+  const offs = unitLayout(R.p, R.q, mA[0].r, mD[0].r);
+  let hw = 0, hh = 0; offs.forEach(o => { const rr = o.role === 'A' ? mA[0].r : mD[0].r; hw = Math.max(hw, Math.abs(o.ox) + rr); hh = Math.max(hh, Math.abs(o.oy) + rr); });
+  const all = [...mA, ...mD], M = G.main;
+  const cx = clamp(all.reduce((s, p) => s + p.x, 0)/all.length, M.cx - M.w/2 + hw + 6, M.cx + M.w/2 - hw - 6);
+  const cy = clamp(all.reduce((s, p) => s + p.y, 0)/all.length, surfaceY() + hh + 4, M.by - hh - 6);
+  const u = { members:[], offs, cx, cy, hw, hh, state:'gather', t:0, ct:0, vy:0, tx:cx, ty:cy };
+  const qA = [...mA], qD = [...mD];
+  offs.forEach(o => { const p = (o.role === 'A' ? qA : qD).shift(); p.unit = u; u.members.push(p); });
+  sim.units.push(u);
+  return true;
+}
+function claimColumn(u){
+  const M = G.main;
+  if (!sim.cols.length){
+    sim.colW = u.hw*2 + 2;
+    sim.cols = new Array(Math.max(1, Math.floor((M.w - 12)/sim.colW))).fill(0);
+  }
+  let best = 0, bestScore = Infinity;
+  sim.cols.forEach((h, i) => { const x = M.cx - M.w/2 + 6 + (i + 0.5)*sim.colW; const s = h*4 + Math.abs(x - u.cx)*0.05; if (s < bestScore){ bestScore = s; best = i; } });
+  u.tx = M.cx - M.w/2 + 6 + (best + 0.5)*sim.colW + rand(-1.5, 1.5);
+  u.ty = M.by - 3 - sim.cols[best] - u.hh;
+  sim.cols[best] += u.hh*2*0.92;
+}
+
+/* ---- main update ---- */
+function step(dt){
+  sim.t += dt;
+  const M = G.main;
+  // water molecules drift
+  const drift = (w, x0, x1, y0, y1) => { w.vx += (Math.random() - .5)*120*dt; w.vy += (Math.random() - .5)*120*dt; w.vx = clamp(w.vx, -14, 14); w.vy = clamp(w.vy, -14, 14);
+    w.x += w.vx*dt; w.y += w.vy*dt; w.a += w.va*dt; if (w.x < x0 || w.x > x1) w.vx *= -1; if (w.y < y0 || w.y > y1) w.vy *= -1; w.x = clamp(w.x, x0, x1); w.y = clamp(w.y, y0, y1); };
+  sim.waterMini.forEach((arr, b) => { const m = G.mini[b]; arr.forEach(w => drift(w, -m.w/2 + 4, m.w/2 - 4, -m.h*G.fill + 4, -4)); });
+  sim.waterMain.forEach(w => drift(w, M.cx - M.w/2 + 5, M.cx + M.w/2 - 5, M.by - M.h*G.mainFill + 5, M.by - 5));
+
+  if (sim.phase === 'pour'){
+    const t = sim.t;
+    const tiltT = t < 2.2 ? ease(clamp(t/0.6, 0, 1)) : 1 - ease(clamp((t - 2.2)/0.5, 0, 1));
+    sim.tilt = tiltT*0.62; sim.raise = tiltT*22;
+    for (const b of [0,1]){
+      const want = Math.floor(sim.order[b].length*clamp((t - 0.5)/1.4, 0, 1));
+      while (sim.released[b] < want){
+        const p = sim.order[b][sim.released[b]++], lip = lipWorld(b), s = b === 0 ? 1 : -1;
+        p.loc = 'air'; p.x = lip.x + rand(-3, 3); p.y = lip.y + rand(-2, 2); p.vx = s*rand(25, 60); p.vy = rand(-10, 10);
+      }
+    }
+    if (t > sim.revealAt && !state.revealed) revealResult();
+    if (t > 2.9) sim.phase = state.R.precip ? 'react' : 'done';
+  }
+  if (sim.phase === 'react'){
+    sim.spawnT -= dt;
+    if (sim.spawnT <= 0){ sim.spawnT = 0.14; spawnUnit(); }
+    if (sim.units.length && sim.units.every(u => u.state === 'settled') && !sim.parts.some(p => p.role === 'A' && !p.unit && p.loc === 'main')) sim.phase = 'done';
+  }
+  // main beaker liquid level follows the ions that have arrived
+  const arrived = sim.parts.filter(p => p.loc === 'main').length;
+  const targetLevel = M.h*G.mainFill*(sim.phase === 'ready' ? 0 : Math.min(1, 0.08 + arrived/sim.total));
+  sim.level += (targetLevel - sim.level)*Math.min(1, dt*3);
+
+  // free ions + falling ions
+  for (const p of sim.parts){
+    if (p.unit) continue;
+    if (p.loc === 0 || p.loc === 1){ const m = G.mini[p.loc]; brown(p, dt); bounce(p, -m.w/2 + p.r + 3, m.w/2 - p.r - 3, -m.h*G.fill + p.r, -p.r - 3); }
+    else if (p.loc === 'air'){
+      p.vy += 760*dt; p.x += p.vx*dt; p.y += p.vy*dt;
+      p.x = clamp(p.x, M.cx - M.w/2 + p.r + 3, M.cx + M.w/2 - p.r - 3);
+      if (p.y > surfaceY() + p.r*0.5 || p.y > M.by - p.r - 4){ p.loc = 'main'; p.vy *= 0.18; p.vx *= 0.3; }
+    } else {
+      brown(p, dt);
+      bounce(p, M.cx - M.w/2 + p.r + 3, M.cx + M.w/2 - p.r - 3, surfaceY() + p.r + 1, M.by - p.r - 3 - pileTop(p.x));
+    }
+  }
+  // soft repulsion so free ions do not pile on top of each other
+  const freeMain = sim.parts.filter(p => p.loc === 'main' && !p.unit);
+  for (let i = 0; i < freeMain.length; i++) for (let j = i + 1; j < freeMain.length; j++){
+    const a = freeMain[i], b = freeMain[j], dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy) || 0.01, min = a.r + b.r + 1;
+    if (d < min){ const push = (min - d)*0.5*Math.min(1, dt*10)/d; a.x -= dx*push; a.y -= dy*push; b.x += dx*push; b.y += dy*push; }
+  }
+  // precipitate units
+  for (const u of sim.units){
+    u.t += dt;
+    if (u.state === 'gather'){
+      u.cx += (Math.random() - .5)*20*dt; u.cy += (Math.random() - .5)*20*dt;
+      let maxD = 0;
+      u.members.forEach((p, i) => { const tx = u.cx + u.offs[i].ox, ty = u.cy + u.offs[i].oy; const k = Math.min(1, dt*(2.2 + u.t*3));
+        p.x += (tx - p.x)*k; p.y += (ty - p.y)*k; maxD = Math.max(maxD, Math.hypot(tx - p.x, ty - p.y)); });
+      if (maxD < 1 || u.t > 1.6){ u.state = 'lock'; u.t = 0; }
+    } else if (u.state === 'lock'){
+      u.ct = Math.min(1, u.ct + dt/0.45);
+      if (u.ct >= 1){ u.state = 'sink'; claimColumn(u); }
+    } else if (u.state === 'sink'){
+      u.vy = Math.min(130, u.vy + 260*dt); u.cy += u.vy*dt; u.cx += (u.tx - u.cx)*Math.min(1, dt*2.5);
+      if (u.cy >= u.ty){ u.cy = u.ty; u.cx = u.tx; u.state = 'settled'; }
+    }
+    if (u.state !== 'gather') u.members.forEach((p, i) => { p.x = u.cx + u.offs[i].ox; p.y = u.cy + u.offs[i].oy; });
+  }
+}
+
+/* ---- drawing ---- */
+function beakerPath(w, h, lip){
+  ctx.beginPath();
+  if (lip){ ctx.moveTo(-w/2 - 5, -h - 4); ctx.lineTo(-w/2, -h + 2); } else ctx.moveTo(-w/2, -h);
+  ctx.lineTo(-w/2, -9); ctx.quadraticCurveTo(-w/2, 0, -w/2 + 9, 0); ctx.lineTo(w/2 - 9, 0); ctx.quadraticCurveTo(w/2, 0, w/2, -9);
+  if (lip){ ctx.lineTo(w/2, -h + 2); ctx.lineTo(w/2 + 5, -h - 4); } else ctx.lineTo(w/2, -h);
+}
+function drawGlass(w, h, ml){
+  beakerPath(w, h, false); ctx.closePath(); ctx.fillStyle = TOKS.glassFill; ctx.fill();
+  beakerPath(w, h, true); ctx.strokeStyle = TOKS.glass; ctx.lineWidth = 2.2; ctx.lineJoin = 'round'; ctx.stroke();
+  // graduation marks
+  ctx.lineWidth = 1; ctx.globalAlpha = 0.6;
+  for (let i = 1; i <= 3; i++){ const y = -h*i/4.4; ctx.beginPath(); ctx.moveTo(-w/2 + 2, y); ctx.lineTo(-w/2 + (i === 2 ? 14 : 9), y); ctx.stroke(); }
+  ctx.globalAlpha = 1; ctx.fillStyle = TOKS.muted; ctx.font = `600 10px ${getComputedStyle(document.body).fontFamily}`; ctx.textAlign = 'right'; ctx.textBaseline = 'alphabetic';
+  ctx.fillText(ml, w/2 - 6, -h + 13);
+}
+function drawWater(w){
+  ctx.save(); ctx.translate(w.x, w.y); ctx.rotate(w.a); ctx.globalAlpha *= 0.32;
+  ctx.fillStyle = TOKS.wh; ctx.beginPath(); ctx.arc(-3.4, 2.4, 1.9, 0, 6.29); ctx.arc(3.4, 2.4, 1.9, 0, 6.29); ctx.fill();
+  ctx.fillStyle = TOKS.wo; ctx.beginPath(); ctx.arc(0, 0, 3, 0, 6.29); ctx.fill();
+  ctx.restore();
+}
+function drawIon(p, fill, ring, alpha){
+  const r = p.r;
+  ctx.globalAlpha = alpha;
+  ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, 6.29); ctx.fillStyle = fill; ctx.fill();
+  const g = ctx.createRadialGradient(p.x - r*0.35, p.y - r*0.4, r*0.1, p.x, p.y, r);
+  g.addColorStop(0, 'rgba(255,255,255,0.38)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = g; ctx.fill();
+  if (ring){ ctx.lineWidth = 1.8; ctx.strokeStyle = ring; ctx.stroke(); }
+  // charge label written on the sphere
+  let fs = r*0.82; ctx.font = `700 ${fs}px 'Atkinson Hyperlegible', system-ui, sans-serif`;
+  const tw = ctx.measureText(p.label).width; if (tw > r*1.78){ fs *= r*1.78/tw; ctx.font = `700 ${fs}px 'Atkinson Hyperlegible', system-ui, sans-serif`; }
+  ctx.fillStyle = p.txt || TOKS.onIon; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(p.label, p.x, p.y + fs*0.05);
+  ctx.globalAlpha = 1;
+}
+function ionAlpha(p){
+  if (state.mode !== 'chem') return 1;
+  const spect = state.R.precip ? (p.role === 'B' || p.role === 'C') : true;
+  return spect ? state.spec : 1;
+}
+function pill(text, x, y, colour){
+  ctx.font = `700 12px 'Atkinson Hyperlegible', system-ui, sans-serif`;
+  const w = ctx.measureText(text).width + 18, h = 22;
+  ctx.globalAlpha = 0.92; ctx.fillStyle = TOKS.surface; ctx.beginPath(); ctx.roundRect(x - w/2, y - h/2, w, h, 11); ctx.fill();
+  ctx.globalAlpha = 1; ctx.strokeStyle = TOKS.line; ctx.lineWidth = 1; ctx.stroke();
+  if (colour){ ctx.beginPath(); ctx.arc(x - w/2 + 11, y, 4.5, 0, 6.29); ctx.fillStyle = colour; ctx.fill(); ctx.strokeStyle = 'rgba(0,0,0,.3)'; ctx.stroke(); }
+  ctx.fillStyle = TOKS.ink; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(text, x + (colour ? 6 : 0), y + 0.5);
+}
+function draw(){
+  const R = state.R, M = G.main;
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  ctx.clearRect(0, 0, W, H);
+
+  // ---- main beaker ----
+  ctx.save(); ctx.translate(M.cx, M.by);
+  if (sim.level > 0.5){
+    ctx.save(); beakerPath(M.w, M.h, false); ctx.closePath(); ctx.clip();
+    ctx.fillStyle = TOKS.water; ctx.fillRect(-M.w/2, -sim.level, M.w, sim.level);
+    if (R.s1.tint && !R.precip){ ctx.globalAlpha = 0.5; ctx.fillStyle = R.s1.tint; ctx.fillRect(-M.w/2, -sim.level, M.w, sim.level); ctx.globalAlpha = 1; }
+    ctx.restore();
+  }
+  drawGlass(M.w, M.h, '250 mL');
+  ctx.restore();
+  if (state.water){ ctx.save(); const sy = surfaceY(); sim.waterMain.forEach(w => { if (w.y > sy + 3) drawWater(w); }); ctx.restore(); }
+
+  // ---- precipitate (settled behind, forming in front) ----
+  const unitDraw = u => u.members.forEach(p => {
+    const base = TOKS[p.role], col = R.color[0];
+    const fill = u.ct > 0 ? mixHex(base, col, u.ct) : base;
+    p.txt = u.ct > 0.5 ? (lum(col) > 0.6 ? '#1b2530' : '#ffffff') : null;
+    drawIon(p, fill, u.ct > 0 ? base : null, 1);
+  });
+  sim.units.filter(u => u.state === 'settled').forEach(unitDraw);
+  for (const p of sim.parts){ if (!p.unit && (p.loc === 'main' || p.loc === 'air')) drawIon(p, TOKS[p.role], null, ionAlpha(p)); }
+  sim.units.filter(u => u.state !== 'settled').forEach(unitDraw);
+
+  // ---- mini beakers ----
+  const fam = getComputedStyle(document.body).fontFamily;
+  [0,1].forEach(b => {
+    const m = G.mini[b], s = b === 0 ? 1 : -1, th = s*sim.tilt;
+    const left = sim.order[b].length - sim.released[b], frac = sim.order[b].length ? left/sim.order[b].length : 0;
+    const L = sim.phase === 'ready' ? m.h*G.fill : (m.h*G.fill + m.w*0.4)*frac - m.w*0.4;
+    const fade = sim.phase === 'ready' || sim.phase === 'pour' ? 1 : 0.45;
+    ctx.save(); ctx.globalAlpha = fade; ctx.translate(m.cx, m.by - sim.raise); ctx.rotate(th);
+    ctx.save(); beakerPath(m.w, m.h, false); ctx.closePath(); ctx.clip();
+    ctx.rotate(-th); ctx.fillStyle = TOKS.water; ctx.fillRect(-m.w*2, -L, m.w*4, m.h*3);
+    const tint = b === 0 ? R.s1.tint : null; if (tint){ ctx.fillStyle = tint; ctx.fillRect(-m.w*2, -L, m.w*4, m.h*3); }
+    ctx.rotate(th);
+    if (state.water && L > -m.w*0.3) sim.waterMini[b].forEach(w => { if (-(w.x*Math.sin(th) + w.y*Math.cos(th)) < L - 3) drawWater(w); });
+    ctx.restore();
+    drawGlass(m.w, m.h, '100 mL');
+    ctx.restore();
+    // ions still inside (local coords → world through the same transform)
+    ctx.save(); ctx.translate(m.cx, m.by - sim.raise); ctx.rotate(th);
+    for (const p of sim.parts) if (p.loc === b) drawIon(p, TOKS[p.role], null, ionAlpha(p));
+    ctx.restore();
+    // label above each beaker
+    if (sim.phase === 'ready'){
+      const sol = b === 0 ? R.s1 : R.s2;
+      ctx.fillStyle = TOKS.ink; ctx.font = `700 13px ${fam}`; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+      ctx.fillText(`Solution ${b + 1}: ${cmpU(sol.cat, sol.an)}(aq)`, m.cx, m.by - m.h - 10);
+    }
+  });
+
+  // ---- captions in the main beaker ----
+  if (sim.phase === 'ready'){
+    ctx.fillStyle = TOKS.muted; ctx.font = `400 13px ${fam}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('Press Mix Solutions to pour both into this beaker', M.cx, M.by - M.h*0.45);
+  }
+  if (R.precip && sim.units.some(u => u.state === 'settled')){
+    const top = Math.max(...sim.cols);
+    pill(`${cmpU(R.A, R.D)}(s)  ${R.color[1]} precipitate`, M.cx, M.by - top - 18, R.color[0]);
+  }
+  if (sim.phase === 'done' && !R.precip) pill('No precipitate: every ion stays dissolved (aq)', M.cx, surfaceY() + 20, null);
+}
+
+let last = performance.now();
+function frame(now){
+  const dt = Math.min(0.033, (now - last)/1000); last = now;
+  if (G && W){ step(dt); draw(); }
+  requestAnimationFrame(frame);
+}
+
+/* =========================================================
+   WIRING
+   ========================================================= */
+function revealResult(){ state.revealed = true; renderEquations(); renderGuide(); }
+function resetAll(){
+  state.R = computeReaction(state.i1, state.i2);
+  state.mixed = false; state.revealed = false;
+  clearHighlights(); renderChips(); renderCards(); renderEquations(); renderGuide();
+  $('mixBtn').disabled = false; $('mixBtn').textContent = 'Mix Solutions';
+  buildScene();
+}
+function mix(){
+  if (state.mixed) return;
+  state.mixed = true; $('mixBtn').disabled = true; $('mixBtn').textContent = 'Mixed';
+  sim.phase = 'pour'; sim.t = 0;
+  renderCards(); renderGuide();
+  const R = state.R;
+  highlightPair(R.AD, 'A', 'D', 250);
+  highlightPair(R.CB, 'C', 'B', 1700);
+}
+function setMode(m){
+  state.mode = m;
+  $('modeSci').setAttribute('aria-checked', m === 'sci'); $('modeChem').setAttribute('aria-checked', m === 'chem');
+  try { localStorage.setItem('solsim-mode', m); } catch(e){}
+  renderEquations();
+}
+
+fillSelects(); renderTable();
+$('sol1').addEventListener('change', e => { state.i1 = +e.target.value; resetAll(); });
+$('sol2').addEventListener('change', e => { state.i2 = +e.target.value; resetAll(); });
+$('mixBtn').addEventListener('click', mix);
+$('resetBtn').addEventListener('click', resetAll);
+$('modeSci').addEventListener('click', () => setMode('sci'));
+$('modeChem').addEventListener('click', () => setMode('chem'));
+$('waterTgl').addEventListener('change', e => { state.water = e.target.checked; });
+$('specSlider').addEventListener('input', e => { state.spec = e.target.value/100; $('specOut').textContent = e.target.value + '%'; applySpec(); });
+$('guideBtn').addEventListener('click', e => { e.stopPropagation(); const p = $('guidePop'); p.hidden = !p.hidden; $('guideBtn').setAttribute('aria-expanded', !p.hidden); });
+document.addEventListener('click', e => { if (!$('guidePop').hidden && !e.target.closest('.guide-wrap')){ $('guidePop').hidden = true; $('guideBtn').setAttribute('aria-expanded', 'false'); } });
+document.addEventListener('keydown', e => { if (e.key === 'Escape'){ $('guidePop').hidden = true; $('guideBtn').setAttribute('aria-expanded', 'false'); } });
+
+readTokens();
+const themeChange = () => { readTokens(); if (state.mode === 'sci') requestAnimationFrame(drawArcs); };
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', themeChange);
+new MutationObserver(themeChange).observe(document.documentElement, {attributes:true, attributeFilter:['data-theme']});
+new ResizeObserver(() => { resize(); if (state.mode === 'sci') drawArcs(); }).observe($('stage'));
+window.addEventListener('resize', () => { if (state.mode === 'sci') drawArcs(); });
+
+// Open on a reaction that shows everything: Pb(NO3)2 + KI → yellow PbI2
+state.R = computeReaction(0, 0);
+let saved = null; try { saved = localStorage.getItem('solsim-mode'); } catch(e){}
+resetAll();
+if (saved === 'chem') setMode('chem');
+document.fonts && document.fonts.ready.then(() => { if (state.mode === 'sci') drawArcs(); });
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
