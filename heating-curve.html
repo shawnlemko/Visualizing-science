@@ -144,14 +144,17 @@ button:focus-visible, input:focus-visible{outline:2.5px solid var(--pt); outline
 .lc-title{font-weight:700; font-size:14px; flex:1; min-width:0}
 .lc-title small{font-weight:400; color:var(--muted); font-size:12.5px; margin-left:4px; white-space:nowrap}
 .lc-q{font-family:var(--font-num); font-weight:700; font-size:15px; white-space:nowrap}
-.ln{font-size:13.5px; line-height:1.6; padding-left:30px}
+.ln{display:flex; flex-wrap:wrap; align-items:center; gap:2px 6px; font-size:15px; line-height:1.3; padding-left:30px; min-height:2.1em}
 .ln .f{font-weight:700}
-.ln .num{font-size:13px}
+.ln .num{font-family:var(--font-num); font-variant-numeric:tabular-nums; font-size:14px; white-space:nowrap}
+.ln .num > b{font-weight:700}
 .x{text-decoration:line-through; text-decoration-thickness:2px; text-decoration-color:var(--ek); opacity:.75}
 .plat .x{text-decoration-color:var(--ep)}
-.conv{background:var(--ek-soft); border-radius:5px; padding:1px 5px; white-space:nowrap}
-.note{font-size:12px; color:var(--muted); padding-left:30px; line-height:1.4; margin-top:2px}
-.note b{color:var(--ep)}
+/* Stacked fraction: numerator over a division bar (no slashes anywhere in the math) */
+.fr{display:inline-flex; flex-direction:column; align-items:center; vertical-align:middle; line-height:1.15; margin:0 2px}
+.fr > span{padding:0 2px}
+.fr > span:first-child{border-bottom:1.5px solid currentColor}
+.fr .fr{font-size:.82em}
 .bar{position:absolute; left:0; bottom:0; height:3px; background:var(--ek); border-bottom-left-radius:8px}
 .plat .bar{background:var(--ep)}
 .total{border:2px solid var(--ink); border-radius:10px; padding:8px 12px; display:flex; flex-direction:column; gap:2px}
@@ -159,7 +162,7 @@ button:focus-visible, input:focus-visible{outline:2.5px solid var(--pt); outline
 .total .t-name{font-weight:700; font-size:14px}
 .total .t-sum{font-size:13px; color:var(--muted); font-family:var(--font-num)}
 .total .t-q{font-family:var(--font-num); font-weight:700; font-size:18px}
-.bridge{border:1px dashed var(--pt); border-radius:10px; padding:8px 12px; font-size:13px; line-height:1.5; background:var(--surface-2)}
+.bridge{border:1px dashed var(--pt); border-radius:10px; padding:6px 12px; font-size:14px; background:var(--surface-2); display:flex; flex-wrap:wrap; align-items:center; gap:4px 8px}
 .bridge b{color:var(--pt)}
 .foot{font-size:11.5px; color:var(--muted); line-height:1.45}
 @media (prefers-reduced-motion: reduce){ *{transition:none !important} }
@@ -262,7 +265,6 @@ button:focus-visible, input:focus-visible{outline:2.5px solid var(--pt); outline
       <div class="bridge" id="bridge" hidden></div>
       <div id="cards" style="display:flex; flex-direction:column; gap:8px"></div>
       <div class="total" id="total"></div>
-      <p class="foot" id="foot"></p>
     </section>
   </main>
 </div>
@@ -389,46 +391,41 @@ function cardQ(as){
 /* =========================================================
    LEDGER
    ========================================================= */
+const fr = (top, bot) => `<span class="fr"><span>${top}</span><span>${bot}</span></span>`;
 function renderLedger(){
   const act = activeSegs(), n = molesOf(S.m);
   const u = t => `<span class="x">${t}</span>`;
+  const head = (s, name, sub, kJ) => `<div class="lc-head"><span class="badge">${s.num}</span><span class="lc-title">${name}${sub ? `<small>${sub}</small>` : ''}</span><span class="lc-q">${fmtK(kJ)} kJ</span></div>`;
   $('cards').innerHTML = act.map(as => {
     const s = as.seg, r = cardQ(as), name = NAMES[S.cooling ? 'cool' : 'heat'][s.id];
     if (s.kind === 'slope'){
       return `<article class="lcard slope" data-id="${s.id}">
-        <div class="lc-head"><span class="badge">${s.num}</span><span class="lc-title">${name}<small>${sgn(as.tA)} °C → ${sgn(as.tB)} °C</small></span><span class="lc-q">${fmtK(r.kJ)} kJ</span></div>
-        <div class="ln">Δt = t<sub>f</sub> − t<sub>i</sub> = <span class="num">${sgn(as.tB)} °C − (${sgn(as.tA)} °C) = ${sgn(r.dt)} °C</span></div>
-        <div class="ln"><span class="f">Q = mcΔt</span> = <span class="num">(${S.m} ${u('g')})(${s.c.toFixed(2)} J/(${u('g')}·${u('°C')}))(${sgn(r.dt)} ${u('°C')})</span></div>
-        <div class="ln">= <span class="num">${fmtJ(r.J)} ${u('J')}</span> × <span class="conv num">1 kJ / 1000 ${u('J')}</span> = <b class="num">${fmtK(r.kJ)} kJ</b></div>
-        <p class="note">Change J to kJ so this matches the kJ on the flat parts.</p>
+        ${head(s, name, `${sgn(as.tA)} °C → ${sgn(as.tB)} °C`, r.kJ)}
+        <div class="ln"><span class="f">Q = mcΔt</span></div>
+        <div class="ln"><span class="num">= (${S.m} ${u('g')})(${s.c.toFixed(2)} ${fr('J', u('g') + '·' + u('°C'))})(${sgn(r.dt)} ${u('°C')})</span><span class="num">= ${fmtJ(r.J)} J</span><span class="num">= <b>${fmtK(r.kJ)} kJ</b></span></div>
         <span class="bar"></span>
       </article>`;
     }
-    const neg = S.cooling, Hs = s.id;
-    const qLine = neg
-      ? `<span class="f">Q = −n${H_NAME(Hs)}</span> = <span class="num">−(${n} ${u('mol')})(${s.H.toFixed(2)} kJ/${u('mol')})</span> = <b class="num">${fmtK(r.kJ)} kJ</b>`
-      : `<span class="f">Q = n${H_NAME(Hs)}</span> = <span class="num">(${n} ${u('mol')})(${s.H.toFixed(2)} kJ/${u('mol')})</span> = <b class="num">${fmtK(r.kJ)} kJ</b>`;
+    const neg = S.cooling ? '−' : '';
     return `<article class="lcard plat" data-id="${s.id}">
-      <div class="lc-head"><span class="badge">${s.num}</span><span class="lc-title">${NAMES[S.cooling ? 'cool' : 'heat'][s.id]}</span><span class="lc-q">${fmtK(r.kJ)} kJ</span></div>
-      <div class="ln">n = m / M = <span class="num">${S.m} ${u('g')} / ${M_H2O} ${u('g')}/mol = ${n} mol</span></div>
-      <div class="ln">${qLine}</div>
-      <p class="note">Temperature does not change here (Δt = 0), so <b>Q = mcΔt would wrongly give 0</b>. Use moles and ${H_NAME(Hs)}.${neg ? ' The same energy taken in on heating is given back.' : ''}</p>
+      ${head(s, name, '', r.kJ)}
+      <div class="ln"><span class="f">n = ${fr('m', 'M')}</span><span class="num">= ${fr(`${S.m} ${u('g')}`, `${M_H2O} ${fr(u('g'), 'mol')}`)}</span><span class="num">= ${n} mol</span></div>
+      <div class="ln"><span class="f">Q = ${neg}n${H_NAME(s.id)}</span><span class="num">= ${neg}(${n} ${u('mol')})(${s.H.toFixed(2)} ${fr('kJ', u('mol'))})</span><span class="num">= <b>${fmtK(r.kJ)} kJ</b></span></div>
       <span class="bar"></span>
     </article>`;
   }).join('');
 
   const parts = act.map(as => cardQ(as).kJ), sum = parts.reduce((a, b) => a + b, 0);
-  $('total').innerHTML = `<div class="t-line"><span class="t-name">Q<sub>total</sub> = sum of the cards</span><span class="t-q">${fmtK(sum)} kJ</span></div>
-    <div class="t-sum">${parts.map((p, i) => (i && p >= 0 ? '+ ' : i ? '' : '') + (p < 0 && i ? MINUS + ' ' + fmtK(-p) : fmtK(p))).join(' ')} = ${fmtK(sum)} kJ</div>
-    ${S.cooling ? '<div class="t-sum">Negative Q: the water releases energy to the surroundings (exothermic).</div>' : ''}`;
+  const terms = parts.map((p, i) => i === 0 ? fmtK(p) : (p < 0 ? MINUS + ' ' + fmtK(-p) : '+ ' + fmtK(p))).join(' ');
+  $('total').innerHTML = `<div class="t-line"><span class="t-name">Q<sub>total</sub></span><span class="t-q">${fmtK(sum)} kJ</span></div>
+    <div class="t-sum">= ${terms}</div>`;
 
   const b = $('bridge');
   b.hidden = !S.chem;
   if (S.chem){
     const dC = S.tf - S.ti, kI = (S.ti + 273.15).toFixed(2), kF = (S.tf + 273.15).toFixed(2);
-    b.innerHTML = `<b>Kelvin check.</b> Δt = ${sgn(S.tf)} °C − (${sgn(S.ti)} °C) = ${sgn(dC)} °C. In kelvin: ${kF} K − ${kI} K = ${sgn(dC)} K. A kelvin is the same size as a degree Celsius, so <b>Δt in °C equals Δt in K</b>. Only the starting point (absolute zero) is different.`;
+    b.innerHTML = `<b>Δt</b><span class="num">= ${sgn(S.tf)} °C − (${sgn(S.ti)} °C) = ${sgn(dC)} °C</span><span class="num">= ${kF} K − ${kI} K = ${sgn(dC)} K</span>`;
   }
-  $('foot').innerHTML = `Data Booklet values: M(H₂O) = ${M_H2O} g/mol, c<sub>ice</sub> = ${C_ICE.toFixed(2)}, c<sub>water</sub> = ${C_WATER.toFixed(2)}, c<sub>steam</sub> = ${C_STEAM.toFixed(2)} J/(g·°C), ${H_NAME('fus')} = ${H_FUS} kJ/mol, ${H_NAME('vap')} = ${H_VAP} kJ/mol. Moles are rounded to 4 significant figures and each card to 0.1 kJ.`;
 }
 function updateLedgerProgress(){
   const x = curX(), cur = segAt(x);
@@ -551,7 +548,7 @@ function renderLegend(){
   $('legend').innerHTML = `<span><i style="background:var(--ek)"></i><b>Q = mcΔt</b>: temperature changes</span>
     <span><i style="background:var(--ep)"></i><b>Q = n${H_NAME('')}</b>: phase changes, temperature stays the same</span>
     <span><i style="background:var(--dim)"></i>outside your start and end</span>
-    ${both ? `<span>Boiling plateau is <b>${(H_VAP / H_FUS).toFixed(1)}×</b> wider than melting (${H_VAP} ÷ ${H_FUS})</span>` : ''}`;
+    ${both ? `<span>Boiling plateau is <b>${(H_VAP / H_FUS).toFixed(1)}×</b> wider than melting</span>` : ''}`;
 }
 
 /* =========================================================
@@ -789,7 +786,7 @@ function frame(now){
 function syncInputs(){
   $('mass').value = S.m; $('ti').value = S.ti; $('tf').value = S.tf;
   $('massOut').textContent = S.m + ' g';
-  $('molesOut').innerHTML = `n = m/M = ${molesOf(S.m)} mol`;
+  $('molesOut').innerHTML = `n = ${molesOf(S.m)} mol`;
   $('tiOut').innerHTML = `${sgn(S.ti)} °C<span class="phase">${phaseWord(S.ti)}</span>`;
   $('tfOut').innerHTML = `${sgn(S.tf)} °C<span class="phase">${phaseWord(S.tf)}</span>`;
   $('title').textContent = S.cooling ? 'Cooling Curve of Water' : 'Heating Curve of Water';
