@@ -492,8 +492,11 @@ function renderBench(){
   $('catCount').innerHTML = `${ionH(state.cat)} ions: <b>${state.nc}</b>`;
   $('anCount').innerHTML = `${ionH(state.an)} ions: <b>${state.na}</b>`;
   $('catRem').disabled = state.nc <= 1; $('anRem').disabled = state.na <= 1;
-  $('catAdd').disabled = state.nc >= MAX_COUNT || pu + cq > MAX_UNITS;
-  $('anAdd').disabled = state.na >= MAX_COUNT || nu + aq > MAX_UNITS;
+  // Counts stop at the simplest ratio, so non-simplified formulas like Fe₄(SO₄)₆ can't be built.
+  const [mc, ma] = crossCounts(state.cat, state.an);
+  $('catAdd').disabled = state.nc >= mc; $('anAdd').disabled = state.na >= ma;
+  $('catAdd').title = $('catAdd').disabled ? 'More would not be the simplest ratio' : '';
+  $('anAdd').title = $('anAdd').disabled ? 'More would not be the simplest ratio' : '';
 }
 
 function renderMeter(){
@@ -585,6 +588,52 @@ function xrayCard(){
 // Valence slots around an atom: one per side first, then pairs (Lewis convention).
 const SLOTS = [[-6,-31],[31,-6],[-6,31],[-31,-6],[6,-31],[31,6],[6,31],[-31,6]];
 let lewisAnim = null, lewisMoves = [];
+
+// Electrons per shell (Bohr model). Ions lose from the outermost shell first.
+const SHELLS = {Na:[2,8,1], Mg:[2,8,2], Al:[2,8,3], Fe:[2,8,14,2], Cu:[2,8,18,1], Sn:[2,8,18,18,4], Cl:[2,8,7], O:[2,6], N:[2,5]};
+function bohrAtom(cx, cy, el, lose, gain, after){
+  const sh = SHELLS[el].slice();
+  // per shell: list of electrons as 'own' | 'lost' | 'gained'
+  const st = sh.map(n => Array(n).fill('own'));
+  if (after){
+    let k = lose; for (let i = st.length - 1; i >= 0 && k > 0; i--) for (let j = st[i].length - 1; j >= 0 && k > 0; j--, k--) st[i][j] = 'lost';
+    for (let g = 0; g < gain; g++) st[st.length - 1].push('gained');
+  } else if (gain) st[st.length - 1].push(...Array(gain).fill('slot'));
+  const r0 = 22, dr = Math.min(15, 70/st.length);
+  let s = `<circle cx="${cx}" cy="${cy}" r="${r0 - 8}" style="fill:${lose ? 'var(--cat-soft)' : 'var(--ani-soft)'};stroke:${lose ? 'var(--cat)' : 'var(--ani)'};stroke-width:1.5"/>`;
+  s += `<text x="${cx}" y="${cy + 1}" text-anchor="middle" dominant-baseline="central" style="fill:var(--ink);font:700 11px var(--font-ui)">${el}</text>`;
+  st.forEach((ring, i) => {
+    const r = r0 + i*dr, empty = ring.every(e => e === 'lost');
+    s += `<circle cx="${cx}" cy="${cy}" r="${r}" style="fill:none;stroke:var(--line-strong);stroke-width:1.2${empty ? ';stroke-dasharray:3 3' : ''}"/>`;
+    ring.forEach((e, j) => {
+      const a = -Math.PI/2 + j*2*Math.PI/ring.length, x = cx + r*Math.cos(a), y = cy + r*Math.sin(a);
+      const transfer = (lose && i === st.length - 1) || (lose && e === 'lost');
+      if (e === 'lost' || e === 'slot') s += `<circle cx="${x}" cy="${y}" r="3.2" style="fill:none;stroke:var(--muted);stroke-dasharray:2 1.5"/>`;
+      else s += `<circle cx="${x}" cy="${y}" r="3.2" style="fill:${e === 'gained' || (!after && transfer) ? 'var(--cat)' : 'var(--ink)'}"/>`;
+    });
+  });
+  return s;
+}
+function bohrCard(){
+  const {cat:c, an:a} = state, C = ION[c], A = ION[a];
+  const after = !!state.bohrAfter;
+  const m = !C.poly && C.parts[0][0], n = !A.poly && A.parts[0][0];
+  const cfg = (el, lose, gain) => { const sh = SHELLS[el].slice(); if (after){ let k = lose; for (let i = sh.length - 1; k > 0; i--){ const t = Math.min(k, sh[i]); sh[i] -= t; k -= t; } sh[sh.length - 1] += gain; } return sh.filter((v, i) => v || i < sh.length - 1).join(', ').replace(/(, 0)+$/, ''); };
+  let s = '', lbl = '';
+  const xs = m && n ? [120, 340] : [230];
+  if (m){ s += bohrAtom(xs[0], 105, m, C.q, 0, after);
+    lbl += `<text x="${xs[0]}" y="205" text-anchor="middle" style="fill:var(--cat);font:700 13px var(--font-ui)">${after ? m + chargeU(C.q) + ' ion' : m + ' atom'}  (${cfg(m, C.q, 0)})</text>`; }
+  if (n){ const x = xs[m ? 1 : 0]; s += bohrAtom(x, 105, n, 0, absQ(a), after);
+    lbl += `<text x="${x}" y="205" text-anchor="middle" style="fill:var(--ani);font:700 13px var(--font-ui)">${after ? n + chargeU(A.q) + ' ion' : n + ' atom'}  (${cfg(n, 0, absQ(a))})</text>`; }
+  if (m && n) s += `<path d="M195 105 H262 M254 98 L263 105 L254 112" style="fill:none;stroke:var(--cat);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round"/><text x="230" y="94" text-anchor="middle" style="fill:var(--cat);font:700 11px var(--font-ui)">${after ? 'moved' : 'will move'}</text>`;
+  const notes = [];
+  if (C.poly || A.poly) notes.push(`${C.poly ? coreH(c) : coreH(a)} is a group of atoms held together by covalent bonds, so it has no single ring diagram.`);
+  if (m && !C.ve) notes.push(`For ${m}, the ${C.q} electron${C.q > 1 ? 's' : ''} it loses come from its outer shells, and the ion that is left does not have 8 in its outer shell.`);
+  return `<div class="card" id="bohrBox"><h3>Bohr model (atom with rings)</h3>
+    <div class="row-btns"><button type="button" class="btn-ghost" id="bohrTgl">${after ? '◀ Show atoms (before)' : 'Show ions (after) ▶'}</button><span class="legend"><span><i style="background:var(--cat)"></i>electrons that transfer</span></span></div>
+    <svg viewBox="0 0 460 215" style="width:100%;height:auto;max-height:220px;display:block" role="img" aria-label="Bohr diagrams">${s}${lbl}</svg>
+    ${notes.map(t => `<p class="muted">${t}</p>`).join('')}</div>`;
+}
 
 function lewisCard(){
   const {cat:c, an:a, nc, na} = state;
@@ -769,7 +818,7 @@ function renderQuiz(){
       : `<div class="q-fb wrong"><span class="diag" style="color:var(--bad)">${ERR_LABEL[o.d]}</span><br>${o.why}</div>`;
     fb += `<div class="row-btns"><button type="button" class="btn-primary" id="nextQ">Next question</button><button type="button" class="btn-ghost" id="buildQ">Build it on the workbench</button></div>`;
   }
-  return `<div class="q-score"><span>Score: <b>${quiz.right} / ${quiz.total}</b></span>${tallies}</div>
+  return `<div class="q-score"><span>Score: <b>${quiz.right} out of ${quiz.total}</b></span>${tallies}</div>
     <div class="card"><div class="q-prompt">${q.prompt}</div><div class="q-target">${q.target}</div>
     <div class="q-opts">${q.opts.map((o, i) => {
       let cls = 'q-opt' + (q.kind === 'name' ? ' name' : '');
@@ -804,7 +853,10 @@ function renderSide(){
     body.innerHTML = romanCard() + xrayCard();
     if ($('errTgl')) $('errTgl').onclick = () => { state.showErr = !state.showErr; renderSide(); };
   } else {
-    body.innerHTML = lewisCard() + enCard();
+    body.innerHTML = lewisCard() + bohrCard() + enCard();
+    // the toggle redraws only the Bohr card so the Lewis animation does not replay
+    const wireBohr = () => { if ($('bohrTgl')) $('bohrTgl').onclick = () => { state.bohrAfter = !state.bohrAfter; $('bohrBox').outerHTML = bohrCard(); wireBohr(); }; };
+    wireBohr();
     if ($('playBtn')) $('playBtn').onclick = playLewis;
     if (document.querySelector('#lewis circle.e')) playLewis();
   }
@@ -815,7 +867,7 @@ function renderGuide(){
   $('guidePop').innerHTML = sci ? `<h2>Writing an ionic formula in 3 steps</h2><ol>
     <li><span class="num">1</span><span><b>Pick the ions.</b> Dashed buttons are polyatomic ions: locked groups you never change inside.</span></li>
     <li><span class="num">2</span><span><b>Balance the charge.</b> Add cations and anions until every + tab sits in a − notch and the meter reads 0.</span></li>
-    <li><span class="num">3</span><span><b>Write it simply.</b> Use brackets when you need more than one polyatomic ion, and divide the counts down to the lowest ratio.</span></li></ol>`
+    <li><span class="num">3</span><span><b>Write it simply.</b> Use brackets when you need more than one polyatomic ion, The workbench stops at the lowest whole-number ratio.</span></li></ol>`
   : `<h2>Explaining the bond in 3 steps</h2><ol>
     <li><span class="num">1</span><span><b>Build a neutral compound</b> on the workbench (meter at 0).</span></li>
     <li><span class="num">2</span><span><b>Watch the transfer.</b> Each metal atom gives its electrons to the non-metal until the non-metal has a full octet.</span></li>
