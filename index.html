@@ -18,6 +18,8 @@
   --ink: #1b2733; --muted: #5b6b7a; --pt: #2f5fd0; --chip: #eaf0f6;
   /* Ion role colours, same as the tools: cation A blue, anion B teal, cation C amber, anion D rose. */
   --ionA: #2160e0; --ionB: #0c8a7f; --ionC: #c46a00; --ionD: #d61f4b;
+  /* Energy colours, same as the heating curve tool: orange = temperature change, purple = phase change. */
+  --ek: #d2620a; --ep: #7a3ec8;
   --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
   --font-body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
   --font-num: "Spline Sans Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
@@ -26,13 +28,13 @@
   :root:not([data-theme="light"]) {
     --paper: #0f161d; --sheet: #151f29; --grid: #1f2c38; --grid-major: #2e3f50;
     --ink: #e6edf3; --muted: #9aabbb; --pt: #7aa2ff; --chip: #1d2935;
-    --ionA: #6ea4ff; --ionB: #35cfbd; --ionC: #f3b13f; --ionD: #ff7192; color-scheme: dark;
+    --ionA: #6ea4ff; --ionB: #35cfbd; --ionC: #f3b13f; --ionD: #ff7192; --ek: #ff9a45; --ep: #b98cff; color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
   --paper: #0f161d; --sheet: #151f29; --grid: #1f2c38; --grid-major: #2e3f50;
   --ink: #e6edf3; --muted: #9aabbb; --pt: #7aa2ff; --chip: #1d2935;
-  --ionA: #6ea4ff; --ionB: #35cfbd; --ionC: #f3b13f; --ionD: #ff7192; color-scheme: dark;
+  --ionA: #6ea4ff; --ionB: #35cfbd; --ionC: #f3b13f; --ionD: #ff7192; --ek: #ff9a45; --ep: #b98cff; color-scheme: dark;
 }
 * { box-sizing: border-box; }
 /* Text grows a little on big screens (projectors, smartboards) so it reads from the back of the room. */
@@ -172,6 +174,26 @@ body.scroll .concepts { flex: none; grid-template-rows: none; grid-auto-rows: 25
         <span class="bands"><span class="band">10-12</span></span>
       </a>
     </li>
+    <li data-bands="10-12" data-cat="ene" data-also="mat">
+      <a class="concept" href="heating-curve.html">
+        <svg viewBox="0 0 240 120" aria-hidden="true">
+          <!-- Heating curve: orange slopes (Q = mcΔt) and purple plateaus (Q = nH), the boiling plateau much wider. -->
+          <path d="M34 14V104H226" style="fill: none; stroke: var(--ink); stroke-width: 2.5"/>
+          <g style="fill: none; stroke-width: 6; stroke-linecap: round">
+            <path d="M40 98L54 80M150 40L162 22" style="stroke: var(--ek)"/>
+            <path d="M54 80H72" style="stroke: var(--ep)"/>
+            <path d="M72 80L96 40" style="stroke: var(--ek)"/>
+            <path d="M96 40H150" style="stroke: var(--ep)"/>
+          </g>
+          <circle cx="122" cy="40" r="7" style="fill: var(--ep); stroke: var(--sheet); stroke-width: 2.5"/>
+          <text x="196" y="56" text-anchor="middle" style="fill: var(--ep); font: 700 15px var(--font-num)">Q=nH</text>
+          <text x="196" y="88" text-anchor="middle" style="fill: var(--ek); font: 700 15px var(--font-num)">Q=mcΔt</text>
+        </svg>
+        <span class="sr">Energy: </span><span class="name">Heating Curve of Water</span>
+        <span class="what">Add energy to ice and see when to use Q = mcΔt and when to use Q = nH.</span>
+        <span class="bands"><span class="band">10-12</span></span>
+      </a>
+    </li>
   </ul>
   <p class="empty" hidden>No tools for this grade in this topic yet. Pick another grade or topic.</p>
   <p class="credit">Curated by shawn.lemko@eips.ca</p>
@@ -208,7 +230,7 @@ body.scroll .concepts { flex: none; grid-template-rows: none; grid-auto-rows: 25
     grid.style.setProperty("--cols", best.cols);
     grid.style.setProperty("--rows", best.rows || 1);
   };
-  // A tile shows when it is in the chosen grade band, the chosen topic, and matches the search words.
+  // A tile shows when it is in the chosen grade band, the chosen topic (its own data-cat or one listed in data-also), and matches the search words.
   const show = (v, c) => {
     band = tabs.some(t => t.dataset.band === v) ? v : "all";
     cat = cats.some(t => t.dataset.cat === c) ? c : "all";
@@ -218,7 +240,7 @@ body.scroll .concepts { flex: none; grid-template-rows: none; grid-auto-rows: 25
     qClear.hidden = !qBox.value;
     tiles.forEach(li => {
       const txt = (li.querySelector(".name").textContent + " " + li.querySelector(".what").textContent).toLowerCase();
-      li.hidden = (band !== "all" && !li.dataset.bands.split(" ").includes(band)) || (cat !== "all" && li.dataset.cat !== cat) || !words.every(w => txt.includes(w));
+      li.hidden = (band !== "all" && !li.dataset.bands.split(" ").includes(band)) || (cat !== "all" && li.dataset.cat !== cat && !(li.dataset.also || "").split(" ").includes(cat)) || !words.every(w => txt.includes(w));
     });
     empty.hidden = tiles.some(li => !li.hidden);
     try { localStorage.setItem("vsc-band", band); localStorage.setItem("vsc-cat", cat); } catch (e) {}

@@ -1,0 +1,857 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<script data-goatcounter="https://shawnlemko.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
+</head>
+<body>
+<title>Heating Curve of Water</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Atkinson+Hyperlegible:wght@400;700&family=Spline+Sans+Mono:wght@500;700&display=swap">
+<style>
+/* MathBoard look (shared with the math visuals site), plus two energy colours:
+   orange = kinetic energy / temperature change (Q = mcΔt), purple = potential energy / phase change (Q = nH).
+   Layout: one-screen lab bench. Top = controls. Left = graph above particle chamber + meters. Right = math ledger. */
+:root{
+  --bg:#f5f8fb; --surface:#ffffff; --surface-2:#eaf0f6; --ink:#1b2733; --muted:#5b6b7a; --line:#dbe5ee; --line-strong:#b9c9d8; --pt:#2f5fd0;
+  --ek:#d2620a; --ek-soft:rgba(210,98,10,.14); --ep:#7a3ec8; --ep-soft:rgba(122,62,200,.13); --dim:#c5d0db;
+  --water-o:#d1495b; --water-h:#a9bac6; --glass:#7d93a2; --btn:#2f5fd0; --btn-ink:#ffffff;
+  --font-ui:'Atkinson Hyperlegible', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-display:'Bricolage Grotesque', 'Segoe UI', system-ui, sans-serif;
+  --font-num:'Spline Sans Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0f161d; --surface:#151f29; --surface-2:#1d2935; --ink:#e6edf3; --muted:#9aabbb; --line:#1f2c38; --line-strong:#2e3f50; --pt:#7aa2ff;
+  --ek:#ff9a45; --ek-soft:rgba(255,154,69,.16); --ep:#b98cff; --ep-soft:rgba(185,140,255,.16); --dim:#34434f;
+  --water-o:#ef6f7f; --water-h:#c3d0da; --glass:#8ea5b5; --btn:#7aa2ff; --btn-ink:#0f161d; color-scheme:dark; } }
+:root[data-theme="dark"]{
+  --bg:#0f161d; --surface:#151f29; --surface-2:#1d2935; --ink:#e6edf3; --muted:#9aabbb; --line:#1f2c38; --line-strong:#2e3f50; --pt:#7aa2ff;
+  --ek:#ff9a45; --ek-soft:rgba(255,154,69,.16); --ep:#b98cff; --ep-soft:rgba(185,140,255,.16); --dim:#34434f;
+  --water-o:#ef6f7f; --water-h:#c3d0da; --glass:#8ea5b5; --btn:#7aa2ff; --btn-ink:#0f161d; color-scheme:dark; }
+
+*,*::before,*::after{box-sizing:border-box}
+h1,h2,p,ol{margin:0} ol{padding:0; list-style:none}
+button,select,input{font:inherit; color:inherit}
+button{border:0; background:none; cursor:pointer}
+html,body{height:100%}
+body{background:var(--bg); color:var(--ink); font-family:var(--font-ui); font-size:14px;
+  padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); padding-block:0}
+#app{display:flex; flex-direction:column; gap:8px; min-height:100%; padding-block:8px}
+@media (min-width:1024px){ #app{height:100%} }
+.num{font-family:var(--font-num); font-variant-numeric:tabular-nums}
+.c-ek{color:var(--ek)} .c-ep{color:var(--ep)}
+
+/* Header */
+.topbar{display:flex; flex-wrap:wrap; align-items:center; gap:10px 20px; justify-content:space-between}
+.brand{display:flex; flex-wrap:wrap; align-items:center; gap:8px 20px}
+.brand h1{font-family:var(--font-display); font-weight:800; font-size:clamp(20px, 2vw, 26px); line-height:1.1; letter-spacing:-.01em; text-wrap:balance}
+a.main-btn{display:inline-flex; align-items:center; gap:8px; padding:8px 16px; min-height:42px; background:var(--pt); color:#fff; font-family:var(--font-display); font-weight:800; font-size:16px; text-decoration:none; border-radius:10px; border:2px solid var(--pt); flex:none}
+a.main-btn span{font-size:19px; line-height:1}
+a.main-btn:hover{background:var(--surface); color:var(--pt)}
+a.main-btn:focus-visible{outline:3px solid var(--pt); outline-offset:3px}
+.top-right{display:flex; flex-wrap:wrap; align-items:center; gap:10px}
+.mode{display:flex; align-items:center; gap:4px; background:var(--surface); border:1px solid var(--line); border-radius:999px; padding:4px}
+.mode-label{font-size:12px; color:var(--muted); padding:0 6px 0 10px; letter-spacing:.04em; text-transform:uppercase}
+.mode button{border-radius:999px; padding:6px 14px; font-weight:700; font-size:14px; color:var(--muted); line-height:1.1}
+.mode button small{font-weight:400; font-size:12px; margin-left:4px}
+.mode button[aria-checked="true"]{background:var(--btn); color:var(--btn-ink)}
+.guide-wrap{position:relative}
+.btn-outline{border:1.5px solid var(--ink); border-radius:8px; padding:7px 12px; font-weight:700; font-size:14px; background:var(--surface)}
+.pop{position:absolute; right:0; top:calc(100% + 8px); width:min(380px, calc(100vw - 32px)); z-index:20; background:var(--surface);
+  border:1px solid var(--line); border-radius:10px; box-shadow:0 12px 32px rgba(10,20,30,.18); padding:14px 16px}
+.pop h2{font-weight:700; font-size:15px; margin-bottom:8px}
+.pop ol{display:flex; flex-direction:column; gap:10px}
+.pop li{display:grid; grid-template-columns:24px 1fr; gap:8px; line-height:1.4}
+.pop .n{width:22px; height:22px; border-radius:50%; background:var(--btn); color:var(--btn-ink); font-weight:700; font-size:12px; display:grid; place-items:center}
+
+.panel{background:var(--surface); border:1px solid var(--line-strong); border-radius:10px; min-width:0}
+button:focus-visible, input:focus-visible{outline:2.5px solid var(--pt); outline-offset:2px}
+
+/* Controls */
+.controls{display:grid; grid-template-columns:repeat(3, minmax(150px,1fr)) minmax(260px,1.6fr); gap:6px 18px; padding:8px 14px; align-items:end}
+.ctl{display:flex; flex-direction:column; gap:3px; min-width:0}
+.ctl-top{display:flex; align-items:baseline; justify-content:space-between; gap:8px; flex-wrap:wrap}
+.ctl label{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.07em; font-weight:700}
+.ctl label .sym, .ctl label sub{text-transform:none}
+.ctl output{font-family:var(--font-num); font-variant-numeric:tabular-nums; font-weight:700; font-size:15px}
+.ctl .phase{font-family:var(--font-ui); font-weight:400; font-size:12px; color:var(--muted); margin-left:4px}
+.ctl input[type=range]{width:100%; accent-color:var(--pt); margin:2px 0}
+.moles{font-family:var(--font-num); font-weight:700; color:var(--ep); background:var(--ep-soft); border-radius:6px; padding:0 6px; font-size:13px}
+.qrow{display:flex; align-items:center; gap:10px}
+.qrow input{flex:1; accent-color:var(--ek)}
+.btn-primary{background:var(--btn); color:var(--btn-ink); border-radius:8px; padding:7px 14px; font-weight:700; font-size:14px; white-space:nowrap; min-width:84px}
+.btn-ghost{border:1px solid var(--line); border-radius:8px; padding:6px 10px; font-size:13px; background:var(--surface-2); white-space:nowrap}
+.btn-ghost[aria-pressed="true"]{background:var(--ink); color:var(--surface); border-color:var(--ink)}
+.cool-wrap{grid-column:1 / -1; display:flex; align-items:center; gap:10px; font-size:12.5px; color:var(--muted); border-top:1px dashed var(--line); padding-top:6px}
+@media (max-width:860px){ .controls{grid-template-columns:1fr 1fr} .ctl.q{grid-column:1 / -1} }
+@media (max-width:480px){ .controls{grid-template-columns:1fr} .mode-label{display:none} .mode button{padding:6px 10px} .mode button small{display:block; margin-left:0} }
+
+/* Main split */
+.layout{display:grid; grid-template-columns:1fr; gap:10px; flex:1; min-height:0}
+@media (min-width:1024px){ .layout{grid-template-columns:58fr 42fr; grid-template-rows:minmax(0,1fr)} }
+.left{display:flex; flex-direction:column; gap:10px; min-height:0; min-width:0}
+.ptitle{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.07em; font-weight:700}
+
+.graph{display:flex; flex-direction:column; flex:1.15; min-height:300px; padding:8px 12px 6px}
+@media (min-width:1024px){ .graph{min-height:0} }
+.g-head{display:flex; justify-content:space-between; align-items:baseline; gap:10px; flex-wrap:wrap}
+.readout{font-size:13px; color:var(--muted)}
+.readout b{font-family:var(--font-num); color:var(--ink)}
+.g-canvas{position:relative; flex:1; min-height:0}
+.g-canvas canvas{position:absolute; inset:0; width:100%; height:100%; display:block}
+.legend{display:flex; flex-wrap:wrap; gap:4px 16px; font-size:12px; color:var(--muted)}
+.legend i{display:inline-block; width:18px; height:4px; border-radius:2px; vertical-align:middle; margin-right:5px}
+.legend b{color:var(--ink)}
+
+.chamber{display:grid; grid-template-columns:1fr auto; grid-template-rows:auto minmax(0,1fr); gap:6px 12px; flex:1; min-height:300px; padding:8px 12px 10px}
+@media (min-width:1024px){ .chamber{min-height:0} }
+.caption{grid-column:1 / -1; font-size:13px; line-height:1.35; min-height:2.7em}
+.caption b{font-weight:700}
+.p-canvas{position:relative; min-height:0; min-width:0}
+.p-canvas canvas{position:absolute; inset:0; width:100%; height:100%; display:block}
+.chem-key{position:absolute; left:8px; top:6px; display:flex; flex-direction:column; gap:2px; font-size:11.5px; color:var(--muted); background:var(--surface); border:1px solid var(--line); border-radius:6px; padding:3px 7px}
+.chem-key svg{width:26px; height:8px; vertical-align:middle; margin-right:4px}
+
+.meters{display:flex; gap:10px; min-height:0}
+.meter{display:flex; flex-direction:column; align-items:center; gap:4px; width:68px; min-height:0}
+.meter .mname{font-weight:700; font-size:14px; line-height:1}
+.meter .msub{font-size:11px; color:var(--muted); text-align:center; line-height:1.15}
+.track{position:relative; flex:1; width:30px; min-height:80px; border:2px solid var(--line-strong); border-radius:8px; background:var(--surface-2); overflow:hidden}
+.fill{position:absolute; left:0; right:0; bottom:0; transition:height .08s linear}
+.meter.ek .fill{background:var(--ek)} .meter.ep .fill{background:var(--ep)}
+.meter.active .track{box-shadow:0 0 0 3px var(--ek-soft), 0 0 14px var(--ek)}
+.meter.ep.active .track{box-shadow:0 0 0 3px var(--ep-soft), 0 0 14px var(--ep)}
+.tick{position:absolute; left:0; right:0; border-top:1.5px dashed var(--ink); opacity:.45}
+.ticklab{position:absolute; right:calc(100% + 4px); transform:translateY(-50%); font-size:10.5px; color:var(--muted); white-space:nowrap}
+.mstate{font-size:12px; font-weight:700; min-height:1.3em; white-space:nowrap}
+.meter:not(.active) .mstate{color:var(--muted); font-weight:400}
+
+/* Ledger */
+.ledger{display:flex; flex-direction:column; gap:8px; padding:10px 14px; overflow:auto; min-height:0}
+.ledger > *{flex-shrink:0}
+.lcard{border:1px solid var(--line); border-left:5px solid var(--ek); border-radius:10px; padding:8px 12px 8px; background:var(--surface); position:relative; transition:box-shadow .2s, opacity .2s}
+.lcard.plat{border-left-color:var(--ep)}
+.lcard.current{box-shadow:0 0 0 2.5px var(--ek)}
+.lcard.plat.current{box-shadow:0 0 0 2.5px var(--ep)}
+.lcard.ahead{opacity:.6}
+.lc-head{display:flex; align-items:center; gap:8px; margin-bottom:4px}
+.badge{width:22px; height:22px; border-radius:50%; display:grid; place-items:center; font-weight:700; font-size:12px; color:#fff; background:var(--ek); flex:none}
+.plat .badge{background:var(--ep)}
+.lc-title{font-weight:700; font-size:14px; flex:1; min-width:0}
+.lc-title small{font-weight:400; color:var(--muted); font-size:12.5px; margin-left:4px; white-space:nowrap}
+.lc-q{font-family:var(--font-num); font-weight:700; font-size:15px; white-space:nowrap}
+.ln{font-size:13.5px; line-height:1.6; padding-left:30px}
+.ln .f{font-weight:700}
+.ln .num{font-size:13px}
+.x{text-decoration:line-through; text-decoration-thickness:2px; text-decoration-color:var(--ek); opacity:.75}
+.plat .x{text-decoration-color:var(--ep)}
+.conv{background:var(--ek-soft); border-radius:5px; padding:1px 5px; white-space:nowrap}
+.note{font-size:12px; color:var(--muted); padding-left:30px; line-height:1.4; margin-top:2px}
+.note b{color:var(--ep)}
+.bar{position:absolute; left:0; bottom:0; height:3px; background:var(--ek); border-bottom-left-radius:8px}
+.plat .bar{background:var(--ep)}
+.total{border:2px solid var(--ink); border-radius:10px; padding:8px 12px; display:flex; flex-direction:column; gap:2px}
+.total .t-line{display:flex; justify-content:space-between; align-items:baseline; gap:10px; flex-wrap:wrap}
+.total .t-name{font-weight:700; font-size:14px}
+.total .t-sum{font-size:13px; color:var(--muted); font-family:var(--font-num)}
+.total .t-q{font-family:var(--font-num); font-weight:700; font-size:18px}
+.bridge{border:1px dashed var(--pt); border-radius:10px; padding:8px 12px; font-size:13px; line-height:1.5; background:var(--surface-2)}
+.bridge b{color:var(--pt)}
+.foot{font-size:11.5px; color:var(--muted); line-height:1.45}
+@media (prefers-reduced-motion: reduce){ *{transition:none !important} }
+</style>
+
+<div id="app">
+  <header class="topbar">
+    <div class="brand">
+      <a class="main-btn" href="index.html"><span aria-hidden="true">←</span> Return to Main Page</a>
+      <h1 id="title">Heating Curve of Water</h1>
+    </div>
+    <div class="top-right">
+      <div class="mode" role="radiogroup" aria-label="Mode">
+        <span class="mode-label">Mode</span>
+        <button type="button" id="modeSci" role="radio" aria-checked="true">Science 10<small>Thermal energy Q</small></button>
+        <button type="button" id="modeChem" role="radio" aria-checked="false">Chem 20/30 Bridge<small>IMFs, K, ΔH</small></button>
+      </div>
+      <div class="guide-wrap">
+        <button type="button" id="guideBtn" class="btn-outline" aria-expanded="false" aria-controls="guidePop">Step-by-Step Guide</button>
+        <div id="guidePop" class="pop" hidden>
+          <h2>How to use this</h2>
+          <ol>
+            <li><span class="n">1</span><span>Set the <b>mass</b>. The moles appear in purple, because the flat parts need <b>n</b>, not m.</span></li>
+            <li><span class="n">2</span><span>Set the <b>start</b> and <b>end</b> temperatures.</span></li>
+            <li><span class="n">3</span><span>Press <b>Play</b> or drag the <b>Q</b> slider to add energy.</span></li>
+            <li><span class="n">4</span><span>Watch the meters: only <b class="c-ek">E<sub>k</sub></b> or <b class="c-ep">E<sub>p</sub></b> rises at a time.</span></li>
+            <li><span class="n">5</span><span>Follow the cards on the right. Orange parts use <b>Q = mcΔt</b>, purple parts use <b>Q = nH</b>. Add the cards for the total.</span></li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <section class="panel controls" aria-label="Controls">
+    <div class="ctl">
+      <div class="ctl-top"><label for="mass">Mass of water, <span class="sym">m</span></label><output id="massOut" for="mass">100 g</output></div>
+      <input type="range" id="mass" min="10" max="500" step="5" value="100">
+      <div class="ctl-top"><span class="moles" id="molesOut">n = 5.549 mol</span></div>
+    </div>
+    <div class="ctl">
+      <div class="ctl-top"><label for="ti">Start temp, <span class="sym">T<sub>i</sub></span></label><output id="tiOut" for="ti"></output></div>
+      <input type="range" id="ti" min="-40" max="140" step="1" value="-20">
+    </div>
+    <div class="ctl">
+      <div class="ctl-top"><label for="tf">End temp, <span class="sym">T<sub>f</sub></span></label><output id="tfOut" for="tf"></output></div>
+      <input type="range" id="tf" min="-40" max="140" step="1" value="120">
+    </div>
+    <div class="ctl q">
+      <div class="ctl-top"><label for="qSlider" id="qLabel">Add thermal energy, Q</label><output id="qOut" for="qSlider">0.0 kJ</output></div>
+      <div class="qrow">
+        <button type="button" id="playBtn" class="btn-primary">▶ Play</button>
+        <input type="range" id="qSlider" min="0" max="1000" step="1" value="0" aria-label="Thermal energy">
+      </div>
+    </div>
+    <div class="cool-wrap" id="coolWrap" hidden>
+      <button type="button" id="coolBtn" class="btn-ghost" aria-pressed="false">Reverse: Cooling Curve (exothermic, −ΔH)</button>
+      <span id="coolHint">Off: energy is absorbed (endothermic, Q is positive).</span>
+    </div>
+  </section>
+
+  <main class="layout">
+    <section class="left">
+      <div class="panel graph">
+        <div class="g-head">
+          <span class="ptitle" id="graphTitle">Heating curve</span>
+          <span class="readout" id="readout"></span>
+        </div>
+        <div class="g-canvas"><canvas id="graph" aria-label="Heating curve graph"></canvas></div>
+        <div class="legend" id="legend"></div>
+      </div>
+
+      <div class="panel chamber">
+        <p class="caption" id="caption" aria-live="polite"></p>
+        <div class="p-canvas">
+          <canvas id="particles" aria-label="Particle view of the water molecules"></canvas>
+          <div class="chem-key" id="chemKey" hidden>
+            <span><svg viewBox="0 0 26 8"><line x1="1" y1="4" x2="25" y2="4" style="stroke:var(--ink); stroke-width:3"/></svg>covalent O–H bond (never breaks)</span>
+            <span><svg viewBox="0 0 26 8"><line x1="1" y1="4" x2="25" y2="4" style="stroke:var(--ep); stroke-width:2; stroke-dasharray:4 3"/></svg>hydrogen bond (between molecules)</span>
+          </div>
+        </div>
+        <div class="meters">
+          <div class="meter ek" id="meterEk">
+            <span class="mname c-ek">E<sub>k</sub></span>
+            <span class="msub">average kinetic<br>(temperature)</span>
+            <div class="track"><div class="fill" id="fillEk"></div></div>
+            <span class="mstate" id="stateEk"></span>
+          </div>
+          <div class="meter ep" id="meterEp">
+            <span class="mname c-ep">E<sub>p</sub></span>
+            <span class="msub">potential<br>(phase, spacing)</span>
+            <div class="track" id="trackEp"><div class="fill" id="fillEp"></div></div>
+            <span class="mstate" id="stateEp"></span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel ledger" aria-label="Math ledger">
+      <span class="ptitle">Step-by-step math</span>
+      <div class="bridge" id="bridge" hidden></div>
+      <div id="cards" style="display:flex; flex-direction:column; gap:8px"></div>
+      <div class="total" id="total"></div>
+      <p class="foot" id="foot"></p>
+    </section>
+  </main>
+</div>
+
+<script>
+/* =========================================================
+   ALBERTA CHEMISTRY DATA BOOKLET VALUES
+   (Thermodynamic Properties table: ΔH fusion / vaporization, specific heat capacity)
+   ========================================================= */
+const M_H2O   = 18.02;  // g/mol  (H 1.01, O 16.00)
+const C_ICE   = 2.00;   // J/(g·°C)  The Chemistry Data Booklet lists 2.00 (the Science 30 booklet lists 2.10).
+const C_WATER = 4.19;   // J/(g·°C)
+const C_STEAM = 2.02;   // J/(g·°C)
+const H_FUS   = 6.01;   // kJ/mol at 0 °C
+const H_VAP   = 40.65;  // kJ/mol at 100 °C
+const T_MIN = -40, T_MAX = 140;
+
+/* =========================================================
+   STATE
+   ========================================================= */
+const S = { m:100, ti:-20, tf:120, chem:false, cooling:false, frac:0, playing:false };
+const $ = id => document.getElementById(id);
+
+/* Moles are shown to 4 significant figures, and the same rounded value is used everywhere, so the cards match what students write. */
+const molesOf = m => Number((m / M_H2O).toPrecision(4));
+
+/* =========================================================
+   THE PATH: five stages, in process order. Heating goes up from −40 °C; cooling goes down from 140 °C.
+   Each stage has an energy length (kJ). x is cumulative energy along the full path.
+   phi = phase progress: 0 solid, 1 liquid, 2 gas (used by meters and particles).
+   ========================================================= */
+function buildPath(){
+  const n = molesOf(S.m);
+  let segs = [
+    {id:'ice',   kind:'slope', c:C_ICE,   t0:-40, t1:0,   phi0:0, phi1:0},
+    {id:'fus',   kind:'plat',  H:H_FUS,   t0:0,   t1:0,   phi0:0, phi1:1},
+    {id:'water', kind:'slope', c:C_WATER, t0:0,   t1:100, phi0:1, phi1:1},
+    {id:'vap',   kind:'plat',  H:H_VAP,   t0:100, t1:100, phi0:1, phi1:2},
+    {id:'steam', kind:'slope', c:C_STEAM, t0:100, t1:140, phi0:2, phi1:2},
+  ];
+  if (S.cooling) segs = segs.reverse().map(s => ({...s, t0:s.t1, t1:s.t0, phi0:s.phi1, phi1:s.phi0}));
+  let x = 0;
+  segs.forEach((s, i) => {
+    s.num = i + 1;
+    s.len = s.kind === 'slope' ? S.m * s.c * Math.abs(s.t1 - s.t0) / 1000 : n * s.H;
+    s.x0 = x; x += s.len; s.x1 = x;
+  });
+  return segs;
+}
+// Where a temperature sits on the path. At exactly 0 °C or 100 °C the substance is still in the phase it started in.
+function posOfT(path, T){
+  for (const s of path) if (s.kind === 'slope' && (T - s.t0) * (T - s.t1) <= 0) return s.x0 + (T - s.t0) / (s.t1 - s.t0) * s.len;
+  return 0;
+}
+function phaseWord(T){
+  if (S.cooling) return T >= 100 ? 'steam' : T >= 0 ? 'liquid water' : 'ice';
+  return T <= 0 ? 'ice' : T <= 100 ? 'liquid water' : 'steam';
+}
+
+let PATH, QA, QB;
+function recompute(){ PATH = buildPath(); QA = posOfT(PATH, S.ti); QB = posOfT(PATH, S.tf); }
+const curX = () => QA + S.frac * (QB - QA);
+
+function segAt(x){
+  if (x >= QB - 1e-9) return PATH.find(s => s.x1 >= QB - 1e-9 && s.x0 < QB);
+  return PATH.find(s => x < s.x1 - 1e-9) || PATH[PATH.length - 1];
+}
+function stateAt(x){
+  const s = segAt(x), f = s.len ? Math.min(1, Math.max(0, (x - s.x0) / s.len)) : 0;
+  return { seg:s, f, T: s.t0 + f * (s.t1 - s.t0), phi: s.phi0 + f * (s.phi1 - s.phi0) };
+}
+function activeSegs(){
+  return PATH.map(s => {
+    const a = Math.max(s.x0, QA), b = Math.min(s.x1, QB);
+    if (b - a < 1e-9) return null;
+    const tA = s.t0 + (a - s.x0) / (s.len || 1) * (s.t1 - s.t0), tB = s.t0 + (b - s.x0) / (s.len || 1) * (s.t1 - s.t0);
+    return {seg:s, a, b, tA:Math.round(tA), tB:Math.round(tB)};
+  }).filter(Boolean);
+}
+
+/* =========================================================
+   FORMATTING
+   ========================================================= */
+const MINUS = '−';
+const sgn = v => (v < 0 ? MINUS : '') + Math.abs(v);
+const group = s => s.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+const fmtJ = v => (v < 0 ? MINUS : '') + (Math.abs(v) >= 10000 ? group(String(Math.round(Math.abs(v)))) : String(Math.round(Math.abs(v))));
+const fmtK = v => (v < -1e-9 ? MINUS : '') + Math.abs(v).toFixed(1);
+const fmtT = v => (v < 0 ? MINUS : '') + Math.abs(Math.round(v * 10) / 10);
+const H_NAME = id => S.chem ? `ΔH<sub>${id}</sub>` : `H<sub>${id}</sub>`;
+
+const NAMES = {
+  heat: {ice:'Ice warms', fus:'Ice melts at 0 °C', water:'Liquid water warms', vap:'Water boils at 100 °C', steam:'Steam warms'},
+  cool: {steam:'Steam cools', vap:'Steam condenses at 100 °C', water:'Liquid water cools', fus:'Water freezes at 0 °C', ice:'Ice cools'},
+};
+const CAPTIONS = {
+  heat: {
+    ice:'<b>Ice:</b> molecules vibrate in place in a hexagonal lattice. Hotter means faster vibration.',
+    fus:'<b>Melting at 0 °C:</b> vibration speed stays the same. Hydrogen bonds snap one by one, so the lattice falls apart.',
+    water:'<b>Liquid water:</b> molecules slide past each other, faster and faster as it warms.',
+    vap:'<b>Boiling at 100 °C:</b> speed stays the same. The remaining attractions snap and molecules shoot up into the gas.',
+    steam:'<b>Steam:</b> molecules are far apart and move faster as the gas heats.',
+  },
+  cool: {
+    steam:'<b>Steam cools:</b> gas molecules slow down.',
+    vap:'<b>Condensing at 100 °C:</b> speed stays the same. Attractions form and gas molecules join the liquid, releasing energy.',
+    water:'<b>Liquid water cools:</b> molecules slide past each other more slowly.',
+    fus:'<b>Freezing at 0 °C:</b> speed stays the same. Hydrogen bonds form and lock molecules into the lattice, releasing energy.',
+    ice:'<b>Ice cools:</b> the vibration slows down.',
+  },
+};
+
+/* Per-card numbers, rounded the way they are shown. Sign is negative when cooling. */
+function cardQ(as){
+  const s = as.seg;
+  if (s.kind === 'slope'){
+    const dt = as.tB - as.tA, J = S.m * s.c * dt;
+    return { dt, J, kJ: Math.round(J / 100) / 10 };
+  }
+  const n = molesOf(S.m), kJ = Math.round(n * s.H * 10) / 10 * (S.cooling ? -1 : 1);
+  return { n, kJ };
+}
+
+/* =========================================================
+   LEDGER
+   ========================================================= */
+function renderLedger(){
+  const act = activeSegs(), n = molesOf(S.m);
+  const u = t => `<span class="x">${t}</span>`;
+  $('cards').innerHTML = act.map(as => {
+    const s = as.seg, r = cardQ(as), name = NAMES[S.cooling ? 'cool' : 'heat'][s.id];
+    if (s.kind === 'slope'){
+      return `<article class="lcard slope" data-id="${s.id}">
+        <div class="lc-head"><span class="badge">${s.num}</span><span class="lc-title">${name}<small>${sgn(as.tA)} °C → ${sgn(as.tB)} °C</small></span><span class="lc-q">${fmtK(r.kJ)} kJ</span></div>
+        <div class="ln">Δt = t<sub>f</sub> − t<sub>i</sub> = <span class="num">${sgn(as.tB)} °C − (${sgn(as.tA)} °C) = ${sgn(r.dt)} °C</span></div>
+        <div class="ln"><span class="f">Q = mcΔt</span> = <span class="num">(${S.m} ${u('g')})(${s.c.toFixed(2)} J/(${u('g')}·${u('°C')}))(${sgn(r.dt)} ${u('°C')})</span></div>
+        <div class="ln">= <span class="num">${fmtJ(r.J)} ${u('J')}</span> × <span class="conv num">1 kJ / 1000 ${u('J')}</span> = <b class="num">${fmtK(r.kJ)} kJ</b></div>
+        <p class="note">Change J to kJ so this matches the kJ on the flat parts.</p>
+        <span class="bar"></span>
+      </article>`;
+    }
+    const neg = S.cooling, Hs = s.id;
+    const qLine = neg
+      ? `<span class="f">Q = −n${H_NAME(Hs)}</span> = <span class="num">−(${n} ${u('mol')})(${s.H.toFixed(2)} kJ/${u('mol')})</span> = <b class="num">${fmtK(r.kJ)} kJ</b>`
+      : `<span class="f">Q = n${H_NAME(Hs)}</span> = <span class="num">(${n} ${u('mol')})(${s.H.toFixed(2)} kJ/${u('mol')})</span> = <b class="num">${fmtK(r.kJ)} kJ</b>`;
+    return `<article class="lcard plat" data-id="${s.id}">
+      <div class="lc-head"><span class="badge">${s.num}</span><span class="lc-title">${NAMES[S.cooling ? 'cool' : 'heat'][s.id]}</span><span class="lc-q">${fmtK(r.kJ)} kJ</span></div>
+      <div class="ln">n = m / M = <span class="num">${S.m} ${u('g')} / ${M_H2O} ${u('g')}/mol = ${n} mol</span></div>
+      <div class="ln">${qLine}</div>
+      <p class="note">Temperature does not change here (Δt = 0), so <b>Q = mcΔt would wrongly give 0</b>. Use moles and ${H_NAME(Hs)}.${neg ? ' The same energy taken in on heating is given back.' : ''}</p>
+      <span class="bar"></span>
+    </article>`;
+  }).join('');
+
+  const parts = act.map(as => cardQ(as).kJ), sum = parts.reduce((a, b) => a + b, 0);
+  $('total').innerHTML = `<div class="t-line"><span class="t-name">Q<sub>total</sub> = sum of the cards</span><span class="t-q">${fmtK(sum)} kJ</span></div>
+    <div class="t-sum">${parts.map((p, i) => (i && p >= 0 ? '+ ' : i ? '' : '') + (p < 0 && i ? MINUS + ' ' + fmtK(-p) : fmtK(p))).join(' ')} = ${fmtK(sum)} kJ</div>
+    ${S.cooling ? '<div class="t-sum">Negative Q: the water releases energy to the surroundings (exothermic).</div>' : ''}`;
+
+  const b = $('bridge');
+  b.hidden = !S.chem;
+  if (S.chem){
+    const dC = S.tf - S.ti, kI = (S.ti + 273.15).toFixed(2), kF = (S.tf + 273.15).toFixed(2);
+    b.innerHTML = `<b>Kelvin check.</b> Δt = ${sgn(S.tf)} °C − (${sgn(S.ti)} °C) = ${sgn(dC)} °C. In kelvin: ${kF} K − ${kI} K = ${sgn(dC)} K. A kelvin is the same size as a degree Celsius, so <b>Δt in °C equals Δt in K</b>. Only the starting point (absolute zero) is different.`;
+  }
+  $('foot').innerHTML = `Data Booklet values: M(H₂O) = ${M_H2O} g/mol, c<sub>ice</sub> = ${C_ICE.toFixed(2)}, c<sub>water</sub> = ${C_WATER.toFixed(2)}, c<sub>steam</sub> = ${C_STEAM.toFixed(2)} J/(g·°C), ${H_NAME('fus')} = ${H_FUS} kJ/mol, ${H_NAME('vap')} = ${H_VAP} kJ/mol. Moles are rounded to 4 significant figures and each card to 0.1 kJ.`;
+}
+function updateLedgerProgress(){
+  const x = curX(), cur = segAt(x);
+  document.querySelectorAll('.lcard').forEach(el => {
+    const s = PATH.find(p => p.id === el.dataset.id), a = Math.max(s.x0, QA), b = Math.min(s.x1, QB);
+    const f = Math.min(1, Math.max(0, (x - a) / (b - a)));
+    el.classList.toggle('current', s === cur && S.frac > 0 && S.frac < 1);
+    el.classList.toggle('ahead', x < a - 1e-9 || (x <= a + 1e-9 && s !== cur));
+    el.querySelector('.bar').style.width = (f * 100) + '%';
+  });
+}
+
+/* =========================================================
+   GRAPH
+   ========================================================= */
+const gCv = $('graph'), gCtx = gCv.getContext('2d');
+let COL = {};
+function readColours(){
+  const cs = getComputedStyle(document.documentElement), g = k => cs.getPropertyValue(k).trim();
+  COL = {ink:g('--ink'), muted:g('--muted'), line:g('--line'), lineS:g('--line-strong'), surface:g('--surface'), surface2:g('--surface-2'),
+    ek:g('--ek'), ep:g('--ep'), dim:g('--dim'), pt:g('--pt'), o:g('--water-o'), h:g('--water-h'), glass:g('--glass')};
+}
+function fit(cv, ctx){
+  const r = cv.getBoundingClientRect(), d = devicePixelRatio || 1;
+  if (cv.width !== Math.round(r.width * d) || cv.height !== Math.round(r.height * d)){ cv.width = Math.round(r.width * d); cv.height = Math.round(r.height * d); }
+  ctx.setTransform(d, 0, 0, d, 0, 0);
+  return {W:r.width, H:r.height};
+}
+function niceStep(span){
+  const raw = span / 5, p = Math.pow(10, Math.floor(Math.log10(raw))), m = raw / p;
+  return (m < 1.5 ? 1 : m < 3 ? 2 : m < 7 ? 5 : 10) * p;
+}
+function subText(ctx, base, sub, x, y, align){
+  const f = ctx.font, w1 = ctx.measureText(base).width;
+  ctx.font = f.replace(/(\d+)px/, (_, n) => Math.round(n * 0.72) + 'px');
+  const w2 = ctx.measureText(sub).width;
+  ctx.font = f;
+  const x0 = align === 'center' ? x - (w1 + w2) / 2 : x;
+  ctx.textAlign = 'left'; ctx.fillText(base, x0, y);
+  ctx.font = f.replace(/(\d+)px/, (_, n) => Math.round(n * 0.72) + 'px'); ctx.fillText(sub, x0 + w1, y + 4); ctx.font = f;
+}
+function drawGraph(){
+  const {W, H} = fit(gCv, gCtx), c = gCtx;
+  c.clearRect(0, 0, W, H);
+  const L = 44, R = W - (S.chem ? 60 : 14), T = 22, B = H - 34;
+  const span = QB - QA, pad = span * 0.06, xLo = QA - pad, xHi = QB + pad;
+  const X = x => L + (x - xLo) / (xHi - xLo) * (R - L), Y = t => B - (t - T_MIN) / (T_MAX - T_MIN) * (B - T);
+  c.font = '500 11px "Spline Sans Mono", monospace'; c.textBaseline = 'middle';
+
+  // Horizontal grid and °C axis
+  for (let t = T_MIN; t <= T_MAX; t += 20){
+    const key = t === 0 || t === 100;
+    c.strokeStyle = key ? COL.lineS : COL.line; c.lineWidth = key ? 1.5 : 1; c.setLineDash(key ? [5, 4] : []);
+    c.beginPath(); c.moveTo(L, Y(t)); c.lineTo(R, Y(t)); c.stroke();
+    c.setLineDash([]); c.fillStyle = key ? COL.ink : COL.muted; c.textAlign = 'right';
+    c.fillText(sgn(t), L - 6, Y(t));
+  }
+  c.fillStyle = COL.ink; c.textAlign = 'left'; c.font = '700 11px "Atkinson Hyperlegible", sans-serif';
+  c.fillText('T (°C)', 4, 9);
+  if (S.chem){
+    c.textAlign = 'left'; c.font = '500 11px "Spline Sans Mono", monospace';
+    [-40, 0, 100, 140].forEach(t => { c.fillStyle = t === 0 || t === 100 ? COL.ink : COL.muted; c.fillText((t + 273.15).toFixed(2), R + 6, Y(t)); });
+    c.font = '700 11px "Atkinson Hyperlegible", sans-serif'; c.fillStyle = COL.ink; c.fillText('T (K)', R + 6, 9);
+    c.strokeStyle = COL.lineS; c.lineWidth = 1; c.beginPath(); c.moveTo(R, T); c.lineTo(R, B); c.stroke();
+  }
+  // Axes
+  c.strokeStyle = COL.ink; c.lineWidth = 1.5; c.beginPath(); c.moveTo(L, T); c.lineTo(L, B); c.lineTo(R, B); c.stroke();
+  // x ticks, measured from the start temperature
+  const step = niceStep(span);
+  c.font = '500 11px "Spline Sans Mono", monospace'; c.fillStyle = COL.muted; c.textAlign = 'center'; c.textBaseline = 'top';
+  for (let v = 0; v <= span + 1e-6; v += step){
+    const px = X(QA + v); c.strokeStyle = COL.ink; c.lineWidth = 1; c.beginPath(); c.moveTo(px, B); c.lineTo(px, B + 4); c.stroke();
+    c.fillText(String(Math.round(v * 100) / 100), px, B + 6);
+  }
+  c.font = '700 11px "Atkinson Hyperlegible", sans-serif'; c.fillStyle = COL.ink;
+  c.fillText(S.cooling ? 'Thermal energy released (kJ)' : 'Thermal energy added, Q (kJ)', (L + R) / 2, B + 20);
+
+  // Curve: grey outside the chosen range, orange/purple inside
+  c.save(); c.beginPath(); c.rect(L, T - 8, R - L, B - T + 16); c.clip();
+  c.lineCap = 'round';
+  const tAt = (s, x) => s.t0 + (s.len ? (x - s.x0) / s.len : 0) * (s.t1 - s.t0);
+  const piece = (s, a, b, col, w) => { if (b - a <= 1e-9) return; c.strokeStyle = col; c.lineWidth = w; c.beginPath(); c.moveTo(X(a), Y(tAt(s, a))); c.lineTo(X(b), Y(tAt(s, b))); c.stroke(); };
+  PATH.forEach(s => {
+    piece(s, s.x0, Math.min(s.x1, QA), COL.dim, 3);
+    piece(s, Math.max(s.x0, QB), s.x1, COL.dim, 3);
+  });
+  PATH.forEach(s => piece(s, Math.max(s.x0, QA), Math.min(s.x1, QB), s.kind === 'slope' ? COL.ek : COL.ep, 4.5));
+
+  // Stage badges and formulas
+  activeSegs().forEach(as => {
+    const s = as.seg, mid = (as.a + as.b) / 2, tm = tAt(s, mid), px = X(as.b) - X(as.a);
+    const col = s.kind === 'slope' ? COL.ek : COL.ep;
+    let bx = X(mid), by = Y(tm) - 17;
+    if (s.kind === 'slope'){ bx -= 15; by += 3; }
+    by = Math.max(T + 2, by);
+    c.fillStyle = col; c.beginPath(); c.arc(bx, by, 9, 0, 7); c.fill();
+    c.fillStyle = '#fff'; c.font = '700 11px "Atkinson Hyperlegible", sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillText(String(s.num), bx, by + .5);
+    const room = s.kind === 'plat' ? px : Math.hypot(px, Y(as.tA) - Y(as.tB));
+    if (room > 110){
+      c.fillStyle = col; c.font = '700 12px "Atkinson Hyperlegible", sans-serif'; c.textBaseline = 'middle';
+      if (s.kind === 'slope'){ c.textAlign = 'right'; c.fillText('Q = mcΔt', bx - 13, by); }
+      else subText(c, (S.chem ? 'Q = nΔH' : 'Q = nH'), s.id, bx + 13, by - 2, 'left');
+    }
+  });
+
+  // Tracking dot with guides to both axes
+  const st = stateAt(curX()), dx = X(curX()), dy = Y(st.T), dc = st.seg.kind === 'slope' ? COL.ek : COL.ep;
+  c.setLineDash([3, 4]); c.strokeStyle = COL.muted; c.lineWidth = 1;
+  c.beginPath(); c.moveTo(dx, dy); c.lineTo(dx, B); c.moveTo(dx, dy); c.lineTo(L, dy); c.stroke(); c.setLineDash([]);
+  c.restore();
+  const g = c.createRadialGradient(dx, dy, 2, dx, dy, 18);
+  g.addColorStop(0, dc); g.addColorStop(1, 'rgba(0,0,0,0)');
+  c.globalAlpha = .55; c.fillStyle = g; c.beginPath(); c.arc(dx, dy, 18, 0, 7); c.fill(); c.globalAlpha = 1;
+  c.fillStyle = dc; c.strokeStyle = COL.surface; c.lineWidth = 2.5; c.beginPath(); c.arc(dx, dy, 6.5, 0, 7); c.fill(); c.stroke();
+}
+
+function renderLegend(){
+  const act = activeSegs().map(a => a.seg.id), both = act.includes('fus') && act.includes('vap');
+  $('legend').innerHTML = `<span><i style="background:var(--ek)"></i><b>Q = mcΔt</b>: temperature changes</span>
+    <span><i style="background:var(--ep)"></i><b>Q = n${H_NAME('')}</b>: phase changes, temperature stays the same</span>
+    <span><i style="background:var(--dim)"></i>outside your start and end</span>
+    ${both ? `<span>Boiling plateau is <b>${(H_VAP / H_FUS).toFixed(1)}×</b> wider than melting (${H_VAP} ÷ ${H_FUS})</span>` : ''}`;
+}
+
+/* =========================================================
+   METERS, READOUT, CAPTION
+   ========================================================= */
+const EP_MELT = H_FUS / (H_FUS + H_VAP);   // share of the Ep bar used by melting
+function buildEpTicks(){
+  const t = $('trackEp');
+  t.querySelectorAll('.tick').forEach(e => e.remove());
+  [[EP_MELT, 'liquid'], [1, 'gas']].forEach(([f, lab]) => {
+    const d = document.createElement('div'); d.className = 'tick'; d.style.bottom = (f * 100) + '%';
+    t.appendChild(d);
+  });
+}
+let lastCap = '';
+function updateLive(){
+  const x = curX(), st = stateAt(x), s = st.seg, dir = S.cooling ? -1 : 1;
+  const ek = (st.T - T_MIN) / (T_MAX - T_MIN);
+  const ep = st.phi <= 1 ? st.phi * EP_MELT : EP_MELT + (st.phi - 1) * (1 - EP_MELT);
+  $('fillEk').style.height = (ek * 100) + '%';
+  $('fillEp').style.height = (Math.max(0, ep) * 100) + '%';
+  const slope = s.kind === 'slope';
+  $('meterEk').classList.toggle('active', slope);
+  $('meterEp').classList.toggle('active', !slope);
+  const arrow = dir > 0 ? '▲ rising' : '▼ falling';
+  $('stateEk').textContent = slope ? arrow : 'steady';
+  $('stateEp').textContent = slope ? 'steady' : arrow;
+
+  const qAbs = x - QA;
+  $('qOut').textContent = (S.cooling ? MINUS : '') + qAbs.toFixed(1) + ' kJ';
+  const K = S.chem ? ` (${(st.T + 273.15).toFixed(2)} K)` : '';
+  $('readout').innerHTML = `${S.cooling ? 'Released' : 'Added'} <b>${qAbs.toFixed(1)} kJ</b> · T = <b>${fmtT(st.T)} °C</b>${K}`;
+
+  let cap = `<span class="badge" style="display:inline-grid; vertical-align:-5px; margin-right:6px; background:${slope ? 'var(--ek)' : 'var(--ep)'}">${s.num}</span>` + CAPTIONS[S.cooling ? 'cool' : 'heat'][s.id];
+  if (S.chem && !slope) cap += ' Only intermolecular forces change. <b>Covalent O–H bonds never break.</b>';
+  if (cap !== lastCap){ $('caption').innerHTML = cap; lastCap = cap; }
+  updateLedgerProgress();
+  drawGraph();
+}
+
+/* =========================================================
+   PARTICLE CHAMBER
+   ========================================================= */
+const pCv = $('particles'), pCtx = pCv.getContext('2d');
+function rng(seed){ return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+let MOL = [], BONDS = [], SPARKS = [], GEO = null;
+
+function buildChamber(W, H){
+  const rand = rng(7);
+  const box = {x:8, y:8, w:W - 16, h:H - 16};
+  // Lattice fills about 60% of the height; as many hexagon columns as fit across.
+  const NY = box.h > 260 ? 3 : 2;
+  const b = Math.max(10, Math.min(34, box.h * 0.6 / (NY * 1.5 + 0.5), box.w * 0.88 / (3.5 * Math.sqrt(3))));
+  const NX = Math.max(3, Math.min(10, Math.floor((box.w * 0.88) / (Math.sqrt(3) * b) - 0.5)));
+  const a1 = Math.sqrt(3) * b, left = box.x + (box.w - NX * a1) / 2 + a1 / 4, bottom = box.y + box.h - b * 0.75;
+  const pts = [];
+  for (let j = 0; j < NY; j++) for (let i = 0; i < NX; i++){
+    const x = left + i * a1 + (j % 2) * a1 / 2, y = bottom - j * 1.5 * b;
+    pts.push([x, y], [x, y - b]);
+  }
+  MOL = pts.map(([x, y]) => ({sx:x, sy:y, x, y, vx:0, vy:0, ang:0, spin:0, mode:'solid', p1:rand() * 6.3, p2:rand() * 6.3, nb:[]}));
+  BONDS = [];
+  for (let i = 0; i < MOL.length; i++) for (let k = i + 1; k < MOL.length; k++){
+    if (Math.hypot(MOL[i].sx - MOL[k].sx, MOL[i].sy - MOL[k].sy) < b * 1.05){
+      BONDS.push({i, k, th:0.04 + rand() * 0.9, intact:true});
+      MOL[i].nb.push(k); MOL[k].nb.push(i);
+    }
+  }
+  // A molecule leaves the lattice when its last hydrogen bond snaps; each gets its own turn to boil off.
+  const order = MOL.map((_, i) => i).sort(() => rand() - 0.5);
+  MOL.forEach((m, i) => {
+    const mine = BONDS.filter(bd => bd.i === i || bd.k === i).map(bd => bd.th);
+    m.meltTh = mine.length ? Math.max(...mine) : rand();
+    m.boilTh = (order.indexOf(i) + 0.5) / MOL.length;
+    const nb = m.nb.slice(0, 2).map(k => Math.atan2(MOL[k].sy - m.sy, MOL[k].sx - m.sx));
+    m.siteAng = nb.length === 2 ? Math.atan2(Math.sin(nb[0]) + Math.sin(nb[1]), Math.cos(nb[0]) + Math.cos(nb[1])) : rand() * 6.3;
+    m.ang = m.siteAng;
+  });
+  const ys = MOL.map(m => m.sy);
+  GEO = {W, H, box, b, rO:b * 0.27, rH:b * 0.17, latH:Math.max(...ys) - Math.min(...ys) + b * 1.2};
+}
+
+function stepParticles(dt, t){
+  const {box, b, rO} = GEO, st = stateAt(curX()), T = st.T, phi = st.phi;
+  const right = box.x + box.w, bottom = box.y + box.h;
+  // Speeds follow temperature, so they stay constant on a plateau.
+  const vibF = Math.min(1, Math.max(0, (Math.min(T, 0) - T_MIN) / -T_MIN));
+  const vL = b * (0.7 + 2.3 * Math.min(1, Math.max(0, T / 100)));
+  const vG = b * (5 + 3 * Math.max(0, (T - 100) / 40));
+  let nCond = 0;
+  MOL.forEach(m => {
+    const want = phi - 1 > m.boilTh ? 'gas' : phi > m.meltTh ? 'liquid' : 'solid';
+    if (want !== m.mode){
+      if (want === 'liquid' && m.mode === 'solid'){ const a = Math.random() * 6.3; m.vx = Math.cos(a) * vL; m.vy = Math.sin(a) * vL; }
+      if (want === 'gas'){ m.vx = (Math.random() - .5) * vG * .6; m.vy = -vG * (0.9 + Math.random() * .3); }
+      m.mode = want;
+    }
+    if (m.mode !== 'gas') nCond++;
+  });
+  const liqTop = bottom - Math.max(b * 1.2, GEO.latH * nCond / MOL.length);
+  GEO.liqTop = liqTop;
+  for (const m of MOL){
+    if (m.mode === 'solid'){
+      const A = b * (0.035 + 0.11 * vibF), w = 7 + 15 * vibF;
+      const tx = m.sx + A * Math.sin(w * t + m.p1), ty = m.sy + A * Math.cos(w * 1.13 * t + m.p2);
+      const k = Math.min(1, dt * 10);
+      m.x += (tx - m.x) * k; m.y += (ty - m.y) * k;
+      let da = m.siteAng + 0.12 * vibF * Math.sin(w * t + m.p2) - m.ang;
+      da = Math.atan2(Math.sin(da), Math.cos(da)); m.ang += da * k;
+      m.vx = m.vy = 0;
+      continue;
+    }
+    if (m.mode === 'liquid'){
+      const a = Math.atan2(m.vy, m.vx) + (Math.random() - .5) * 4 * dt;
+      let sp = Math.hypot(m.vx, m.vy); sp += (vL - sp) * Math.min(1, dt * 3);
+      m.vx = Math.cos(a) * sp; m.vy = Math.sin(a) * sp;
+      if (m.y < liqTop) m.vy += b * 30 * dt;   // pulled back into the liquid
+      m.spin += ((Math.random() - .5) * 6 - m.spin) * dt; m.ang += m.spin * dt * (0.4 + vL / b / 2);
+    } else {
+      let sp = Math.hypot(m.vx, m.vy); if (sp > 1e-6){ const f = 1 + (vG - sp) / sp * Math.min(1, dt * 2); m.vx *= f; m.vy *= f; }
+      m.ang += 4 * dt;
+    }
+    m.x += m.vx * dt; m.y += m.vy * dt;
+    const top = m.mode === 'gas' ? box.y + rO : Math.min(liqTop, bottom - rO) + rO;
+    if (m.x < box.x + rO){ m.x = box.x + rO; m.vx = Math.abs(m.vx); }
+    if (m.x > right - rO){ m.x = right - rO; m.vx = -Math.abs(m.vx); }
+    if (m.y > bottom - rO){ m.y = bottom - rO; m.vy = -Math.abs(m.vy); }
+    if (m.y < box.y + rO){ m.y = box.y + rO; m.vy = Math.abs(m.vy); }
+    if (m.mode === 'liquid' && m.y < top && m.y > liqTop - b * 0.2 && m.vy < 0) m.vy = Math.abs(m.vy);
+  }
+  // Keep molecules from overlapping (lattice molecules hold their place)
+  const dmin = b * 0.9;
+  for (let i = 0; i < MOL.length; i++) for (let k = i + 1; k < MOL.length; k++){
+    const p = MOL[i], q = MOL[k];
+    if (p.mode === 'gas' || q.mode === 'gas' || (p.mode === 'solid' && q.mode === 'solid')) continue;
+    const dx = q.x - p.x, dy = q.y - p.y, d = Math.hypot(dx, dy);
+    if (d > 0 && d < dmin){
+      const push = (dmin - d) / d * 0.5;
+      if (p.mode === 'solid'){ q.x += dx * push * 2; q.y += dy * push * 2; }
+      else if (q.mode === 'solid'){ p.x -= dx * push * 2; p.y -= dy * push * 2; }
+      else { p.x -= dx * push; p.y -= dy * push; q.x += dx * push; q.y += dy * push; }
+    }
+  }
+  // Bonds snap in turn as the melting plateau is crossed
+  BONDS.forEach(bd => {
+    const intact = phi < bd.th && MOL[bd.i].mode === 'solid' && MOL[bd.k].mode === 'solid';
+    if (bd.intact && !intact && !S.cooling) SPARKS.push({x:(MOL[bd.i].x + MOL[bd.k].x) / 2, y:(MOL[bd.i].y + MOL[bd.k].y) / 2, t:0});
+    bd.intact = intact;
+  });
+  SPARKS.forEach(s => s.t += dt); SPARKS = SPARKS.filter(s => s.t < 0.4);
+}
+
+function hPos(m){
+  const d = GEO.rO * 1.2, h = 0.912;   // half of 104.5°
+  return [[m.x + Math.cos(m.ang - h) * d, m.y + Math.sin(m.ang - h) * d], [m.x + Math.cos(m.ang + h) * d, m.y + Math.sin(m.ang + h) * d]];
+}
+function hBondLine(c, p, q){
+  if (!S.chem){ c.moveTo(p.x, p.y); c.lineTo(q.x, q.y); return; }
+  // Chem mode: draw from the nearer H of one molecule to the O of the other
+  let best = null;
+  hPos(p).forEach(h => { const d = Math.hypot(h[0] - q.x, h[1] - q.y); if (!best || d < best.d) best = {d, a:h, o:q}; });
+  hPos(q).forEach(h => { const d = Math.hypot(h[0] - p.x, h[1] - p.y); if (!best || d < best.d) best = {d, a:h, o:p}; });
+  const ux = (best.o.x - best.a[0]) / best.d, uy = (best.o.y - best.a[1]) / best.d;
+  c.moveTo(best.a[0] + ux * GEO.rH, best.a[1] + uy * GEO.rH); c.lineTo(best.o.x - ux * GEO.rO, best.o.y - uy * GEO.rO);
+}
+function drawParticles(){
+  const {W, H} = fit(pCv, pCtx), c = pCtx, {box, b, rO, rH} = GEO;
+  c.clearRect(0, 0, W, H);
+  // Sealed container
+  c.strokeStyle = COL.glass; c.lineWidth = 2.5; c.beginPath(); c.roundRect(box.x - 2, box.y - 2, box.w + 4, box.h + 4, 10); c.stroke();
+  const anyLiquid = MOL.some(m => m.mode === 'liquid');
+  if (anyLiquid){ c.fillStyle = 'rgba(120,180,225,0.14)'; c.fillRect(box.x, GEO.liqTop, box.w, box.y + box.h - GEO.liqTop); }
+
+  // Hydrogen bonds: lattice bonds, plus short-lived attractions between close liquid molecules
+  c.strokeStyle = COL.ep; c.lineWidth = 1.8; c.setLineDash([4, 3]);
+  c.beginPath(); BONDS.forEach(bd => { if (bd.intact) hBondLine(c, MOL[bd.i], MOL[bd.k]); }); c.stroke();
+  c.globalAlpha = 0.5; c.beginPath();
+  for (let i = 0; i < MOL.length; i++) for (let k = i + 1; k < MOL.length; k++){
+    const p = MOL[i], q = MOL[k];
+    if (p.mode !== 'liquid' && q.mode !== 'liquid') continue;
+    if (p.mode === 'gas' || q.mode === 'gas') continue;
+    if (Math.hypot(p.x - q.x, p.y - q.y) < b * 1.15) hBondLine(c, p, q);
+  }
+  c.stroke(); c.globalAlpha = 1; c.setLineDash([]);
+
+  // Snap sparks
+  c.strokeStyle = COL.ep; c.lineWidth = 2;
+  SPARKS.forEach(s => {
+    const r = 3 + s.t * 30; c.globalAlpha = 1 - s.t / 0.4; c.beginPath();
+    for (let a = 0; a < 6.28; a += 1.57){ c.moveTo(s.x + Math.cos(a + .6) * r * .4, s.y + Math.sin(a + .6) * r * .4); c.lineTo(s.x + Math.cos(a + .6) * r, s.y + Math.sin(a + .6) * r); }
+    c.stroke();
+  });
+  c.globalAlpha = 1;
+
+  // Molecules
+  MOL.forEach(m => {
+    const hs = hPos(m);
+    if (S.chem){
+      c.strokeStyle = COL.ink; c.lineWidth = 2.6; c.beginPath();
+      hs.forEach(h => { c.moveTo(m.x, m.y); c.lineTo(h[0], h[1]); }); c.stroke();
+    }
+    c.fillStyle = COL.h; c.strokeStyle = 'rgba(0,0,0,.25)'; c.lineWidth = 1;
+    hs.forEach(h => { c.beginPath(); c.arc(h[0], h[1], S.chem ? rH * 0.8 : rH, 0, 7); c.fill(); c.stroke(); });
+    c.fillStyle = COL.o; c.beginPath(); c.arc(m.x, m.y, S.chem ? rO * 0.85 : rO, 0, 7); c.fill(); c.stroke();
+    if (S.chem && b >= 16){
+      c.font = `700 ${Math.max(8, Math.round(b * 0.32))}px "Atkinson Hyperlegible", sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
+      c.fillStyle = COL.ink;
+      const back = m.ang + Math.PI;
+      c.fillText('δ−', m.x + Math.cos(back) * rO * 1.75, m.y + Math.sin(back) * rO * 1.75);
+      c.fillStyle = COL.muted;
+      hs.forEach(h => { const a = Math.atan2(h[1] - m.y, h[0] - m.x); c.fillText('δ+', h[0] + Math.cos(a) * rH * 1.9, h[1] + Math.sin(a) * rH * 1.9); });
+    }
+  });
+}
+
+let lastT = performance.now();
+function frame(now){
+  const dt = Math.min(0.05, (now - lastT) / 1000); lastT = now;
+  const r = pCv.getBoundingClientRect();
+  if (!GEO || Math.abs(GEO.W - r.width) > 1 || Math.abs(GEO.H - r.height) > 1) buildChamber(r.width, r.height);
+  if (S.playing){
+    S.frac = Math.min(1, S.frac + dt / 14);   // constant kJ per second, so the boiling plateau takes longest
+    $('qSlider').value = Math.round(S.frac * 1000);
+    if (S.frac >= 1){ S.playing = false; $('playBtn').textContent = '▶ Play'; }
+    updateLive();
+  }
+  stepParticles(dt, now / 1000);
+  drawParticles();
+  requestAnimationFrame(frame);
+}
+
+/* =========================================================
+   CONTROLS
+   ========================================================= */
+function syncInputs(){
+  $('mass').value = S.m; $('ti').value = S.ti; $('tf').value = S.tf;
+  $('massOut').textContent = S.m + ' g';
+  $('molesOut').innerHTML = `n = m/M = ${molesOf(S.m)} mol`;
+  $('tiOut').innerHTML = `${sgn(S.ti)} °C<span class="phase">${phaseWord(S.ti)}</span>`;
+  $('tfOut').innerHTML = `${sgn(S.tf)} °C<span class="phase">${phaseWord(S.tf)}</span>`;
+  $('title').textContent = S.cooling ? 'Cooling Curve of Water' : 'Heating Curve of Water';
+  $('graphTitle').textContent = S.cooling ? 'Cooling curve' : 'Heating curve';
+  $('qLabel').textContent = S.cooling ? 'Remove thermal energy, Q' : 'Add thermal energy, Q';
+  $('coolWrap').hidden = !S.chem;
+  $('coolBtn').setAttribute('aria-pressed', S.cooling);
+  $('coolHint').textContent = S.cooling ? 'On: energy is released (exothermic). Q and ΔH are negative.' : 'Off: energy is absorbed (endothermic). Q is positive.';
+  $('chemKey').hidden = !S.chem;
+  $('modeSci').setAttribute('aria-checked', !S.chem); $('modeChem').setAttribute('aria-checked', S.chem);
+}
+function refresh(){ recompute(); syncInputs(); renderLedger(); renderLegend(); updateLive(); }
+
+$('mass').addEventListener('input', e => { S.m = +e.target.value; refresh(); });
+// Heating needs end > start; cooling needs end < start. Moving one slider pushes the other.
+$('ti').addEventListener('input', e => {
+  let v = +e.target.value;
+  if (!S.cooling){ v = Math.min(v, T_MAX - 1); if (S.tf <= v) S.tf = v + 1; }
+  else { v = Math.max(v, T_MIN + 1); if (S.tf >= v) S.tf = v - 1; }
+  S.ti = v; refresh();
+});
+$('tf').addEventListener('input', e => {
+  let v = +e.target.value;
+  if (!S.cooling){ v = Math.max(v, T_MIN + 1); if (S.ti >= v) S.ti = v - 1; }
+  else { v = Math.min(v, T_MAX - 1); if (S.ti <= v) S.ti = v + 1; }
+  S.tf = v; refresh();
+});
+$('qSlider').addEventListener('input', e => { S.frac = +e.target.value / 1000; S.playing = false; $('playBtn').textContent = '▶ Play'; updateLive(); });
+$('playBtn').addEventListener('click', () => {
+  if (S.playing){ S.playing = false; $('playBtn').textContent = '▶ Play'; return; }
+  if (S.frac >= 1) S.frac = 0;
+  S.playing = true; $('playBtn').textContent = '❚❚ Pause';
+});
+function setCooling(on){
+  if (on === S.cooling) return;
+  S.cooling = on;
+  if ((on && S.ti < S.tf) || (!on && S.ti > S.tf)) [S.ti, S.tf] = [S.tf, S.ti];
+  S.frac = 0; $('qSlider').value = 0; refresh();
+}
+$('coolBtn').addEventListener('click', () => setCooling(!S.cooling));
+function setMode(chem){
+  S.chem = chem;
+  if (!chem) setCooling(false);
+  refresh();
+}
+$('modeSci').addEventListener('click', () => setMode(false));
+$('modeChem').addEventListener('click', () => setMode(true));
+[$('modeSci'), $('modeChem')].forEach(bt => bt.addEventListener('keydown', e => {
+  if (['ArrowLeft', 'ArrowRight'].includes(e.key)){ setMode(!S.chem); (S.chem ? $('modeChem') : $('modeSci')).focus(); }
+}));
+$('guideBtn').addEventListener('click', () => {
+  const p = $('guidePop'); p.hidden = !p.hidden; $('guideBtn').setAttribute('aria-expanded', !p.hidden);
+});
+document.addEventListener('click', e => { if (!e.target.closest('.guide-wrap')){ $('guidePop').hidden = true; $('guideBtn').setAttribute('aria-expanded', false); } });
+document.addEventListener('keydown', e => { if (e.key === 'Escape'){ $('guidePop').hidden = true; $('guideBtn').setAttribute('aria-expanded', false); } });
+
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { readColours(); drawGraph(); });
+addEventListener('resize', () => drawGraph());
+
+readColours(); buildEpTicks(); refresh();
+requestAnimationFrame(frame);
+if (document.fonts) document.fonts.ready.then(() => drawGraph());
+</script>
+</body>
+</html>

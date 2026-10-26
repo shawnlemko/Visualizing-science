@@ -13,9 +13,11 @@ It is set up the same way as the math site, [shawnlemko/mathvisuals](https://git
 1. Put the tool's HTML file in this folder, starting with the same `<head>` block as `solubility.html` (it holds the analytics script).
 2. In `index.html`, copy one `<li>` inside `<ul class="concepts">` and change `href`, the picture, the name, the note,
    `data-bands` (`K-6`, `7-9`, `10-12`, space-separated) and `data-cat` (`mat` Matter, `ene` Energy, `ear` Earth Systems, `liv` Living Systems, `spa` Space, `cs` Computer Science, `sm` Scientific Methods).
+   A tile that fits a second topic can also list it in `data-also` (space-separated); its colour still comes from `data-cat`.
 
 ## Tools
 
 | File | Tool | Grades, topic |
 | --- | --- | --- |
 | `solubility.html` | Solubility and Precipitates | 10-12, Matter |
+| `heating-curve.html` | Heating Curve of Water | 10-12, Energy (also Matter) |
