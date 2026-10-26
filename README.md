@@ -21,3 +21,4 @@ It is set up the same way as the math site, [shawnlemko/mathvisuals](https://git
 | --- | --- | --- |
 | `solubility.html` | Solubility and Precipitates | 10-12, Matter |
 | `heating-curve.html` | Heating Curve of Water | 10-12, Energy (also Matter) |
+| `ionic-builder.html` | Ionic Formula Builder | 10-12, Matter |

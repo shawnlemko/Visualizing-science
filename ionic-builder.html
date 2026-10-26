@@ -1,0 +1,859 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<script data-goatcounter="https://shawnlemko.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
+</head>
+<body>
+<title>Ionic Formula Builder</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Atkinson+Hyperlegible:wght@400;700&family=Spline+Sans+Mono:wght@500;700&display=swap">
+<style>
+/* MathBoard look (shared with the math visuals site).
+   Roles: cation = indigo puzzle block with + tabs, anion = emerald block with − notches, gold = brackets and Roman numerals.
+   Layout: one-screen bench. Left = ion picker, workbench, formula bar. Right = explain panel (changes with mode) or self-check quiz. */
+:root{
+  --bg:#f5f8fb; --surface:#ffffff; --surface-2:#eaf0f6; --ink:#1b2733; --muted:#5b6b7a; --line:#dbe5ee; --line-strong:#b9c9d8; --pt:#2f5fd0;
+  --cat:#4338ca; --cat-soft:#e4e3fb; --ani:#047857; --ani-soft:#d5f2e6; --on-ion:#ffffff;
+  --gold:#b7791f; --gold-soft:#fbefd4; --warn:#c2410c; --ok:#15803d; --ok-soft:#dcf3e3; --bad:#be123c; --bad-soft:#fde4ea;
+  --el-o:#d61f4b; --el-h:#7b8b99; --el-n:#2f6fd0; --el-s:#a37800; --el-c:#3b4651; --el-p:#c46a00; --el-cl:#047857;
+  --btn:#2f5fd0; --btn-ink:#ffffff;
+  --font-ui:'Atkinson Hyperlegible', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-display:'Bricolage Grotesque', 'Segoe UI', system-ui, sans-serif;
+  --font-num:'Spline Sans Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0f161d; --surface:#151f29; --surface-2:#1d2935; --ink:#e6edf3; --muted:#9aabbb; --line:#1f2c38; --line-strong:#2e3f50; --pt:#7aa2ff;
+  --cat:#8b8ff5; --cat-soft:#25264a; --ani:#34c99a; --ani-soft:#14352b; --on-ion:#0b141a;
+  --gold:#f2c14e; --gold-soft:#3a2f14; --warn:#fb923c; --ok:#4ade80; --ok-soft:#14321f; --bad:#fb7185; --bad-soft:#3a1822;
+  --el-o:#ff7192; --el-h:#a9b6c4; --el-n:#7aa2ff; --el-s:#e0b44a; --el-c:#c9d3dc; --el-p:#f3b13f; --el-cl:#34c99a;
+  --btn:#7aa2ff; --btn-ink:#0f161d; color-scheme:dark; } }
+:root[data-theme="dark"]{
+  --bg:#0f161d; --surface:#151f29; --surface-2:#1d2935; --ink:#e6edf3; --muted:#9aabbb; --line:#1f2c38; --line-strong:#2e3f50; --pt:#7aa2ff;
+  --cat:#8b8ff5; --cat-soft:#25264a; --ani:#34c99a; --ani-soft:#14352b; --on-ion:#0b141a;
+  --gold:#f2c14e; --gold-soft:#3a2f14; --warn:#fb923c; --ok:#4ade80; --ok-soft:#14321f; --bad:#fb7185; --bad-soft:#3a1822;
+  --el-o:#ff7192; --el-h:#a9b6c4; --el-n:#7aa2ff; --el-s:#e0b44a; --el-c:#c9d3dc; --el-p:#f3b13f; --el-cl:#34c99a;
+  --btn:#7aa2ff; --btn-ink:#0f161d; color-scheme:dark; }
+
+*,*::before,*::after{box-sizing:border-box}
+h1,h2,h3,p,ol,ul{margin:0} ol,ul{padding:0; list-style:none}
+button{font:inherit; color:inherit; border:0; background:none; cursor:pointer}
+html,body{height:100%}
+body{background:var(--bg); color:var(--ink); font-family:var(--font-ui); font-size:14px;
+  padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); padding-block:0}
+#app{display:flex; flex-direction:column; gap:8px; min-height:100%; padding-block:8px}
+@media (min-width:1024px){ #app{height:100%} }
+sub,sup{font-size:.62em; line-height:0}
+button:focus-visible{outline:2.5px solid var(--pt); outline-offset:2px}
+
+/* Header */
+.topbar{display:flex; flex-wrap:wrap; align-items:center; gap:12px 20px; justify-content:space-between}
+.brand{display:flex; flex-wrap:wrap; align-items:center; gap:8px 20px}
+.brand h1{font-family:var(--font-display); font-weight:800; font-size:clamp(20px, 2vw, 26px); line-height:1.1; letter-spacing:-.01em}
+a.main-btn{display:inline-flex; align-items:center; gap:8px; padding:8px 16px; min-height:42px; background:var(--pt); color:#fff; font-family:var(--font-display); font-weight:800; font-size:16px; text-decoration:none; border-radius:10px; border:2px solid var(--pt); flex:none}
+a.main-btn span{font-size:19px; line-height:1}
+a.main-btn:hover{background:var(--surface); color:var(--pt)}
+a.main-btn:focus-visible{outline:3px solid var(--pt); outline-offset:3px}
+.tools{display:flex; align-items:center; gap:12px; flex-wrap:wrap}
+.mode{display:flex; align-items:center; gap:4px; background:var(--surface); border:1px solid var(--line); border-radius:999px; padding:4px}
+.mode-label{font-size:12px; color:var(--muted); padding:0 6px 0 10px; letter-spacing:.04em; text-transform:uppercase}
+.mode button{border-radius:999px; padding:6px 14px; font-weight:700; font-size:14px; color:var(--muted); line-height:1.1}
+.mode button small{font-weight:400; font-size:12px; margin-left:4px}
+.mode button[aria-checked="true"]{background:var(--btn); color:var(--btn-ink)}
+.guide-wrap{position:relative}
+.btn-outline{border:1.5px solid var(--ink); border-radius:8px; padding:7px 12px; font-weight:700; font-size:14px; background:var(--surface)}
+.pop{position:absolute; right:0; top:calc(100% + 8px); width:min(380px, calc(100vw - 32px)); z-index:20; background:var(--surface);
+  border:1px solid var(--line); border-radius:10px; box-shadow:0 12px 32px rgba(10,20,30,.18); padding:14px 16px}
+.pop h2{font-weight:700; font-size:15px; margin-bottom:8px}
+.pop ol{display:flex; flex-direction:column; gap:10px}
+.pop li{display:grid; grid-template-columns:24px 1fr; gap:8px; line-height:1.4}
+.pop .num{width:22px; height:22px; border-radius:50%; background:var(--btn); color:var(--btn-ink); font-weight:700; font-size:12px; display:grid; place-items:center}
+
+/* Main split */
+.layout{display:grid; grid-template-columns:1fr; gap:12px; flex:1; min-height:0}
+@media (min-width:1024px){ .layout{grid-template-columns:57fr 43fr; grid-template-rows:minmax(0,1fr)} }
+.panel{background:var(--surface); border:1px solid var(--line-strong); border-radius:10px; min-width:0}
+.left{display:flex; flex-direction:column; gap:10px; min-height:0; min-width:0}
+.kicker{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.07em; font-weight:700}
+
+/* Ion picker */
+.picker{padding:8px 12px; display:grid; grid-template-columns:auto 1fr; gap:6px 10px; align-items:center}
+.picker .kicker{width:62px}
+@media (max-width:560px){ .picker{grid-template-columns:1fr} }
+.ions{display:flex; flex-wrap:wrap; gap:5px}
+.ionbtn{display:flex; flex-direction:column; align-items:center; justify-content:center; min-width:54px; padding:3px 8px 2px; border-radius:8px; border:1.5px solid var(--line-strong); background:var(--surface); line-height:1.15}
+.ionbtn b{font-size:15px; white-space:nowrap}
+.ionbtn small{font-size:10.5px; color:var(--muted); white-space:nowrap}
+.ionbtn.poly{border-style:dashed}
+.ionbtn.c:hover{border-color:var(--cat)} .ionbtn.a:hover{border-color:var(--ani)}
+.ionbtn.c[aria-checked="true"]{background:var(--cat); border-color:var(--cat); color:var(--on-ion)}
+.ionbtn.a[aria-checked="true"]{background:var(--ani); border-color:var(--ani); color:var(--on-ion)}
+.ionbtn[aria-checked="true"] small{color:inherit; opacity:.85}
+
+/* Workbench */
+.bench{flex:1; min-height:220px; display:flex; flex-direction:column; padding:8px 12px 10px; gap:4px}
+@media (min-width:1024px){ .bench{min-height:0} }
+.bench-head{display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap}
+.meter{display:flex; align-items:center; gap:8px; font-size:13px}
+.meter svg{width:150px; height:26px; display:block}
+.meter output{font-family:var(--font-num); font-weight:700; font-size:15px; min-width:7.5em}
+.bench-body{flex:1; display:grid; grid-template-columns:132px 1fr; gap:10px; min-height:0; align-items:center}
+.steppers{display:flex; flex-direction:column; gap:22px}
+.stepper{display:flex; flex-direction:column; gap:4px}
+.stepper .count{font-size:13px; color:var(--muted)} .stepper .count b{color:var(--ink); font-size:15px}
+.stepper .row{display:flex; gap:4px}
+.add{flex:1; border-radius:8px; padding:7px 6px; font-weight:700; font-size:13px; color:var(--on-ion); white-space:nowrap}
+.add.c{background:var(--cat)} .add.a{background:var(--ani)}
+.rem{width:34px; border-radius:8px; border:1.5px solid var(--line-strong); background:var(--surface-2); font-weight:700; font-size:16px}
+.add:disabled,.rem:disabled{opacity:.35; cursor:not-allowed}
+.board{position:relative; min-width:0; height:100%; min-height:170px}
+.board svg{position:absolute; inset:0; width:100%; height:100%; overflow:visible}
+.drop{animation:drop .35s cubic-bezier(.2,.9,.3,1.2) both; transform-box:fill-box}
+@keyframes drop{from{transform:translateY(-18px); opacity:0}}
+.board-note{font-size:12px; color:var(--muted)}
+
+/* Formula bar */
+.fbar{padding:8px 14px 10px; display:grid; grid-template-columns:auto 1fr; gap:4px 18px; align-items:center}
+.formula{font-size:clamp(34px, 3.4vw, 46px); font-weight:700; line-height:1.15; white-space:nowrap; letter-spacing:.01em}
+.formula .fc{color:var(--cat)} .formula .fa{color:var(--ani)}
+.br{color:var(--gold); font-weight:800; display:inline-block}
+.brn{color:var(--gold); font-weight:800}
+.br.snap{animation:snap .5s cubic-bezier(.2,1.4,.4,1) both}
+.br.snap.r{animation-delay:.05s}
+@keyframes snap{0%{transform:scale(2.2); opacity:0} 100%{transform:none; opacity:1}}
+.fside{display:flex; flex-direction:column; gap:4px; min-width:0}
+.fname{font-size:17px; font-weight:700}
+.fname.dim{color:var(--muted); font-weight:400}
+.status{display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-size:13.5px; line-height:1.35}
+.status.warn{color:var(--warn)} .status.ok{color:var(--ok)} .status.gold{color:var(--ink)}
+.btn-gold{background:var(--gold); color:#fff; border-radius:8px; padding:4px 10px; font-weight:700; font-size:13px}
+:root[data-theme="dark"] .btn-gold{color:#1b1405}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .btn-gold{color:#1b1405} }
+
+/* Right panel */
+.side{display:flex; flex-direction:column; min-height:0; overflow:hidden}
+.sidetabs{display:flex; gap:4px; padding:8px 10px 0; border-bottom:1px solid var(--line)}
+.sidetabs button{padding:7px 12px; font-weight:700; font-size:14px; color:var(--muted); border-bottom:3px solid transparent; margin-bottom:-1px}
+.sidetabs button[aria-selected="true"]{color:var(--ink); border-bottom-color:var(--pt)}
+.sidebody{padding:12px 14px; overflow:auto; display:flex; flex-direction:column; gap:12px; flex:1; min-height:0}
+.card{border:1px solid var(--line); border-radius:10px; padding:10px 12px; background:var(--surface-2); display:flex; flex-direction:column; gap:8px}
+.card h3{font-size:15px; font-weight:700}
+.card p{font-size:13px; line-height:1.45}
+.muted{color:var(--muted)}
+.gold-t{color:var(--gold); font-weight:800}
+
+/* Roman numeral translator */
+.rn{display:grid; grid-template-columns:auto auto 1fr; gap:6px 12px; align-items:center}
+.rn-name{font-size:22px; font-weight:700; grid-row:span 2}
+.rn-arrow{font-size:12px; color:var(--muted); grid-row:span 2; text-align:center}
+.rn-arrow svg{display:block; width:34px; height:22px; margin:0 auto}
+.rn-opt{display:flex; align-items:center; gap:8px; font-size:13px; line-height:1.3}
+.atom{position:relative; display:inline-grid; place-items:center; width:34px; height:34px; border-radius:50%; background:var(--cat); color:var(--on-ion); font-weight:700; font-size:13px; flex:none}
+.atom .badge{position:absolute; top:-8px; right:-14px; background:var(--gold); color:#fff; border-radius:999px; font-size:11px; font-weight:800; padding:1px 5px; border:2px solid var(--surface-2)}
+.atoms-bad{display:flex; gap:3px; opacity:.55}
+.atoms-bad .atom{width:26px; height:26px; font-size:11px}
+.mark{font-weight:800; font-size:16px} .mark.ok{color:var(--ok)} .mark.no{color:var(--bad)}
+.rn-sum{font-size:13px; border-top:1px dashed var(--line-strong); padding-top:6px}
+
+/* Atom X-ray */
+.xray{display:grid; gap:10px}
+.xray.two{grid-template-columns:1fr 1fr}
+.xcol{border-radius:8px; padding:8px 10px; background:var(--surface); border:1.5px solid var(--line)}
+.xcol.err{border-color:var(--bad); background:var(--bad-soft)}
+.xcol h4{margin:0 0 6px; font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.05em}
+.xcol .big{font-size:20px; font-weight:700; margin-bottom:4px}
+.xrow{display:grid; grid-template-columns:24px 26px 1fr; align-items:center; gap:4px; font-size:13px; min-height:20px}
+.xrow b{font-family:var(--font-num)}
+.dots{display:flex; flex-wrap:wrap; gap:2px; align-items:center}
+.dot{width:9px; height:9px; border-radius:50%; background:var(--c)}
+.more{font-size:11px; font-weight:700; color:var(--muted); margin-left:2px} .xcol.err .more{color:var(--bad)}
+.toggle{align-self:flex-start; display:inline-flex; align-items:center; gap:8px; font-size:13px; font-weight:700; border:1.5px solid var(--bad); color:var(--bad); border-radius:999px; padding:4px 12px; background:var(--surface)}
+.toggle[aria-pressed="true"]{background:var(--bad); color:#fff}
+
+/* Chem 20: Lewis + ΔEN */
+.lewis svg, .en svg{width:100%; height:auto; display:block; overflow:visible}
+.lewis svg{max-height:230px}
+.lewis .ion-br{opacity:0; transition:opacity .4s}
+.lewis.done .ion-br{opacity:1}
+.lewis .shrink{transition:transform .5s; transform-box:fill-box; transform-origin:center}
+.lewis.done .shrink{transform:scale(.8)}
+.row-btns{display:flex; gap:6px; align-items:center; flex-wrap:wrap}
+.btn-ghost{border:1px solid var(--line-strong); border-radius:8px; padding:5px 10px; font-size:13px; background:var(--surface); font-weight:700}
+.legend{display:flex; gap:12px; flex-wrap:wrap; font-size:12px; color:var(--muted)}
+.legend i{display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:4px; vertical-align:-1px}
+.zone{display:grid; grid-template-columns:auto 1fr; gap:4px 10px; font-size:13px; line-height:1.45}
+.zone .tag{font-size:11px; font-weight:700; border-radius:999px; padding:1px 8px; white-space:nowrap; align-self:start; margin-top:1px}
+.tag.cov{background:var(--ani-soft); color:var(--ani)} .tag.ionic{background:var(--cat-soft); color:var(--cat)}
+.flag{border-left:3px solid var(--gold); background:var(--gold-soft); padding:6px 10px; border-radius:0 8px 8px 0; font-size:12.5px; line-height:1.45}
+.src{font-size:11.5px; color:var(--muted)}
+
+/* Quiz */
+.q-score{display:flex; gap:6px 14px; flex-wrap:wrap; font-size:12.5px; color:var(--muted)}
+.q-score b{color:var(--ink)}
+.q-prompt{font-size:13px; color:var(--muted)}
+.q-target{font-size:24px; font-weight:700; line-height:1.25}
+.q-opts{display:grid; grid-template-columns:1fr 1fr; gap:8px}
+.q-opt{border:1.5px solid var(--line-strong); border-radius:10px; padding:10px; font-size:20px; font-weight:700; background:var(--surface); text-align:center; line-height:1.25}
+.q-opt.name{font-size:15px}
+.q-opt:hover:not(:disabled){border-color:var(--pt)}
+.q-opt:disabled{cursor:default}
+.q-opt.right{border-color:var(--ok); background:var(--ok-soft)}
+.q-opt.wrong{border-color:var(--bad); background:var(--bad-soft)}
+.q-fb{border-radius:10px; padding:10px 12px; font-size:13.5px; line-height:1.45}
+.q-fb.right{background:var(--ok-soft)} .q-fb.wrong{background:var(--bad-soft)}
+.q-fb .diag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; margin-bottom:2px}
+.btn-primary{background:var(--btn); color:var(--btn-ink); border-radius:8px; padding:7px 14px; font-weight:700; font-size:14px}
+
+@media (max-width:560px){ .mode-label{display:none} .mode button{padding:6px 10px} .mode button small{display:block; margin-left:0}
+  .bench-body{grid-template-columns:1fr} .steppers{flex-direction:row; gap:10px} .stepper{flex:1} .fbar{grid-template-columns:1fr} .q-opts{grid-template-columns:1fr} .xray.two{grid-template-columns:1fr} }
+@media (prefers-reduced-motion: reduce){ *{animation:none !important; transition:none !important} }
+</style>
+
+<div id="app">
+  <header class="topbar">
+    <div class="brand">
+      <a class="main-btn" href="index.html"><span aria-hidden="true">←</span> Return to Main Page</a>
+      <h1>Ionic Formula Builder</h1>
+    </div>
+    <div class="tools">
+      <div class="mode" role="radiogroup" aria-label="Mode">
+        <span class="mode-label">Mode</span>
+        <button type="button" id="modeSci" role="radio" aria-checked="true">Science 10<small>Charges &amp; Brackets</small></button>
+        <button type="button" id="modeChem" role="radio" aria-checked="false">Chemistry 20<small>Electron Transfer &amp; ΔEN</small></button>
+      </div>
+      <div class="guide-wrap">
+        <button type="button" id="guideBtn" class="btn-outline" aria-expanded="false" aria-controls="guidePop">Step-by-Step Guide</button>
+        <div id="guidePop" class="pop" hidden></div>
+      </div>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="left">
+      <div class="panel picker">
+        <span class="kicker">Cation</span>
+        <div class="ions" id="catPick" role="radiogroup" aria-label="Cation"></div>
+        <span class="kicker">Anion</span>
+        <div class="ions" id="anPick" role="radiogroup" aria-label="Anion"></div>
+      </div>
+
+      <div class="panel bench">
+        <div class="bench-head">
+          <span class="kicker">Workbench: add ions until every + tab fits a − notch</span>
+          <div class="meter" aria-live="polite">
+            <svg id="meterSvg" viewBox="0 0 150 26" aria-hidden="true"></svg>
+            <output id="meterOut"></output>
+          </div>
+        </div>
+        <div class="bench-body">
+          <div class="steppers">
+            <div class="stepper">
+              <span class="count" id="catCount"></span>
+              <div class="row"><button type="button" class="rem" id="catRem" aria-label="Remove a cation">−</button><button type="button" class="add c" id="catAdd">+ Add cation</button></div>
+            </div>
+            <div class="stepper">
+              <span class="count" id="anCount"></span>
+              <div class="row"><button type="button" class="rem" id="anRem" aria-label="Remove an anion">−</button><button type="button" class="add a" id="anAdd">+ Add anion</button></div>
+            </div>
+          </div>
+          <div class="board" id="board"><svg id="benchSvg" aria-label="Ion puzzle blocks"></svg></div>
+        </div>
+      </div>
+
+      <div class="panel fbar">
+        <div>
+          <div class="kicker">Formula</div>
+          <div class="formula" id="formula" aria-live="polite"></div>
+        </div>
+        <div class="fside">
+          <div class="fname" id="fname"></div>
+          <div class="status" id="status"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel side">
+      <div class="sidetabs" role="tablist">
+        <button type="button" role="tab" id="tabExplain" aria-selected="true">Explain</button>
+        <button type="button" role="tab" id="tabQuiz" aria-selected="false">Self-check quiz</button>
+      </div>
+      <div class="sidebody" id="sidebody"></div>
+    </section>
+  </main>
+</div>
+
+<script>
+/* =========================================================
+   CHEMISTRY DATA
+   ========================================================= */
+// Pauling electronegativities as printed on the Alberta Data Booklet periodic table (one decimal).
+const EN = {H:2.2, C:2.6, N:3.0, O:3.4, Na:0.9, Mg:1.3, Al:1.6, P:2.2, S:2.6, Cl:3.2, Fe:1.8, Cu:1.9, Sn:2.0};
+const IONIC_CUTOFF = 1.7;
+
+// parts = atoms inside one ion. poly = locked capsule. ve = valence electrons of the neutral atom (main-group only).
+// bond = the covalent bond inside a polyatomic ion. other = the multivalent metal's other common charge.
+const ION = {
+  Na:{parts:[['Na',1]], q:1, name:'sodium', ve:1},
+  Mg:{parts:[['Mg',1]], q:2, name:'magnesium', ve:2},
+  Al:{parts:[['Al',1]], q:3, name:'aluminium', ve:3},
+  Fe2:{parts:[['Fe',1]], q:2, name:'iron(II)', metal:'iron', roman:'II', other:3},
+  Fe3:{parts:[['Fe',1]], q:3, name:'iron(III)', metal:'iron', roman:'III', other:2},
+  Cu1:{parts:[['Cu',1]], q:1, name:'copper(I)', metal:'copper', roman:'I', other:2},
+  Cu2:{parts:[['Cu',1]], q:2, name:'copper(II)', metal:'copper', roman:'II', other:1},
+  Sn4:{parts:[['Sn',1]], q:4, name:'tin(IV)', metal:'tin', roman:'IV', other:2},
+  NH4:{parts:[['N',1],['H',4]], q:1, name:'ammonium', poly:true, bond:['N','H']},
+  Cl:{parts:[['Cl',1]], q:-1, name:'chloride', ve:7},
+  O:{parts:[['O',1]], q:-2, name:'oxide', ve:6},
+  N:{parts:[['N',1]], q:-3, name:'nitride', ve:5},
+  OH:{parts:[['O',1],['H',1]], q:-1, name:'hydroxide', poly:true, bond:['O','H']},
+  NO3:{parts:[['N',1],['O',3]], q:-1, name:'nitrate', poly:true, bond:['N','O']},
+  SO4:{parts:[['S',1],['O',4]], q:-2, name:'sulfate', poly:true, bond:['S','O']},
+  CO3:{parts:[['C',1],['O',3]], q:-2, name:'carbonate', poly:true, bond:['C','O']},
+  PO4:{parts:[['P',1],['O',4]], q:-3, name:'phosphate', poly:true, bond:['P','O']},
+};
+const CATIONS = ['Na','Mg','Al','Fe2','Fe3','Cu1','Cu2','Sn4','NH4'];
+const ANIONS = ['Cl','O','N','OH','NO3','SO4','CO3','PO4'];
+const ROMAN = ['','I','II','III','IV','V','VI'];
+const WORD = ['zero','one','two','three','four','five','six'];
+const PREFIX = ['','mono','di','tri','tetra','penta','hexa'];
+const EL_COLOR = {O:'--el-o', H:'--el-h', N:'--el-n', S:'--el-s', C:'--el-c', P:'--el-p', Cl:'--el-cl'};
+const elColor = e => `var(${EL_COLOR[e] || '--cat'})`;
+const MAX_UNITS = 12, MAX_COUNT = 6;
+
+/* =========================================================
+   FORMULA HELPERS
+   ========================================================= */
+const $ = id => document.getElementById(id);
+const gcd = (a,b) => b ? gcd(b, a % b) : a;
+const SUB = '₀₁₂₃₄₅₆₇₈₉', SUP = '⁰¹²³⁴⁵⁶⁷⁸⁹';
+const subU = n => String(n).split('').map(d => SUB[d]).join('');
+const chargeU = q => (Math.abs(q) > 1 ? SUP[Math.abs(q)] : '') + (q > 0 ? '⁺' : '⁻');
+const chargeH = q => `<sup>${Math.abs(q) > 1 ? Math.abs(q) : ''}${q > 0 ? '+' : '−'}</sup>`;
+const coreU = id => ION[id].parts.map(([e,k]) => e + (k > 1 ? subU(k) : '')).join('');
+const coreH = id => ION[id].parts.map(([e,k]) => e + (k > 1 ? `<sub>${k}</sub>` : '')).join('');
+const chargeT = q => `${Math.abs(q) > 1 ? Math.abs(q) : ''}${q > 0 ? '+' : '−'}`;
+const ionU = id => coreU(id) + chargeU(ION[id].q);
+const ionH = id => coreH(id) + chargeH(ION[id].q);
+const absQ = id => Math.abs(ION[id].q);
+const crossCounts = (c,a) => { const g = gcd(absQ(c), absQ(a)); return [absQ(a)/g, absQ(c)/g]; };
+
+// One ion group of a formula. gold = show the bracket shield in gold; snap = animate it in.
+function groupH(id, n, {gold = false, snap = false} = {}){
+  if (n === 1) return coreH(id);
+  if (!ION[id].poly) return coreH(id) + `<sub>${n}</sub>`;
+  if (!gold) return `(${coreH(id)})<sub>${n}</sub>`;
+  const s = snap ? ' snap' : '';
+  return `<span class="br${s}">(</span>${coreH(id)}<span class="br r${s}">)</span><sub class="brn">${n}</sub>`;
+}
+const formulaH = (c,nc,a,na,opt) => groupH(c,nc,opt) + groupH(a,na,opt);
+// The common error: brackets left off, so the count is written straight after the ion (Mg(OH)₂ → MgOH₂, Ca(NO₃)₂ → CaNO₃₂).
+function errGroupH(id, n){
+  if (n === 1 || !ION[id].poly) return groupH(id, n);
+  const p = ION[id].parts, last = p[p.length - 1];
+  return p.slice(0,-1).map(([e,k]) => e + (k > 1 ? `<sub>${k}</sub>` : '')).join('') + last[0] + `<sub>${last[1] > 1 ? last[1] : ''}${n}</sub>`;
+}
+const needsBrackets = (c,nc,a,na) => (ION[c].poly && nc > 1) || (ION[a].poly && na > 1);
+
+// Atom counts in reading order. err = read the bracket-free error literally.
+function atomCounts(c,nc,a,na,err = false){
+  const out = new Map();
+  [[c,nc],[a,na]].forEach(([id,n]) => {
+    const p = ION[id].parts;
+    p.forEach(([e,k], i) => {
+      let v = k*n;
+      if (err && ION[id].poly && n > 1) v = i === p.length - 1 ? parseInt(`${k > 1 ? k : ''}${n}`, 10) : k;
+      out.set(e, (out.get(e) || 0) + v);
+    });
+  });
+  return out;
+}
+
+/* =========================================================
+   STATE
+   ========================================================= */
+const state = {mode:'sci', tab:'explain', cat:'Mg', an:'OH', nc:1, na:1, showErr:false, fresh:null, snap:{c:false, a:false}};
+const charge = () => state.nc*ION[state.cat].q + state.na*ION[state.an].q;
+const posUnits = () => state.nc*absQ(state.cat);
+const negUnits = () => state.na*absQ(state.an);
+
+/* =========================================================
+   ION PICKER
+   ========================================================= */
+function renderPicker(){
+  const btn = (id, role) => {
+    const io = ION[id], sel = (role === 'c' ? state.cat : state.an) === id;
+    const sub = io.poly || io.roman ? `<small>${io.poly ? io.name : io.name.replace(io.metal, '').trim()}</small>` : `<small>${io.name}</small>`;
+    return `<button type="button" role="radio" class="ionbtn ${role}${io.poly ? ' poly' : ''}" data-id="${id}" aria-checked="${sel}" title="${io.name}${io.poly ? ' (polyatomic)' : ''}"><b>${ionH(id)}</b>${sub}</button>`;
+  };
+  $('catPick').innerHTML = CATIONS.map(id => btn(id,'c')).join('');
+  $('anPick').innerHTML = ANIONS.map(id => btn(id,'a')).join('');
+}
+function pick(role, id){
+  if (role === 'c') state.cat = id; else state.an = id;
+  state.nc = 1; state.na = 1; state.showErr = false; state.fresh = null;
+  renderAll();
+}
+
+/* =========================================================
+   WORKBENCH (puzzle blocks)
+   Each block is |charge| units wide. Cation tabs point down, anion notches open up.
+   When the rows are the same length every tab sits in a notch: net charge 0.
+   ========================================================= */
+function benchGeom(){
+  const box = $('board').getBoundingClientRect();
+  const U = Math.max(posUnits(), negUnits(), 4);
+  const W = Math.max(40, Math.min(120, Math.floor((box.width - 70)/U)));
+  const H = Math.max(44, Math.min(96, Math.floor((box.height - 40)/2.3), Math.max(54, Math.round(W*1.1))));
+  return {W, H, cw:box.width, ch:box.height};
+}
+function textFit(str, w, base){ return Math.min(base, (w - 8)/(str.length*0.6)); }
+
+function cationPath(x, w, k, y, H, W, tw, td){
+  const r = 8, yb = y + H;
+  let d = `M${x + r},${y} H${x + w - r} Q${x + w},${y} ${x + w},${y + r} V${yb}`;
+  for (let j = k - 1; j >= 0; j--){
+    const cx = x - 2 + (j + .5)*W, a = cx - tw/2, b = cx + tw/2;
+    d += ` L${b},${yb} L${b},${yb + td - 5} Q${b},${yb + td} ${b - 5},${yb + td} L${a + 5},${yb + td} Q${a},${yb + td} ${a},${yb + td - 5} L${a},${yb}`;
+  }
+  return d + ` L${x},${yb} V${y + r} Q${x},${y} ${x + r},${y} Z`;
+}
+function anionPath(x, w, k, y, H, W, nw, td){
+  const r = 8, yb = y + H;
+  let d = `M${x},${y}`;
+  for (let j = 0; j < k; j++){
+    const cx = x - 2 + (j + .5)*W, a = cx - nw/2, b = cx + nw/2;
+    d += ` L${a},${y} L${a},${y + td - 4} Q${a},${y + td + 1} ${a + 5},${y + td + 1} L${b - 5},${y + td + 1} Q${b},${y + td + 1} ${b},${y + td - 4} L${b},${y}`;
+  }
+  return d + ` L${x + w},${y} V${yb - r} Q${x + w},${yb} ${x + w - r},${yb} H${x + r} Q${x},${yb} ${x},${yb - r} Z`;
+}
+const lockIcon = (x, y, col) => `<g transform="translate(${x},${y})" style="fill:none;stroke:${col};stroke-width:1.6"><rect x="-5" y="-1" width="10" height="8" rx="1.5" style="fill:${col}"/><path d="M-3,-1 V-4 a3,3 0 0 1 6,0 V-1"/></g>`;
+
+function renderBench(){
+  const {W, H, cw, ch} = benchGeom();
+  const td = Math.round(Math.max(14, H*0.2)), tw = Math.min(34, W*0.42), nw = tw + 5, F = Math.min(28, H*0.36);
+  const pu = posUnits(), nu = negUnits(), U = Math.max(pu, nu);
+  const rowW = U*W, x0 = Math.max(30, (cw - rowW)/2);
+  const totalH = H*2 + td + 8, y0 = Math.max(8, (ch - totalH)/2 - 4), y1 = y0 + H + 2;
+  const cq = absQ(state.cat), aq = absQ(state.an);
+  let s = '';
+  // cation row
+  for (let i = 0; i < state.nc; i++){
+    const x = x0 + i*cq*W + 2, w = cq*W - 4, fresh = state.fresh === 'c' && i === state.nc - 1;
+    const lbl = ionU(state.cat), fs = textFit(lbl, w, F);
+    s += `<g class="${fresh ? 'drop' : ''}"><title>${ION[state.cat].name} ion, ${chargeU(ION[state.cat].q)}</title>`;
+    s += `<path d="${cationPath(x, w, cq, y0, H, W, tw, td)}" style="fill:var(--cat)"/>`;
+    for (let j = 0; j < cq; j++){
+      const u = i*cq + j, cx = x0 + (u + .5)*W, extra = u >= nu;
+      if (extra) s += `<path d="M${cx - tw/2},${y0 + H} V${y0 + H + td - 5} Q${cx - tw/2},${y0 + H + td} ${cx - tw/2 + 5},${y0 + H + td} H${cx + tw/2 - 5} Q${cx + tw/2},${y0 + H + td} ${cx + tw/2},${y0 + H + td - 5} V${y0 + H}" style="fill:none;stroke:var(--warn);stroke-width:2.5"/>`;
+      s += `<text x="${cx}" y="${y0 + H + td/2 + 1}" text-anchor="middle" dominant-baseline="central" style="fill:var(--on-ion);font:800 ${Math.min(18, td)}px var(--font-ui)">+</text>`;
+    }
+    if (ION[state.cat].poly){
+      s += `<rect x="${x + 5}" y="${y0 + 5}" width="${w - 10}" height="${H - 10}" rx="10" style="fill:none;stroke:var(--on-ion);stroke-width:1.5;stroke-dasharray:4 3;opacity:.8"/>`;
+      if (w > 90) s += lockIcon(x + w - 13, y0 + 12, 'var(--on-ion)');
+    }
+    s += `<text x="${x + w/2}" y="${y0 + H/2 + 1}" text-anchor="middle" dominant-baseline="central" style="fill:var(--on-ion);font:700 ${fs}px var(--font-ui)">${lbl}</text></g>`;
+  }
+  // anion row
+  for (let i = 0; i < state.na; i++){
+    const x = x0 + i*aq*W + 2, w = aq*W - 4, fresh = state.fresh === 'a' && i === state.na - 1;
+    const lbl = ionU(state.an), fs = textFit(lbl, w, F), mid = y1 + td + (H - td)/2 + 2;
+    s += `<g class="${fresh ? 'drop' : ''}"><title>${ION[state.an].name} ion, ${chargeU(ION[state.an].q)}</title>`;
+    s += `<path d="${anionPath(x, w, aq, y1, H, W, nw, td)}" style="fill:var(--ani)"/>`;
+    for (let j = 0; j < aq; j++){
+      const u = i*aq + j, cx = x0 + (u + .5)*W;
+      if (u >= pu) s += `<rect x="${cx - nw/2 + 1.5}" y="${y1 - 1}" width="${nw - 3}" height="${td + 1}" rx="4" style="fill:none;stroke:var(--warn);stroke-width:2.5;stroke-dasharray:4 3"/><text x="${cx}" y="${y1 + td/2}" text-anchor="middle" dominant-baseline="central" style="fill:var(--warn);font:800 14px var(--font-ui)">−</text>`;
+    }
+    if (ION[state.an].poly){
+      s += `<rect x="${x + 5}" y="${y1 + td + 5}" width="${w - 10}" height="${H - td - 10}" rx="10" style="fill:none;stroke:var(--on-ion);stroke-width:1.5;stroke-dasharray:4 3;opacity:.8"/>`;
+      if (w > 90) s += lockIcon(x + w - 13, y1 + td + 11, 'var(--on-ion)');
+    }
+    s += `<text x="${x + w/2}" y="${mid}" text-anchor="middle" dominant-baseline="central" style="fill:var(--on-ion);font:700 ${fs}px var(--font-ui)">${lbl}</text></g>`;
+  }
+  // gold bracket shield around a row of 2+ polyatomic ions, mirroring the formula
+  const shield = (y, h, units, n) => {
+    const l = x0 - 4, r = x0 + units*W + 4;
+    return `<g style="fill:none;stroke:var(--gold);stroke-width:3.5;stroke-linecap:round"><path d="M${l + 6},${y} Q${l - 6},${y + h/2} ${l + 6},${y + h}"/><path d="M${r - 6},${y} Q${r + 6},${y + h/2} ${r - 6},${y + h}"/></g>`
+      + `<text x="${r + 6}" y="${y + h - 2}" style="fill:var(--gold);font:800 16px var(--font-num)">${n}</text>`;
+  };
+  if (ION[state.cat].poly && state.nc > 1) s += shield(y0 - 2, H + 4, pu, state.nc);
+  if (ION[state.an].poly && state.na > 1) s += shield(y1 + td - 2, H - td + 4, nu, state.na);
+  // unmatched labels
+  const net = charge();
+  if (net > 0) s += `<text x="${x0 + nu*W + 4}" y="${y1 + td + 16}" style="fill:var(--warn);font:700 12px var(--font-ui)">${net} unmatched +</text>`;
+  if (net < 0) s += `<text x="${x0 + pu*W + 4}" y="${y0 + H - 6}" style="fill:var(--warn);font:700 12px var(--font-ui)">${-net} unmatched −</text>`;
+  $('benchSvg').innerHTML = s;
+  state.fresh = null;
+
+  // steppers
+  $('catCount').innerHTML = `${ionH(state.cat)} ions: <b>${state.nc}</b>`;
+  $('anCount').innerHTML = `${ionH(state.an)} ions: <b>${state.na}</b>`;
+  $('catRem').disabled = state.nc <= 1; $('anRem').disabled = state.na <= 1;
+  $('catAdd').disabled = state.nc >= MAX_COUNT || pu + cq > MAX_UNITS;
+  $('anAdd').disabled = state.na >= MAX_COUNT || nu + aq > MAX_UNITS;
+}
+
+function renderMeter(){
+  const net = charge(), L = 6, x = v => 10 + (Math.max(-L, Math.min(L, v)) + L)/(2*L)*130;
+  let s = `<line x1="10" y1="13" x2="140" y2="13" style="stroke:var(--line-strong);stroke-width:4;stroke-linecap:round"/>`;
+  s += `<line x1="10" y1="13" x2="75" y2="13" style="stroke:var(--ani);stroke-width:4;stroke-linecap:round;opacity:.35"/><line x1="75" y1="13" x2="140" y2="13" style="stroke:var(--cat);stroke-width:4;stroke-linecap:round;opacity:.35"/>`;
+  s += `<line x1="75" y1="4" x2="75" y2="22" style="stroke:var(--ink);stroke-width:2"/>`;
+  s += `<circle cx="${x(net)}" cy="13" r="7" style="fill:${net === 0 ? 'var(--ok)' : 'var(--warn)'};stroke:var(--surface);stroke-width:2"/>`;
+  $('meterSvg').innerHTML = s;
+  $('meterOut').innerHTML = net === 0 ? `<span style="color:var(--ok)">0 (Neutral)</span>` : `<span style="color:var(--warn)">Net ${net > 0 ? '+' : '−'}${Math.abs(net)}</span>`;
+}
+
+/* =========================================================
+   FORMULA BAR
+   ========================================================= */
+function renderFormula(){
+  const {cat:c, an:a, nc, na} = state, net = charge(), g = gcd(nc, na);
+  $('formula').innerHTML = `<span class="fc">${groupH(c, nc, {gold:true, snap:state.snap.c})}</span><span class="fa">${groupH(a, na, {gold:true, snap:state.snap.a})}</span>`;
+  state.snap = {c:false, a:false};
+  const st = $('status'), nm = $('fname');
+  if (net !== 0){
+    nm.className = 'fname dim'; nm.textContent = 'Not a compound yet';
+    st.className = 'status warn';
+    st.innerHTML = `<span>${net > 0 ? 'Too much positive charge. Add an anion.' : 'Too much negative charge. Add a cation.'}</span>`;
+  } else if (g > 1){
+    nm.className = 'fname dim'; nm.textContent = 'Neutral, but not in lowest terms';
+    st.className = 'status gold';
+    st.innerHTML = `<span>Both counts divide by ${g}: ${formulaH(c,nc,a,na)} → ${formulaH(c,nc/g,a,na/g)}</span> <button type="button" class="btn-gold" id="simplifyBtn">Simplify ÷${g}</button>`;
+    $('simplifyBtn').onclick = () => { state.nc /= g; state.na /= g; renderAll(); };
+  } else {
+    nm.className = 'fname'; nm.textContent = `${ION[c].name} ${ION[a].name}`;
+    st.className = 'status ok';
+    st.innerHTML = `<span>✓ Neutral, lowest whole-number ratio.${needsBrackets(c,nc,a,na) ? ' Brackets keep each polyatomic ion locked together.' : ''}</span>`;
+  }
+}
+
+/* =========================================================
+   EXPLAIN PANEL: SCIENCE 10
+   ========================================================= */
+function romanCard(){
+  const io = ION[state.cat];
+  if (!io.roman){
+    if (io.poly) return `<div class="card"><h3>Ammonium is a polyatomic cation</h3><p>${ionH('NH4')} is one locked group of 5 atoms carrying a 1+ charge. Treat it like a single ion: put it in brackets when you need more than one.</p></div>`;
+    return `<div class="card"><h3>One charge only</h3><p>${io.name[0].toUpperCase() + io.name.slice(1)} only forms ${ionH(state.cat)}, so its name needs no Roman numeral.</p></div>`;
+  }
+  const sym = io.parts[0][0], q = io.q, n = q;
+  const bad = Array.from({length:n}, () => `<span class="atom">${sym}</span>`).join('');
+  return `<div class="card"><h3>Roman numeral = charge on one ion</h3>
+    <div class="rn">
+      <div class="rn-name">${io.metal}<span class="gold-t">(${io.roman})</span></div>
+      <div class="rn-arrow"><svg viewBox="0 0 34 22" aria-hidden="true"><path d="M2 11 H28 M22 5 L29 11 L22 17" style="fill:none;stroke:var(--gold);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round"/></svg>means</div>
+      <div class="rn-opt"><span class="atom">${sym}<span class="badge">${q}+</span></span><span><b>one</b> ${io.metal} ion with a <b class="gold-t">${q}+</b> charge</span><span class="mark ok" aria-label="correct">✓</span></div>
+      ${n > 1 ? `<div class="rn-opt"><span class="atoms-bad">${bad}</span><span class="muted">not ${WORD[n]} ${io.metal} atom${n > 1 ? 's' : ''}</span><span class="mark no" aria-label="wrong">✗</span></div>` : ''}
+    </div>
+    <div class="rn-sum">${n > 1 ? `${sym}${chargeH(q)} (one ion, charge ${q}+) is not ${sym}<sub>${n}</sub> (${WORD[n]} atoms). ` : ''}The subscript in the formula comes from balancing charge, not from the numeral.</div>
+  </div>`;
+}
+
+function xrayCol(title, f, counts, err){
+  const rows = [...counts].map(([e,v]) => {
+    const show = Math.min(v, 12);
+    const dots = Array.from({length:show}, () => `<span class="dot" style="--c:${elColor(e)}"></span>`).join('') + (v > 12 ? `<span class="more">+${v - 12}</span>` : '');
+    return `<div class="xrow"><span style="color:${elColor(e)};font-weight:700">${e}</span><b>${v}</b><span class="dots">${dots}</span></div>`;
+  }).join('');
+  return `<div class="xcol${err ? ' err' : ''}"><h4>${title}</h4><div class="big">${f}</div>${rows}</div>`;
+}
+function xrayCard(){
+  const {cat:c, an:a, nc, na} = state, f = formulaH(c,nc,a,na);
+  const good = atomCounts(c,nc,a,na);
+  if (!needsBrackets(c,nc,a,na)){
+    const hint = ION[c].poly || ION[a].poly ? 'Add a second polyatomic ion to see why the brackets matter.' : 'Pick a polyatomic ion (dashed buttons) to see why brackets matter.';
+    return `<div class="card"><h3>Atom X-ray</h3><div class="xray">${xrayCol('Atoms in ' + f, f, good, false)}</div><p class="muted">${hint}</p></div>`;
+  }
+  const ef = errGroupH(c,nc) + errGroupH(a,na);
+  const bad = atomCounts(c,nc,a,na,true);
+  const pid = ION[a].poly && na > 1 ? a : c, pn = pid === a ? na : nc;
+  const list = m => [...m].map(([e,v]) => `${v} ${e}`).join(', ');
+  const why = `${ef} reads as ${list(bad)}. That is not ${WORD[pn]} ${ION[pid].name} ions. The brackets say: copy the whole ${coreH(pid)} group ${pn} times.`;
+  return `<div class="card"><h3>Atom X-ray: why brackets?</h3>
+    <button type="button" class="toggle" id="errTgl" aria-pressed="${state.showErr}"><span>${state.showErr ? 'Hide' : 'Show'} the common error ${ef}</span></button>
+    <div class="xray${state.showErr ? ' two' : ''}">${xrayCol('Correct', f, good, false)}${state.showErr ? xrayCol('Common error', ef, bad, true) : ''}</div>
+    ${state.showErr ? `<p>${why}</p>` : ''}
+  </div>`;
+}
+
+/* =========================================================
+   EXPLAIN PANEL: CHEMISTRY 20
+   ========================================================= */
+// Valence slots around an atom: one per side first, then pairs (Lewis convention).
+const SLOTS = [[-6,-31],[31,-6],[-6,31],[-31,-6],[6,-31],[31,6],[6,31],[-31,6]];
+let lewisAnim = null, lewisMoves = [];
+
+function lewisCard(){
+  const {cat:c, an:a, nc, na} = state;
+  if (charge() !== 0) return `<div class="card"><h3>Electron transfer</h3><p class="muted">Balance the workbench first (net charge 0). Then you can watch the electrons move.</p></div>`;
+  const C = ION[c], A = ION[a], step = C.poly || A.poly ? 134 : 122;
+  const wide = Math.max(nc, na)*step;
+  const VW = Math.max(360, wide + 40), yC = 52, yA = 176;
+  const xs = (k, i) => VW/2 + (i - (k - 1)/2)*step;
+  let s = '', moves = [];
+  // anion targets: empty valence slots (monatomic) or charge slots on the capsule (polyatomic)
+  const targets = [];
+  for (let j = 0; j < na; j++){
+    const x = xs(na, j);
+    if (A.poly){
+      s += `<rect x="${x - 38}" y="${yA - 19}" width="76" height="38" rx="19" style="fill:var(--ani-soft);stroke:var(--ani);stroke-width:2;stroke-dasharray:5 3"/>`;
+      s += `<text x="${x}" y="${yA + 1}" text-anchor="middle" dominant-baseline="central" style="fill:var(--ani);font:700 16px var(--font-ui)">${coreU(a)}</text>`;
+      for (let k = 0; k < absQ(a); k++){ const tx = x + (k - (absQ(a) - 1)/2)*13, ty = yA - 27; targets.push([tx, ty]); s += `<circle cx="${tx}" cy="${ty}" r="4" style="fill:none;stroke:var(--muted);stroke-dasharray:2 2"/>`; }
+      s += `<g class="ion-br" style="fill:var(--ani);font:300 46px var(--font-ui)"><text x="${x - 50}" y="${yA + 1}" text-anchor="middle" dominant-baseline="central">[</text><text x="${x + 50}" y="${yA + 1}" text-anchor="middle" dominant-baseline="central">]</text><text x="${x + 58}" y="${yA - 20}" style="font:800 17px var(--font-ui)">${chargeT(A.q)}</text></g>`;
+    } else {
+      s += `<circle cx="${x}" cy="${yA}" r="20" style="fill:var(--ani-soft);stroke:var(--ani);stroke-width:2"/>`;
+      s += `<text x="${x}" y="${yA + 1}" text-anchor="middle" dominant-baseline="central" style="fill:var(--ani);font:700 17px var(--font-ui)">${A.parts[0][0]}</text>`;
+      SLOTS.forEach(([dx,dy], k) => {
+        if (k < A.ve) s += `<circle cx="${x + dx}" cy="${yA + dy}" r="4" style="fill:var(--ink)"/>`;
+        else { targets.push([x + dx, yA + dy]); s += `<circle cx="${x + dx}" cy="${yA + dy}" r="4" style="fill:none;stroke:var(--muted);stroke-dasharray:2 2"/>`; }
+      });
+      s += `<g class="ion-br" style="fill:var(--ani);font:300 46px var(--font-ui)"><text x="${x - 45}" y="${yA + 1}" text-anchor="middle" dominant-baseline="central">[</text><text x="${x + 45}" y="${yA + 1}" text-anchor="middle" dominant-baseline="central">]</text><text x="${x + 53}" y="${yA - 22}" style="font:800 17px var(--font-ui)">${chargeT(A.q)}</text></g>`;
+    }
+  }
+  // cations: valence electrons that will move (main group) or the electrons the transition metal gives up
+  let t = 0;
+  for (let i = 0; i < nc; i++){
+    const x = xs(nc, i);
+    if (C.poly){
+      s += `<rect x="${x - 38}" y="${yC - 19}" width="76" height="38" rx="19" style="fill:var(--cat-soft);stroke:var(--cat);stroke-width:2;stroke-dasharray:5 3"/>`;
+      s += `<text x="${x}" y="${yC + 1}" text-anchor="middle" dominant-baseline="central" style="fill:var(--cat);font:700 16px var(--font-ui)">${coreU(c)}</text>`;
+      s += `<g style="fill:var(--cat);font:300 46px var(--font-ui)"><text x="${x - 50}" y="${yC + 1}" text-anchor="middle" dominant-baseline="central">[</text><text x="${x + 50}" y="${yC + 1}" text-anchor="middle" dominant-baseline="central">]</text><text x="${x + 58}" y="${yC - 20}" style="font:800 17px var(--font-ui)">+</text></g>`;
+      continue;
+    }
+    s += `<g class="shrink"><circle cx="${x}" cy="${yC}" r="20" style="fill:var(--cat-soft);stroke:var(--cat);stroke-width:2"/><text x="${x}" y="${yC + 1}" text-anchor="middle" dominant-baseline="central" style="fill:var(--cat);font:700 16px var(--font-ui)">${C.parts[0][0]}</text></g>`;
+    for (let k = 0; k < C.q; k++){
+      const [dx,dy] = SLOTS[k], tg = targets[t++];
+      moves.push({x0:x + dx, y0:yC + dy, x1:tg[0], y1:tg[1]});
+    }
+    s += `<g class="ion-br" style="fill:var(--cat);font:300 40px var(--font-ui)"><text x="${x - 30}" y="${yC + 1}" text-anchor="middle" dominant-baseline="central">[</text><text x="${x + 30}" y="${yC + 1}" text-anchor="middle" dominant-baseline="central">]</text><text x="${x + 37}" y="${yC - 18}" style="font:800 17px var(--font-ui)">${chargeT(C.q)}</text></g>`;
+  }
+  // NH4+ has no electrons to give: the anion is drawn as the finished ion
+  if (C.poly) targets.forEach(([x,y]) => s += `<circle cx="${x}" cy="${y}" r="4" style="fill:var(--ink)"/>`);
+  lewisMoves = moves;
+  s += moves.map((m, i) => `<circle class="e" data-i="${i}" cx="${m.x0}" cy="${m.y0}" r="4.5" style="fill:var(--cat)"/>`).join('');
+
+  const sym = C.parts[0][0], an1 = A.poly ? `each ${coreU(a)} group` : `each ${A.parts[0][0]} atom`;
+  let cap;
+  if (C.poly) cap = `<p>Ammonium is already an ion: it formed when NH₃ picked up an H⁺, so no electrons move from it. The bond between ${ionH(c)} and ${ionH(a)} is the attraction between the two ions.</p>`;
+  else {
+    cap = `<p>Each ${sym} atom gives away ${C.q} electron${C.q > 1 ? 's' : ''} and becomes ${ionH(c)}. ${A.poly ? `Each ${coreH(a)} group gains ${absQ(a)} and the whole group carries the ${absQ(a) > 1 ? absQ(a) : ''}− charge.` : `Each ${A.parts[0][0]} atom gains ${absQ(a)} and fills its octet: ${ionH(a)}.`}</p>`;
+    if (!C.ve) cap += `<p class="flag">${sym} is a transition metal. Only the ${C.q} electron${C.q > 1 ? 's' : ''} it gives away are drawn, and ${ionH(c)} does not end up with an octet.</p>`;
+  }
+  return `<div class="card"><h3>Electron transfer (Lewis)</h3>
+    <div class="lewis${C.poly ? ' done' : ''}" id="lewis"><svg viewBox="0 -14 ${VW} 236" role="img" aria-label="Electrons moving from cation to anion">${s}</svg></div>
+    ${C.poly ? '' : `<div class="row-btns"><button type="button" class="btn-ghost" id="playBtn">▶ Replay transfer</button><span class="legend"><span><i style="background:var(--cat)"></i>electron from ${sym}</span><span><i style="background:var(--ink)"></i>electron already on ${A.poly ? 'the anion' : A.parts[0][0]}</span></span></div>`}
+    ${cap}</div>`;
+}
+
+function playLewis(){
+  const box = document.getElementById('lewis'); if (!box) return;
+  const dots = [...box.querySelectorAll('circle.e')];
+  if (lewisAnim) cancelAnimationFrame(lewisAnim);
+  box.classList.remove('done');
+  const moves = dots.map((d, i) => ({d, ...lewisMoves[i]}));
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const gap = Math.max(160, Math.min(420, 2400/moves.length)), dur = 650, t0 = performance.now() + 250;
+  const frame = now => {
+    let all = true;
+    moves.forEach((m, i) => {
+      let p = reduce ? 1 : (now - t0 - i*gap)/dur;
+      p = Math.max(0, Math.min(1, p)); if (p < 1) all = false;
+      const e = p < .5 ? 2*p*p : 1 - Math.pow(-2*p + 2, 2)/2;
+      m.d.setAttribute('cx', m.x0 + (m.x1 - m.x0)*e);
+      m.d.setAttribute('cy', m.y0 + (m.y1 - m.y0)*e - Math.sin(Math.PI*e)*28);
+    });
+    if (all){ box.classList.add('done'); lewisAnim = null; } else lewisAnim = requestAnimationFrame(frame);
+  };
+  lewisAnim = requestAnimationFrame(frame);
+}
+
+function enCard(){
+  const {cat:c, an:a} = state, C = ION[c], A = ION[a];
+  const d = (x,y) => Math.round(Math.abs(EN[x] - EN[y])*10)/10;
+  const marks = [];
+  if (!C.poly && !A.poly) marks.push({lbl:`${C.parts[0][0]}–${A.parts[0][0]}`, v:d(C.parts[0][0], A.parts[0][0]), main:true});
+  [c, a].forEach(id => { if (!ION[id].poly) return;
+    const v = d(...ION[id].bond), lbl = `${ION[id].bond.join('–')} inside ${coreU(id)}`, same = marks.find(m => m.v === v);
+    if (same) same.lbl += `, ${lbl}`; else marks.push({lbl, v}); });
+  const inner = [c, a].filter(id => ION[id].poly).map(id => `${ION[id].bond.join('–')} inside ${coreU(id)}: ΔEN ${d(...ION[id].bond).toFixed(1)}`).join('; ');
+  const X = v => 14 + v/3.3*432;
+  let s = `<rect x="${X(0)}" y="44" width="${X(1.7) - X(0)}" height="22" rx="4" style="fill:var(--ani-soft)"/><rect x="${X(1.7)}" y="44" width="${X(3.3) - X(1.7)}" height="22" rx="4" style="fill:var(--cat-soft)"/>`;
+  s += `<text x="${(X(0) + X(1.7))/2}" y="56" text-anchor="middle" dominant-baseline="central" style="fill:var(--ani);font:700 12px var(--font-ui)">Polar covalent (&lt; 1.7)</text>`;
+  s += `<text x="${(X(1.7) + X(3.3))/2}" y="56" text-anchor="middle" dominant-baseline="central" style="fill:var(--cat);font:700 12px var(--font-ui)">Ionic (≥ 1.7)</text>`;
+  s += `<line x1="${X(1.7)}" y1="40" x2="${X(1.7)}" y2="72" style="stroke:var(--ink);stroke-width:2"/>`;
+  [0, 1.7, 3.3].forEach(v => s += `<text x="${X(v)}" y="84" text-anchor="middle" style="fill:var(--muted);font:500 11px var(--font-num)">${v.toFixed(1)}</text>`);
+  s += `<text x="${X(0)}" y="98" style="fill:var(--muted);font:400 11px var(--font-ui)">0 = non-polar</text><text x="${X(3.3)}" y="98" text-anchor="end" style="fill:var(--muted);font:400 11px var(--font-ui)">ΔEN</text>`;
+  marks.forEach((m, i) => {
+    const x = X(m.v), ly = i % 2 ? 14 : 30;
+    const anchor = x < 80 ? 'start' : x > 380 ? 'end' : 'middle';
+    s += `<path d="M${x - 6},${ly + 4} L${x + 6},${ly + 4} L${x},${ly + 12} Z" style="fill:var(--ink)"/><line x1="${x}" y1="${ly + 12}" x2="${x}" y2="44" style="stroke:var(--ink);stroke-width:1.5"/>`;
+    s += `<text x="${x + (anchor === 'start' ? -6 : anchor === 'end' ? 6 : 0)}" y="${ly}" text-anchor="${anchor}" style="fill:var(--ink);font:700 12px var(--font-ui)">${m.lbl} ${m.v.toFixed(1)}</text>`;
+  });
+  const els = [...new Set([...C.parts, ...A.parts].map(p => p[0]))];
+  const src = `<p class="src">Electronegativities from the Alberta Data Booklet periodic table: ${els.map(e => `${e} ${EN[e].toFixed(1)}`).join(' · ')}</p>`;
+  let body;
+  if (marks[0] && marks[0].main){
+    const m = C.parts[0][0], n = A.parts[0][0], v = marks[0].v;
+    body = `<p>ΔEN = ${EN[n].toFixed(1)} − ${EN[m].toFixed(1)} = <b>${v.toFixed(1)}</b>. ${v >= IONIC_CUTOFF ? `That is ≥ 1.7, so the ${m}–${n} bond is <b>ionic</b>: ${m} gives electrons to ${n}.` : `That is below 1.7, so the ΔEN rule puts ${m}–${n} in the <b>polar covalent</b> range.`}</p>`;
+    if (v < IONIC_CUTOFF) body += `<p class="flag">A metal with a non-metal is still named and written as an ionic compound. A small ΔEN means the real bond has some covalent character (it shares electrons a little). ΔEN is a guide, not a hard line.</p>`;
+  } else {
+    body = `<div class="zone"><span class="tag cov">Inside the capsule</span><span><b>Covalent.</b> ${inner}. These atoms share electrons, which is why the subscripts inside the ion are locked.</span>
+      <span class="tag ionic">Between the ions</span><span><b>Ionic.</b> ${ionH(c)} and ${ionH(a)} attract as whole charged particles. ΔEN compares two atoms, so there is no single ΔEN for this bond.</span></div>`;
+  }
+  return `<div class="card en"><h3>Electronegativity difference (ΔEN)</h3><svg viewBox="0 0 460 104" role="img" aria-label="Bonding continuum">${s}</svg>${body}${src}</div>`;
+}
+
+/* =========================================================
+   SELF-CHECK QUIZ
+   ========================================================= */
+const quiz = {q:null, answered:false, right:0, total:0, err:{bracket:0, roman:0, simplify:0, charge:0}};
+const ERR_LABEL = {bracket:'Bracket error', roman:'Roman numeral error', simplify:'Not simplified', charge:'Charge balance error'};
+const ERR_TALLY = {bracket:'Brackets', roman:'Roman numerals', simplify:'Simplifying', charge:'Charge balance'};
+const pickR = arr => arr[Math.floor(Math.random()*arr.length)];
+const shuffle = arr => { for (let i = arr.length - 1; i > 0; i--){ const j = Math.floor(Math.random()*(i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; } return arr; };
+const strip = h => h.replace(/<[^>]+>/g, '');
+const ok = (c,a) => !(c === 'NH4' && (a === 'O' || a === 'N'));   // (NH₄)₂O and (NH₄)₃N don't exist
+
+function formulaQuestion(){
+  for (;;){
+    const c = pickR(CATIONS), a = pickR(ANIONS); if (!ok(c,a)) continue;
+    const [nc, na] = crossCounts(c,a), C = ION[c], A = ION[a];
+    const right = formulaH(c,nc,a,na), name = `${C.name} ${A.name}`;
+    const cand = [];
+    if (needsBrackets(c,nc,a,na)){ const pid = A.poly && na > 1 ? a : c, pn = pid === a ? na : nc;
+      cand.push({h:errGroupH(c,nc) + errGroupH(a,na), d:'bracket', why:`Without brackets the ${pn} sticks to the last atom only. To take ${WORD[pn]} whole ${ION[pid].name} ions, put the ion in brackets: ${right}.`}); }
+    if (gcd(absQ(c), absQ(a)) > 1){ const g = gcd(absQ(c), absQ(a)); cand.push({h:formulaH(c, absQ(a), a, absQ(c)), d:'simplify', why:`The charges balance, but both subscripts divide by ${g}. Ionic formulas use the lowest whole-number ratio: ${right}.`}); }
+    if (C.roman) cand.push({h:formulaH(c, C.q, a, 1), d:'roman', why:`(${C.roman}) is the charge on one ${C.metal} ion (${ionH(c)}), not the number of ${C.metal} atoms. Balance the charges to find the subscripts.`});
+    if (C.roman){ const oq = C.other, g = gcd(oq, absQ(a));
+      const h = groupH(c, absQ(a)/g) + groupH(a, oq/g);
+      cand.push({h, d:'roman', why:`That is the formula for ${C.metal}(${ROMAN[oq]}) ${A.name}. The (${C.roman}) means each ${C.metal} ion is ${C.q}+.`}); }
+    cand.push({h:formulaH(c,1,a,1), d:'charge', why:`${ionH(c)} and ${ionH(a)} don't cancel one-for-one. Add ions until the total + equals the total −: ${right}.`});
+    if (nc !== na) cand.push({h:formulaH(c,na,a,nc), d:'charge', why:`The counts are swapped. Check: the total positive charge has to equal the total negative charge.`});
+    if (!A.poly && na > 1) cand.push({h:groupH(c,nc) + `(${coreH(a)})<sub>${na}</sub>`, d:'bracket', why:`Brackets only go around polyatomic ions. ${A.parts[0][0]} is a single atom, so just write the subscript: ${right}.`});
+    const seen = new Set([strip(right)]), opts = [];
+    for (const o of shuffle(cand)){ const k = strip(o.h); if (!seen.has(k)){ seen.add(k); opts.push(o); } if (opts.length === 3) break; }
+    if (opts.length < 3) continue;
+    opts.push({h:right, correct:true});
+    return {kind:'formula', prompt:'Pick the correct formula for', target:name, opts:shuffle(opts), c, a, nc, na};
+  }
+}
+function nameQuestion(){
+  for (;;){
+    const c = pickR(['Fe2','Fe3','Cu1','Cu2','Sn4']), a = pickR(ANIONS);
+    const [nc, na] = crossCounts(c,a), C = ION[c], A = ION[a];
+    const right = `${C.name} ${A.name}`, cand = [];
+    if (nc !== C.q && ROMAN[nc]) cand.push({h:`${C.metal}(${ROMAN[nc]}) ${A.name}`, d:'roman', why:`The subscript ${nc > 1 ? nc : '(1)'} on ${C.parts[0][0]} is a count of ions, not the charge. Work out the charge: ${na} × ${ionU(a)} = ${na*absQ(a)}−, shared by ${nc} ${C.metal} ion${nc > 1 ? 's' : ''}, so each is ${C.q}+.`});
+    cand.push({h:`${C.metal}(${ROMAN[C.other]}) ${A.name}`, d:'roman', why:`Check the charge: ${na} × ${ionU(a)} = ${na*absQ(a)}−. ${nc > 1 ? `Split over ${nc} ${C.metal} ions, each` : `One ${C.metal} ion`} must be ${C.q}+, so the name uses (${C.roman}).`});
+    cand.push({h:`${C.metal} ${A.name}`, d:'roman', why:`${C.metal[0].toUpperCase() + C.metal.slice(1)} can have more than one charge, so the name must say which one with a Roman numeral: ${right}.`});
+    if (!A.poly) cand.push({h:`${nc > 1 ? PREFIX[nc] : ''}${C.metal} ${PREFIX[na]}${A.name}`.replace(/[ao]oxide/, 'oxide'), d:'roman', why:`Prefixes like di- and tri- are for molecular (non-metal) compounds. Ionic compounds with a multivalent metal use a Roman numeral: ${right}.`});
+    const seen = new Set([right]), opts = [];
+    for (const o of shuffle(cand)){ if (!seen.has(o.h)){ seen.add(o.h); opts.push(o); } if (opts.length === 3) break; }
+    if (opts.length < 3) continue;
+    opts.push({h:right, correct:true});
+    return {kind:'name', prompt:'Pick the correct name for', target:formulaH(c,nc,a,na), opts:shuffle(opts), c, a, nc, na};
+  }
+}
+function newQuestion(){ quiz.q = Math.random() < 0.6 ? formulaQuestion() : nameQuestion(); quiz.answered = false; }
+
+function renderQuiz(){
+  if (!quiz.q) newQuestion();
+  const q = quiz.q;
+  const tallies = `<span>Mistakes by type:</span>` + Object.entries(quiz.err).map(([k,v]) => `<span>${ERR_TALLY[k]} <b>${v}</b></span>`).join('');
+  let fb = '';
+  if (quiz.answered !== false){
+    const o = q.opts[quiz.answered];
+    fb = o.correct ? `<div class="q-fb right"><span class="diag" style="color:var(--ok)">Correct</span><br>${q.kind === 'formula' ? `${q.target} is ${formulaH(q.c,q.nc,q.a,q.na)}.` : `${q.target} is ${q.opts.find(x => x.correct).h}.`}</div>`
+      : `<div class="q-fb wrong"><span class="diag" style="color:var(--bad)">${ERR_LABEL[o.d]}</span><br>${o.why}</div>`;
+    fb += `<div class="row-btns"><button type="button" class="btn-primary" id="nextQ">Next question</button><button type="button" class="btn-ghost" id="buildQ">Build it on the workbench</button></div>`;
+  }
+  return `<div class="q-score"><span>Score: <b>${quiz.right} / ${quiz.total}</b></span>${tallies}</div>
+    <div class="card"><div class="q-prompt">${q.prompt}</div><div class="q-target">${q.target}</div>
+    <div class="q-opts">${q.opts.map((o, i) => {
+      let cls = 'q-opt' + (q.kind === 'name' ? ' name' : '');
+      if (quiz.answered !== false){ if (o.correct) cls += ' right'; else if (i === quiz.answered) cls += ' wrong'; }
+      return `<button type="button" class="${cls}" data-i="${i}" ${quiz.answered !== false ? 'disabled' : ''}>${o.h}</button>`;
+    }).join('')}</div>${fb}</div>
+    <p class="src">Questions are generated from the same ions as the workbench. The wrong answers are the common mistakes, so the feedback tells you which one you made.</p>`;
+}
+function answer(i){
+  if (quiz.answered !== false) return;
+  quiz.answered = i; quiz.total++;
+  const o = quiz.q.opts[i];
+  if (o.correct) quiz.right++; else quiz.err[o.d]++;
+  renderSide();
+}
+
+/* =========================================================
+   SIDE PANEL + GUIDE
+   ========================================================= */
+function renderSide(){
+  const body = $('sidebody');
+  $('tabExplain').setAttribute('aria-selected', state.tab === 'explain');
+  $('tabQuiz').setAttribute('aria-selected', state.tab === 'quiz');
+  if (state.tab === 'quiz'){
+    body.innerHTML = renderQuiz();
+    body.querySelectorAll('.q-opt').forEach(b => b.onclick = () => answer(+b.dataset.i));
+    if ($('nextQ')) $('nextQ').onclick = () => { newQuestion(); renderSide(); };
+    if ($('buildQ')) $('buildQ').onclick = () => { const q = quiz.q; Object.assign(state, {cat:q.c, an:q.a, nc:q.nc, na:q.na, tab:'explain', showErr:false}); renderAll(); };
+    return;
+  }
+  if (state.mode === 'sci'){
+    body.innerHTML = romanCard() + xrayCard();
+    if ($('errTgl')) $('errTgl').onclick = () => { state.showErr = !state.showErr; renderSide(); };
+  } else {
+    body.innerHTML = lewisCard() + enCard();
+    if ($('playBtn')) $('playBtn').onclick = playLewis;
+    if (document.querySelector('#lewis circle.e')) playLewis();
+  }
+}
+
+function renderGuide(){
+  const sci = state.mode === 'sci';
+  $('guidePop').innerHTML = sci ? `<h2>Writing an ionic formula in 3 steps</h2><ol>
+    <li><span class="num">1</span><span><b>Pick the ions.</b> Dashed buttons are polyatomic ions: locked groups you never change inside.</span></li>
+    <li><span class="num">2</span><span><b>Balance the charge.</b> Add cations and anions until every + tab sits in a − notch and the meter reads 0.</span></li>
+    <li><span class="num">3</span><span><b>Write it simply.</b> Use brackets when you need more than one polyatomic ion, and divide the counts down to the lowest ratio.</span></li></ol>`
+  : `<h2>Explaining the bond in 3 steps</h2><ol>
+    <li><span class="num">1</span><span><b>Build a neutral compound</b> on the workbench (meter at 0).</span></li>
+    <li><span class="num">2</span><span><b>Watch the transfer.</b> Each metal atom gives its electrons to the non-metal until the non-metal has a full octet.</span></li>
+    <li><span class="num">3</span><span><b>Check ΔEN.</b> 1.7 or more is ionic. Inside a polyatomic ion the bonds are covalent; between the ions the bond is ionic.</span></li></ol>`;
+}
+
+function renderAll(){ renderPicker(); renderBench(); renderMeter(); renderFormula(); renderSide(); renderGuide(); }
+
+/* =========================================================
+   WIRING
+   ========================================================= */
+$('catPick').addEventListener('click', e => { const b = e.target.closest('.ionbtn'); if (b) pick('c', b.dataset.id); });
+$('anPick').addEventListener('click', e => { const b = e.target.closest('.ionbtn'); if (b) pick('a', b.dataset.id); });
+function change(role, d){
+  if (role === 'c'){ state.nc += d; if (d > 0){ state.fresh = 'c'; state.snap.c = ION[state.cat].poly && state.nc === 2; } }
+  else { state.na += d; if (d > 0){ state.fresh = 'a'; state.snap.a = ION[state.an].poly && state.na === 2; } }
+  renderBench(); renderMeter(); renderFormula(); if (state.tab === 'explain') renderSide();
+}
+$('catAdd').onclick = () => change('c', 1); $('catRem').onclick = () => change('c', -1);
+$('anAdd').onclick = () => change('a', 1); $('anRem').onclick = () => change('a', -1);
+function setMode(m){
+  state.mode = m;
+  $('modeSci').setAttribute('aria-checked', m === 'sci'); $('modeChem').setAttribute('aria-checked', m === 'chem');
+  try { localStorage.setItem('ionbuilder-mode', m); } catch(e){}
+  renderSide(); renderGuide();
+}
+$('modeSci').onclick = () => setMode('sci'); $('modeChem').onclick = () => setMode('chem');
+$('tabExplain').onclick = () => { state.tab = 'explain'; renderSide(); };
+$('tabQuiz').onclick = () => { state.tab = 'quiz'; renderSide(); };
+$('guideBtn').addEventListener('click', e => { e.stopPropagation(); const p = $('guidePop'); p.hidden = !p.hidden; $('guideBtn').setAttribute('aria-expanded', !p.hidden); });
+document.addEventListener('click', e => { if (!$('guidePop').hidden && !e.target.closest('.guide-wrap')){ $('guidePop').hidden = true; $('guideBtn').setAttribute('aria-expanded', 'false'); } });
+document.addEventListener('keydown', e => { if (e.key === 'Escape'){ $('guidePop').hidden = true; $('guideBtn').setAttribute('aria-expanded', 'false'); } });
+new ResizeObserver(() => renderBench()).observe($('board'));
+
+let saved = null; try { saved = localStorage.getItem('ionbuilder-mode'); } catch(e){}
+state.mode = saved === 'chem' ? 'chem' : 'sci';
+$('modeSci').setAttribute('aria-checked', state.mode === 'sci'); $('modeChem').setAttribute('aria-checked', state.mode === 'chem');
+renderAll();
+</script>
+</body>
+</html>
