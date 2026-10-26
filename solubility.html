@@ -85,12 +85,21 @@ a.main-btn:focus-visible{outline:3px solid var(--pt); outline-offset:3px}
 .chips{display:flex; gap:5px; flex-wrap:wrap}
 .chip{display:inline-flex; align-items:center; border-radius:999px; padding:1px 9px; font-size:12px; font-weight:700; color:var(--on-ion)}
 .plus{align-self:center; font-size:20px; color:var(--muted); padding-top:14px}
-.actions{display:flex; flex-direction:column; gap:6px; padding-top:18px}
-.btn-primary{background:var(--btn); color:var(--btn-ink); border-radius:8px; padding:8px 14px; font-weight:700; font-size:14px; white-space:nowrap}
-.btn-primary:disabled{opacity:.45; cursor:not-allowed}
+.actions{display:flex; flex-direction:column; gap:6px; padding-top:4px}
+.btn-hl{border:2px solid var(--pt); color:var(--pt); background:var(--surface); border-radius:8px; padding:5px 12px; font-weight:700; font-size:14px; white-space:nowrap}
+.btn-hl:hover, .btn-hl[aria-pressed="true"]{background:var(--surface-2)}
+/* Mix is the main action on the page: largest, filled, with a soft pulse while it is waiting to be pressed. */
+.btn-mix{display:inline-flex; align-items:center; justify-content:center; gap:8px; background:var(--btn); color:var(--btn-ink); border-radius:10px; padding:11px 18px;
+  font-family:var(--font-display); font-weight:800; font-size:18px; white-space:nowrap; box-shadow:0 4px 0 color-mix(in srgb, var(--btn) 55%, #000); transition:transform .08s, box-shadow .08s}
+.btn-mix:not(:disabled){animation:mixPulse 2s ease-in-out infinite}
+.btn-mix:hover:not(:disabled){filter:brightness(1.08)}
+.btn-mix:active:not(:disabled){transform:translateY(3px); box-shadow:0 1px 0 color-mix(in srgb, var(--btn) 55%, #000)}
+.btn-mix:disabled{opacity:.45; cursor:not-allowed; box-shadow:none}
+.btn-mix .arrow{font-size:20px; line-height:1}
+@keyframes mixPulse{0%,100%{outline:0 solid transparent} 50%{outline:5px solid color-mix(in srgb, var(--btn) 25%, transparent)}}
 .btn-ghost{border:1px solid var(--line); border-radius:8px; padding:5px 10px; font-size:13px; color:var(--ink); background:var(--surface-2); white-space:nowrap}
 button:focus-visible, select:focus-visible, input:focus-visible{outline:2.5px solid var(--ionA); outline-offset:2px}
-@media (max-width:560px){ .mode-label{display:none} .mode button{padding:6px 10px} .mode button small{display:block; margin-left:0} .controls{grid-template-columns:1fr} .plus{display:none} .actions{flex-direction:row; padding-top:0} }
+@media (max-width:560px){ .mode-label{display:none} .mode button{padding:6px 10px} .mode button small{display:block; margin-left:0} .controls{grid-template-columns:1fr} .plus{display:none} .actions{flex-direction:row; flex-wrap:wrap; padding-top:0} }
 
 /* Stage */
 .stage{position:relative; flex:1; min-height:340px; overflow:hidden}
@@ -193,7 +202,8 @@ table.sol{width:100%; border-collapse:separate; border-spacing:0; font-size:13px
           <div class="chips" id="chips2"></div>
         </div>
         <div class="actions">
-          <button type="button" id="mixBtn" class="btn-primary">Mix Solutions</button>
+          <button type="button" id="hlBtn" class="btn-hl" aria-pressed="false">Highlight Table</button>
+          <button type="button" id="mixBtn" class="btn-mix"><span class="arrow" aria-hidden="true">⇣</span> Mix Solutions</button>
           <button type="button" id="resetBtn" class="btn-ghost">Reset Beaker</button>
         </div>
       </div>
@@ -472,7 +482,7 @@ function cardHTML(cat, an, rc, ra, L){
 function renderCards(){
   const R = state.R;
   if (!state.mixed){
-    $('cards').innerHTML = `<div class="placeholder"><b>Predict first.</b> The table shows where to look for the two new partner pairs, ${cmpH(R.A,R.D,'A','D')} and ${cmpH(R.C,R.B,'C','B')}. Will each one be (s) or (aq)? Then press <b>Mix Solutions</b> to check, step by step.</div>`;
+    $('cards').innerHTML = `<div class="placeholder"><b>Predict first.</b> Press <b>Highlight Table</b> to see where to look for the two new partner pairs, ${cmpH(R.A,R.D,'A','D')} and ${cmpH(R.C,R.B,'C','B')}. Will each one be (s) or (aq)? Then press <b>Mix Solutions</b> to check, step by step.</div>`;
     return;
   }
   $('cards').innerHTML = `<div class="cards">${cardHTML(R.A,R.D,'A','D',R.AD)}${cardHTML(R.C,R.B,'C','B',R.CB)}</div>`;
@@ -910,10 +920,8 @@ function resetAll(){
   state.R = computeReaction(state.i1, state.i2);
   state.mixed = false; state.revealed = false;
   clearHighlights(); renderChips(); renderCards(); renderEquations(); renderGuide();
-  // Show where to look in the table as soon as the solutions are chosen, so students can predict before mixing.
-  highlightPair(state.R.AD, 'A', 'D', 150);
-  highlightPair(state.R.CB, 'C', 'B', 1100);
-  $('mixBtn').disabled = false; $('mixBtn').textContent = 'Mix Solutions';
+  state.highlighted = false; $('hlBtn').setAttribute('aria-pressed', 'false');
+  $('mixBtn').disabled = false; $('mixBtn').innerHTML = '<span class="arrow" aria-hidden="true">⇣</span> Mix Solutions';
   buildScene();
 }
 function mix(){
@@ -921,6 +929,14 @@ function mix(){
   state.mixed = true; $('mixBtn').disabled = true; $('mixBtn').textContent = 'Mixed';
   sim.phase = 'pour'; sim.t = 0;
   renderCards(); renderGuide();
+  if (!state.highlighted) highlightTable();
+}
+// Light up where to look in the table for the two new partner pairs: column first, then the cell.
+function highlightTable(){
+  clearHighlights();
+  state.highlighted = true; $('hlBtn').setAttribute('aria-pressed', 'true');
+  highlightPair(state.R.AD, 'A', 'D', 100);
+  highlightPair(state.R.CB, 'C', 'B', 1050);
 }
 function setMode(m){
   state.mode = m;
@@ -933,6 +949,7 @@ fillSelects(); renderTable();
 $('sol1').addEventListener('change', e => { state.i1 = +e.target.value; resetAll(); });
 $('sol2').addEventListener('change', e => { state.i2 = +e.target.value; resetAll(); });
 $('mixBtn').addEventListener('click', mix);
+$('hlBtn').addEventListener('click', highlightTable);
 $('resetBtn').addEventListener('click', resetAll);
 $('modeSci').addEventListener('click', () => setMode('sci'));
 $('modeChem').addEventListener('click', () => setMode('chem'));
