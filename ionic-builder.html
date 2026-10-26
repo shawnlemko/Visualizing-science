@@ -563,6 +563,7 @@ function textW(txt, px){ measureCtx.font = `700 ${px}px ${getComputedStyle(docum
 // Criss-cross: each ion's charge number drops diagonally to become the other ion's subscript.
 function crossCard(){
   const {cat:c, an:a} = state, C = ION[c], A = ION[a];
+  if (charge() !== 0) return `<div class="card"><h3>Cross the charges down</h3><p class="muted">First balance the workbench until the net charge is 0. Then the charges cross down here to show where the subscripts come from.</p></div>`;
   const qc = absQ(c), qa = absQ(a), g = gcd(qc, qa), [nc, na] = crossCounts(c, a);
   const F = 34;
   const cs = coreU(c), as = coreU(a);
