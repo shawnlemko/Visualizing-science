@@ -22,6 +22,7 @@ It is set up the same way as the math site, [shawnlemko/mathvisuals](https://git
 | `solubility.html` | Solubility and Precipitates | 10-12, Matter |
 | `heating-curve.html` | Heating Curve of Water | 10-12, Energy (also Matter) |
 | `ionic-builder.html` | Ionic Formula Builder | 10-12, Matter |
+| `atoms-bonding.html` | Atoms and Bonding (Grade 8 Bohr atoms → Grade 9 compounds → Science 10 Lewis dots) | 7-9 and 10-12, Matter |
 | `unit-analysis.html` | Unit Analysis | 7-9 and 10-12, Scientific Methods |
 | `diffusion-race.html` | Cell Size Diffusion Race (SA : V) | 10-12, Living Systems |
 | `forces-fluids.html` | Forces in Water and Air (buoyancy, lift, drag) | K-6 and 7-9, Energy (also Matter) |
