@@ -25,3 +25,4 @@ It is set up the same way as the math site, [shawnlemko/mathvisuals](https://git
 | `unit-analysis.html` | Unit Analysis | 7-9 and 10-12, Scientific Methods |
 | `diffusion-race.html` | Cell Size Diffusion Race (SA : V) | 10-12, Living Systems |
 | `forces-fluids.html` | Forces in Water and Air (buoyancy, lift, drag) | K-6 and 7-9, Energy (also Matter) |
+| `rover-algorithms.html` | Rover Algorithms and AI (blocks, search race, AI training bias, Python) | K-6 and 7-9, Computer Science |

@@ -1,0 +1,979 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<script data-goatcounter="https://shawnlemko.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
+</head>
+<body>
+<title>Rover Algorithms and AI</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Atkinson+Hyperlegible:wght@400;700&family=Spline+Sans+Mono:wght@500;700&display=swap">
+<style>
+/* MathBoard look (shared with the math visuals site), plus one colour per block role.
+   The same block colours are used in every grade and on the matching Python line:
+   amber = loop, purple = decision (if, else), blue = rover action, teal = variable, green = report, grey = define.
+   Layout: one screen. Top = controls. Below = two rovers side by side (Grade 5–6, Grade 8) or rover + blocks + Python (Grade 9). */
+:root{
+  --bg:#f5f8fb; --surface:#ffffff; --surface-2:#eaf0f6; --ink:#1b2733; --muted:#5b6b7a; --line:#dbe5ee; --line-strong:#b9c9d8; --pt:#2f5fd0;
+  --k-loop:#b45f00; --k-if:#7a3ec8; --k-act:#2160e0; --k-var:#0c7d73; --k-ret:#13874b; --k-def:#4a5868;
+  --ok:#13874b; --bad:#d1293f; --water:#3d8fe0;
+  --btn:#2f5fd0; --btn-ink:#ffffff;
+  --font-ui:'Atkinson Hyperlegible', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-display:'Bricolage Grotesque', 'Segoe UI', system-ui, sans-serif;
+  --font-num:'Spline Sans Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0f161d; --surface:#151f29; --surface-2:#1d2935; --ink:#e6edf3; --muted:#9aabbb; --line:#1f2c38; --line-strong:#2e3f50; --pt:#7aa2ff;
+  --k-loop:#c27014; --k-if:#8b55d6; --k-act:#3a74e8; --k-var:#178f84; --k-ret:#1f9a5a; --k-def:#5b6b7c;
+  --ok:#45c985; --bad:#ff6b7d; --water:#6cb4ff;
+  --btn:#7aa2ff; --btn-ink:#0f161d; color-scheme:dark; } }
+:root[data-theme="dark"]{
+  --bg:#0f161d; --surface:#151f29; --surface-2:#1d2935; --ink:#e6edf3; --muted:#9aabbb; --line:#1f2c38; --line-strong:#2e3f50; --pt:#7aa2ff;
+  --k-loop:#c27014; --k-if:#8b55d6; --k-act:#3a74e8; --k-var:#178f84; --k-ret:#1f9a5a; --k-def:#5b6b7c;
+  --ok:#45c985; --bad:#ff6b7d; --water:#6cb4ff;
+  --btn:#7aa2ff; --btn-ink:#0f161d; color-scheme:dark; }
+
+*,*::before,*::after{box-sizing:border-box}
+h1,h2,p,ol{margin:0} ol{padding:0; list-style:none}
+button,select,input{font:inherit; color:inherit}
+button{border:0; background:none; cursor:pointer}
+html,body{height:100%}
+body{background:var(--bg); color:var(--ink); font-family:var(--font-ui); font-size:14px;
+  padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); padding-block:0}
+#app{display:flex; flex-direction:column; gap:8px; min-height:100%; padding-block:8px}
+@media (min-width:1024px){ #app{height:100%} }
+
+/* Header */
+.topbar{display:flex; flex-wrap:wrap; align-items:center; gap:10px 20px; justify-content:space-between}
+.brand{display:flex; flex-wrap:wrap; align-items:center; gap:8px 20px}
+.brand h1{font-family:var(--font-display); font-weight:800; font-size:clamp(20px, 2vw, 26px); line-height:1.1; letter-spacing:-.01em; text-wrap:balance}
+a.main-btn{display:inline-flex; align-items:center; gap:8px; padding:8px 16px; min-height:42px; background:var(--pt); color:#fff; font-family:var(--font-display); font-weight:800; font-size:16px; text-decoration:none; border-radius:10px; border:2px solid var(--pt); flex:none}
+a.main-btn span{font-size:19px; line-height:1}
+a.main-btn:hover{background:var(--surface); color:var(--pt)}
+a.main-btn:focus-visible{outline:3px solid var(--pt); outline-offset:3px}
+.top-right{display:flex; flex-wrap:wrap; align-items:center; gap:10px}
+.mode{display:flex; flex-wrap:wrap; align-items:center; gap:4px; background:var(--surface); border:1px solid var(--line); border-radius:999px; padding:4px}
+.mode button{border-radius:999px; padding:6px 16px; font-weight:700; font-size:15px; color:var(--muted); line-height:1.1}
+.mode button small{font-weight:400; font-size:12px; margin-left:4px}
+.mode button[aria-checked="true"]{background:var(--btn); color:var(--btn-ink)}
+.guide-wrap{position:relative}
+.btn-outline{border:1.5px solid var(--ink); border-radius:8px; padding:7px 12px; font-weight:700; font-size:14px; background:var(--surface)}
+.pop{position:absolute; right:0; top:calc(100% + 8px); width:min(340px, calc(100vw - 32px)); z-index:20; background:var(--surface);
+  border:1px solid var(--line); border-radius:10px; box-shadow:0 12px 32px rgba(10,20,30,.18); padding:14px 16px}
+.pop h2{font-weight:700; font-size:15px; margin-bottom:8px}
+.pop ol{display:flex; flex-direction:column; gap:10px}
+.pop li{display:grid; grid-template-columns:24px 1fr; gap:8px; line-height:1.4}
+.pop .n{width:22px; height:22px; border-radius:50%; background:var(--btn); color:var(--btn-ink); font-weight:700; font-size:12px; display:grid; place-items:center}
+.pop .outcome{margin-top:12px; padding-top:10px; border-top:1px solid var(--line); font-size:12.5px; color:var(--muted); line-height:1.4}
+
+.panel{background:var(--surface); border:1px solid var(--line-strong); border-radius:10px; min-width:0}
+button:focus-visible, input:focus-visible{outline:2.5px solid var(--pt); outline-offset:2px}
+
+/* Controls */
+.controls{display:flex; flex-wrap:wrap; gap:8px 22px; padding:8px 14px; align-items:end}
+.ctl{display:flex; flex-direction:column; gap:3px}
+.ctl-top{display:flex; align-items:center; justify-content:space-between; gap:8px; min-height:24px}
+.lab{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.07em; font-weight:700}
+.ctl output, .big-out{font-family:var(--font-num); font-variant-numeric:tabular-nums; font-weight:700; font-size:15px}
+.big-out{font-size:20px; padding:2px 0}
+.ctl input[type=range]{width:140px; accent-color:var(--pt); margin:8px 0}
+.seg{display:flex; flex-wrap:wrap; gap:3px; background:var(--surface-2); border-radius:9px; padding:3px}
+.seg button{padding:6px 12px; border-radius:7px; font-weight:700; font-size:14px; color:var(--muted); white-space:nowrap}
+.seg button[aria-checked="true"], .seg button[aria-pressed="true"]{background:var(--surface); color:var(--ink); box-shadow:0 0 0 1.5px var(--ink)}
+.btns{display:flex; gap:6px; flex-wrap:wrap}
+.btn-primary{background:var(--btn); color:var(--btn-ink); border-radius:8px; padding:9px 18px; font-weight:700; font-size:15px; white-space:nowrap; min-width:104px}
+.btn-plain{border:1.5px solid var(--line-strong); background:var(--surface); border-radius:8px; padding:7.5px 14px; font-weight:700; font-size:15px; white-space:nowrap}
+.btn-plain:hover{border-color:var(--ink)}
+.spacer{flex:1 1 0; min-width:0}
+
+/* Two side-by-side lanes */
+.layout{display:grid; grid-template-columns:1fr; gap:10px; flex:1; min-height:0}
+@media (min-width:900px){ .layout.two{grid-template-columns:1fr 1fr; grid-template-rows:minmax(0,1fr)} }
+.lane{display:flex; flex-direction:column; gap:8px; padding:10px 12px; min-height:0; overflow:hidden}
+.lane-head{display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:6px 10px}
+.lane-title{font-family:var(--font-display); font-weight:800; font-size:clamp(17px, 1.5vw, 21px); line-height:1.1}
+.chip{display:inline-flex; align-items:center; gap:5px; border-radius:999px; padding:3px 11px; font-weight:700; font-size:13.5px; background:var(--surface-2); white-space:nowrap}
+.chip b{font-family:var(--font-num)}
+.chip.ok{background:var(--ok); color:var(--surface)}
+.chip.bad{background:var(--bad); color:var(--surface)}
+.cv-wrap{position:relative; min-height:150px}
+.cv-wrap canvas{position:absolute; inset:0; width:100%; height:100%; display:block}
+.lane .cv-field{flex:0 0 clamp(150px, 26vh, 230px)}
+.lane .cv-shelf{flex:1 1 220px}
+.result{font-family:var(--font-display); font-weight:800; font-size:clamp(16px, 1.5vw, 20px); min-height:1.3em}
+.result.ok{color:var(--ok)} .result.bad{color:var(--bad)}
+
+/* Blocks */
+.prog{display:flex; flex-direction:column; gap:4px; overflow:auto; min-height:0; padding:2px}
+.prog.flow{flex-direction:row; flex-wrap:wrap; align-content:flex-start}
+.prog .note{width:100%; font-size:12px; color:var(--muted); margin-bottom:2px}
+.row{display:flex; align-items:stretch; gap:0}
+.rail{width:20px; flex:none; display:flex}
+.rail::before{content:""; width:5px; border-radius:3px; background:var(--rail, transparent); margin-left:3px}
+.blk{display:inline-flex; align-items:center; gap:6px; padding:5px 11px; border-radius:7px; font-weight:700; font-size:14.5px; color:#fff; background:var(--kc); line-height:1.2}
+.blk .ico{font-size:15px; line-height:1}
+.blk.on{box-shadow:0 0 0 2.5px var(--surface), 0 0 0 5px var(--ink); transform:translateX(3px)}
+.k-loop{--kc:var(--k-loop)} .k-if{--kc:var(--k-if)} .k-else{--kc:var(--k-if)} .k-act{--kc:var(--k-act)} .k-var{--kc:var(--k-var)} .k-ret{--kc:var(--k-ret)} .k-def{--kc:var(--k-def)}
+
+/* Grade 8 search lanes */
+.stats{display:flex; flex-wrap:wrap; align-items:flex-end; gap:6px 22px}
+.stat{display:flex; flex-direction:column; gap:1px}
+.stat .num{font-family:var(--font-num); font-weight:700; font-size:clamp(26px, 3vw, 38px); line-height:1; font-variant-numeric:tabular-nums}
+.stat small{font-size:12px; color:var(--muted)}
+.bat{width:150px; height:16px; border:2px solid var(--ink); border-radius:4px; position:relative; overflow:hidden; background:var(--surface-2)}
+.bat i{position:absolute; left:0; top:0; bottom:0; width:0; background:var(--k-loop); transition:width .15s}
+.bat-row{display:flex; align-items:center; gap:8px}
+.bat-row b{font-family:var(--font-num); font-size:16px; min-width:5.5ch}
+.req{display:inline-flex; align-items:center; gap:5px; font-weight:700; font-size:13.5px; border-radius:999px; padding:3px 11px; border:2px solid}
+.req.ok{border-color:var(--ok); color:var(--ok)} .req.bad{border-color:var(--bad); color:var(--bad)}
+.sortcost{border-left:2px dashed var(--line-strong); padding-left:14px}
+.sortcost b{font-family:var(--font-num); font-size:clamp(18px, 1.8vw, 24px); line-height:1.1; color:var(--muted)}
+
+/* Grade 8 AI bias */
+.ai-panel{display:flex; flex-direction:column; gap:10px; padding:10px 14px; overflow:auto; min-height:0}
+.ai-panel > *{flex-shrink:0}
+.ptitle{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.07em; font-weight:700}
+.toggles{display:flex; flex-wrap:wrap; gap:6px}
+.tog{display:inline-flex; align-items:center; gap:6px; padding:5px 12px 5px 6px; border-radius:9px; border:2px solid var(--line-strong); font-weight:700; font-size:14px; background:var(--surface); color:var(--muted)}
+.tog[aria-pressed="true"]{border-color:var(--ink); color:var(--ink); background:var(--surface-2)}
+.tog .box{width:18px; height:18px; border-radius:4px; border:2px solid currentColor; display:grid; place-items:center; font-size:12px; line-height:1}
+.gallery{display:flex; flex-wrap:wrap; gap:4px; min-height:64px; padding:6px; border-radius:10px; background:var(--surface-2)}
+.gallery svg{width:44px; height:62px}
+.rule{display:flex; flex-direction:column; gap:6px; border:2.5px solid var(--ink); border-radius:10px; padding:10px 12px}
+.rule-line{display:flex; flex-wrap:wrap; align-items:center; gap:6px; font-size:15px}
+.rule-line .k{font-weight:700; min-width:4.2em}
+.sw{display:inline-flex; align-items:center; gap:5px; padding:2px 10px 2px 4px; border-radius:999px; background:var(--surface-2); font-weight:700; font-size:13.5px}
+.sw svg{width:18px; height:24px}
+.test{display:grid; grid-template-columns:auto 1fr auto; gap:6px 12px; align-items:center}
+.test .tl{font-weight:700; font-size:14px}
+.cells{display:flex; gap:6px}
+.cell{display:flex; flex-direction:column; align-items:center; gap:2px; padding:4px 6px 5px; border-radius:9px; border:2.5px solid var(--line); min-width:74px}
+.cell svg{width:34px; height:48px}
+.cell .ans{font-size:12px; font-weight:700; white-space:nowrap}
+.cell.ok{border-color:var(--ok)} .cell.bad{border-color:var(--bad); background:color-mix(in srgb, var(--bad) 10%, transparent)}
+.cell .mk{font-weight:800; font-size:13px} .cell.ok .mk{color:var(--ok)} .cell.bad .mk{color:var(--bad)}
+.score{display:flex; align-items:center; gap:8px}
+.score .bar{width:90px; height:12px; border-radius:6px; background:var(--surface-2); overflow:hidden}
+.score .bar i{display:block; height:100%; background:var(--ok)}
+.score .bar.low i{background:var(--bad)}
+.score b{font-family:var(--font-num); font-size:13.5px; white-space:nowrap}
+.total{font-family:var(--font-display); font-weight:800; font-size:clamp(17px, 1.6vw, 22px)}
+
+/* Grade 9 Python */
+.py-layout{display:grid; grid-template-columns:1fr; gap:10px; flex:1; min-height:0}
+@media (min-width:900px){ .py-layout{grid-template-columns:1fr 1fr; grid-template-rows:auto minmax(0,1fr)} .py-stage{grid-column:1 / -1} }
+.py-stage{display:flex; flex-direction:column; gap:6px; padding:8px 12px}
+.py-stage .cv-wrap{height:clamp(130px, 22vh, 240px)}
+.vars{display:flex; flex-wrap:wrap; gap:6px; min-height:28px; align-items:center}
+.var{font-family:var(--font-num); font-size:14px; font-weight:700; padding:3px 10px; border-radius:7px; background:var(--surface-2); border-left:4px solid var(--k-var)}
+.var.chg{background:color-mix(in srgb, var(--k-var) 22%, var(--surface))}
+.code{margin:0; font-family:var(--font-num); font-size:clamp(13px, 1.15vw, 16px); line-height:1.55; overflow:auto; min-height:0; padding:6px 0}
+.pl{display:flex; white-space:pre; padding-right:12px; border-left:5px solid transparent}
+.pl .ln{width:2.6em; text-align:right; padding-right:12px; color:var(--muted); user-select:none; flex:none}
+.pl.on{background:color-mix(in srgb, var(--kc) 16%, transparent); border-left-color:var(--kc)}
+.py-kw{color:var(--k-if); font-weight:700} .py-fn{color:var(--k-act)} .py-num{color:var(--k-loop)} .py-op{color:var(--muted)}
+.prog.py-blocks{padding:4px 2px; gap:3px}
+.py-blocks .blk{padding:4px 10px; font-size:14px}
+
+@media (prefers-reduced-motion: reduce){ *{transition:none !important} }
+</style>
+
+<div id="app">
+  <header class="topbar">
+    <div class="brand">
+      <a class="main-btn" href="index.html"><span aria-hidden="true">←</span> Return to Main Page</a>
+      <h1>Rover Algorithms and AI</h1>
+    </div>
+    <div class="top-right">
+      <div class="mode" role="radiogroup" aria-label="Grade">
+        <button type="button" data-grade="56" role="radio" aria-checked="true">Grade 5–6<small>Blocks</small></button>
+        <button type="button" data-grade="8" role="radio" aria-checked="false">Grade 8<small>Efficiency &amp; AI</small></button>
+        <button type="button" data-grade="9" role="radio" aria-checked="false">Grade 9<small>Python</small></button>
+      </div>
+      <div class="guide-wrap">
+        <button type="button" id="guideBtn" class="btn-outline" aria-expanded="false" aria-controls="guidePop">How to use</button>
+        <div id="guidePop" class="pop" hidden>
+          <h2>How to use this</h2>
+          <ol id="guideList"></ol>
+          <p class="outcome" id="guideOutcome"></p>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <section class="panel controls" aria-label="Controls">
+    <!-- Grade 5–6 -->
+    <div class="ctl" data-show="56">
+      <div class="ctl-top"><span class="lab">Field</span></div>
+      <div class="btns"><output class="big-out" id="fieldNo">1</output><button type="button" class="btn-plain" id="newField">New field</button></div>
+    </div>
+    <!-- Grade 8 -->
+    <div class="ctl" data-show="8">
+      <div class="ctl-top"><span class="lab" id="viewLab">Show</span></div>
+      <div class="seg" role="radiogroup" aria-labelledby="viewLab" id="viewSeg">
+        <button type="button" role="radio" data-view="search" aria-checked="true">Search race</button>
+        <button type="button" role="radio" data-view="ai" aria-checked="false">AI training bias</button>
+      </div>
+    </div>
+    <div class="ctl" data-show="8s">
+      <div class="ctl-top"><span class="lab" id="nLab">Samples</span></div>
+      <div class="seg" role="radiogroup" aria-labelledby="nLab" id="nSeg">
+        <button type="button" role="radio" data-n="16" aria-checked="false">16</button>
+        <button type="button" role="radio" data-n="32" aria-checked="true">32</button>
+        <button type="button" role="radio" data-n="64" aria-checked="false">64</button>
+        <button type="button" role="radio" data-n="128" aria-checked="false">128</button>
+      </div>
+    </div>
+    <div class="ctl" data-show="8s">
+      <div class="ctl-top"><span class="lab" id="ordLab">Samples are</span></div>
+      <div class="seg" role="radiogroup" aria-labelledby="ordLab" id="ordSeg">
+        <button type="button" role="radio" data-sorted="0" aria-checked="false">Shuffled</button>
+        <button type="button" role="radio" data-sorted="1" aria-checked="true">Sorted</button>
+      </div>
+    </div>
+    <div class="ctl" data-show="8s 9s">
+      <div class="ctl-top"><span class="lab">Find sample</span></div>
+      <output class="big-out" id="targetOut">0</output>
+    </div>
+    <!-- Grade 9 -->
+    <div class="ctl" data-show="9">
+      <div class="ctl-top"><span class="lab" id="p9Lab">Program</span></div>
+      <div class="seg" role="radiogroup" aria-labelledby="p9Lab" id="p9Seg">
+        <button type="button" role="radio" data-p9="field" aria-checked="true">Water the field</button>
+        <button type="button" role="radio" data-p9="linear" aria-checked="false">Linear search</button>
+        <button type="button" role="radio" data-p9="binary" aria-checked="false">Binary search</button>
+      </div>
+    </div>
+    <span class="spacer"></span>
+    <!-- Shared run controls -->
+    <div class="ctl" data-show="56 8s 9">
+      <div class="ctl-top"><label class="lab" for="speed">Speed</label></div>
+      <input type="range" id="speed" min="1" max="5" step="1" value="3">
+    </div>
+    <div class="ctl" data-show="56 8s 9">
+      <div class="btns">
+        <button type="button" class="btn-primary" id="runBtn">▶ Run</button>
+        <button type="button" class="btn-plain" id="stepBtn">Step</button>
+        <button type="button" class="btn-plain" id="resetBtn">Reset</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Grade 5–6: two rovers on the same field, each with its own program -->
+  <main class="layout two" id="view56">
+    <section class="panel lane" data-lane="0" aria-label="Left rover"></section>
+    <section class="panel lane" data-lane="1" aria-label="Right rover"></section>
+  </main>
+
+  <!-- Grade 8: linear and binary search race on the same shelf of samples -->
+  <main class="layout two" id="view8s" hidden>
+    <section class="panel lane" data-slane="lin" aria-label="Linear search">
+      <div class="lane-head"><h2 class="lane-title">Linear search</h2><span class="chip">Check every sample in order</span></div>
+      <div class="stats">
+        <div class="stat"><span class="lab">CPU steps</span><span class="num" data-k="steps">0</span><small data-k="most"></small></div>
+        <div class="stat"><span class="lab">Energy used</span><div class="bat-row"><div class="bat"><i data-k="bat"></i></div><b data-k="J">0 J</b></div><small>2 J per check</small></div>
+      </div>
+      <div class="cv-wrap cv-shelf"><canvas aria-label="Linear search shelf"></canvas></div>
+      <p class="result" data-k="res" aria-live="polite"></p>
+    </section>
+    <section class="panel lane" data-slane="bin" aria-label="Binary search">
+      <div class="lane-head"><h2 class="lane-title">Binary search</h2><span class="req" id="req"></span></div>
+      <div class="stats">
+        <div class="stat"><span class="lab">CPU steps</span><span class="num" data-k="steps">0</span><small data-k="most"></small></div>
+        <div class="stat"><span class="lab">Energy used</span><div class="bat-row"><div class="bat"><i data-k="bat"></i></div><b data-k="J">0 J</b></div><small>2 J per check</small></div>
+        <div class="stat sortcost" id="sortCost"><span class="lab">Sorting first</span><b data-k="sort"></b><small>steps, paid once</small></div>
+      </div>
+      <div class="cv-wrap cv-shelf"><canvas aria-label="Binary search shelf"></canvas></div>
+      <p class="result" data-k="res" aria-live="polite"></p>
+    </section>
+  </main>
+
+  <!-- Grade 8: AI training set bias -->
+  <main class="layout two" id="view8a" hidden>
+    <section class="panel ai-panel" aria-label="Training">
+      <span class="ptitle">1 · Train the AI with photos of quartz</span>
+      <div class="toggles" id="trainBtns"></div>
+      <div class="gallery" id="trainGal" aria-label="Training photos"></div>
+      <span class="ptitle">2 · What the AI learned</span>
+      <div class="rule" id="ruleBox"></div>
+    </section>
+    <section class="panel ai-panel" aria-label="Test">
+      <span class="ptitle">3 · Test: is it quartz?</span>
+      <div class="test" id="testGrid"></div>
+      <p class="total" id="aiTotal" aria-live="polite"></p>
+    </section>
+  </main>
+
+  <!-- Grade 9: one rover, its blocks and the same program in Python, line for line -->
+  <main class="py-layout" id="view9" hidden>
+    <section class="panel py-stage">
+      <div class="cv-wrap"><canvas id="cv9" aria-label="Rover"></canvas></div>
+      <div class="vars" id="vars9" aria-live="polite"></div>
+    </section>
+    <section class="panel lane">
+      <div class="lane-head"><h2 class="lane-title">Blocks</h2></div>
+      <div class="prog py-blocks" id="blocks9"></div>
+    </section>
+    <section class="panel lane">
+      <div class="lane-head"><h2 class="lane-title">Python</h2></div>
+      <pre class="code" id="code9"></pre>
+    </section>
+  </main>
+</div>
+
+<script>
+/* =========================================================
+   CONSTANTS
+   ========================================================= */
+const PATCHES = 8;
+const FIELD1 = [1, 0, 1, 1, 0, 1, 0, 0];          // 1 = dry, 0 = wet. Field 1 is the same every time.
+const J_PER_CHECK = 2;                          // rover battery used for each sample it checks
+const SPEED_MS = [0, 1100, 650, 380, 180, 70];  // speed slider 1 to 5 → milliseconds per step
+const LANE_PROG = ['seq', 'ifelse'];            // starting program in each Grade 5–6 lane
+
+/* =========================================================
+   STATE
+   ========================================================= */
+const S = {
+  grade:'56', view8:'search', p9:'field',
+  field:1, soil:FIELD1.slice(), seqSoil:FIELD1.slice(),   // the Sequence program was written for seqSoil
+  lanes:LANE_PROG.slice(),
+  n:32, sorted:true, values:[], shelf:[], target:0,
+  shelf9:[], target9:0,
+  train:{purple:true, clear:false, smoky:false},
+  players:[], running:false, timer:null,
+};
+
+const $ = id => document.getElementById(id);
+const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+/* =========================================================
+   PROGRAMS. Each line is one block and one Python line:
+   ind = how far in it sits, k = block colour role, b = block words, py = Python, act = rover action.
+   ========================================================= */
+const L = (ind, k, b, py, act) => ({ind, k, b, py, act});
+const ICON = {water:'💧', plant:'🌱', move:'➜'};
+
+function fieldProgram(kind){
+  if (kind === 'seq'){
+    const out = [];
+    S.seqSoil.forEach(d => {
+      out.push(d ? L(0, 'act', 'Water', 'water()', 'water') : L(0, 'act', 'Plant seed', 'plant_seed()', 'plant'));
+      out.push(L(0, 'act', 'Move', 'move_forward()', 'move'));
+    });
+    return out;
+  }
+  if (kind === 'loop') return [
+    L(0, 'loop', 'Repeat 8 times', 'for step in range(8):'),
+    L(1, 'act', 'Water', 'water()', 'water'),
+    L(1, 'act', 'Move', 'move_forward()', 'move'),
+  ];
+  return [
+    L(0, 'loop', 'Repeat 8 times', 'for step in range(8):'),
+    L(1, 'if', 'If soil is dry', 'if soil_is_dry():'),
+    L(2, 'act', 'Water', 'water()', 'water'),
+    L(1, 'else', 'Else', 'else:'),
+    L(2, 'act', 'Plant seed', 'plant_seed()', 'plant'),
+    L(1, 'act', 'Move', 'move_forward()', 'move'),
+  ];
+}
+const PROG_NAME = {seq:'Sequence', loop:'Loop', ifelse:'Loop + If–Else'};
+// "Else" is part of the If–Else block, so it is not counted as a block of its own.
+const blockCount = prog => prog.filter(l => l.k !== 'else').length;
+
+const LINEAR = [
+  L(0, 'def', 'To search for the target', 'def linear_search(samples, target):'),
+  L(1, 'loop', 'For each sample i, in order', 'for i in range(len(samples)):'),
+  L(2, 'if', 'If sample i = target', 'if samples[i] == target:'),
+  L(3, 'ret', 'Report i (found)', 'return i'),
+  L(1, 'ret', 'Report not found', 'return -1'),
+];
+const BINARY = [
+  L(0, 'def', 'To search for the target', 'def binary_search(samples, target):'),
+  L(1, 'var', 'Set low to the first sample', 'low = 0'),
+  L(1, 'var', 'Set high to the last sample', 'high = len(samples) - 1'),
+  L(1, 'loop', 'Repeat while low ≤ high', 'while low <= high:'),
+  L(2, 'var', 'Set mid to halfway', 'mid = int((low + high) * 0.5)'),
+  L(2, 'if', 'If sample mid = target', 'if samples[mid] == target:'),
+  L(3, 'ret', 'Report mid (found)', 'return mid'),
+  L(2, 'if', 'Else if sample mid < target', 'elif samples[mid] < target:'),
+  L(3, 'var', 'Set low to mid + 1', 'low = mid + 1'),
+  L(2, 'else', 'Else', 'else:'),
+  L(3, 'var', 'Set high to mid − 1', 'high = mid - 1'),
+  L(1, 'ret', 'Report not found', 'return -1'),
+];
+
+/* =========================================================
+   TRACES. Running a program makes a list of frames; each frame is the state after one line.
+   ========================================================= */
+function traceField(kind, prog, soil){
+  const T = [];
+  let pos = 0;
+  const out = Array(PATCHES).fill('');
+  const snap = (line, vars = {}) => T.push({line, pos, out:out.slice(), vars});
+  const act = a => { if (a === 'move') pos++; else if (pos < PATCHES) out[pos] = a; };
+  if (kind === 'seq') prog.forEach((l, i) => { act(l.act); snap(i); });
+  else if (kind === 'loop'){
+    for (let k = 0; k < PATCHES; k++){ snap(0, {step:k}); act('water'); snap(1, {step:k}); act('move'); snap(2, {step:k}); }
+  } else {
+    for (let k = 0; k < PATCHES; k++){
+      snap(0, {step:k});
+      const dry = soil[pos];
+      snap(1, {step:k, 'soil_is_dry()':dry ? 'True' : 'False'});
+      if (dry){ act('water'); snap(2, {step:k}); }
+      else { snap(3, {step:k}); act('plant'); snap(4, {step:k}); }
+      act('move'); snap(5, {step:k});
+    }
+  }
+  return T;
+}
+const fieldStart = () => ({line:-1, pos:0, out:Array(PATCHES).fill(''), vars:{}});
+const correctCount = (fr, soil) => fr.out.filter((o, i) => o && ((soil[i] && o === 'water') || (!soil[i] && o === 'plant'))).length;
+const doneCount = fr => fr.out.filter(Boolean).length;
+
+function traceLinear(arr, target){
+  const T = []; const checked = []; let steps = 0;
+  const snap = (line, o) => T.push({line, checked:checked.slice(), steps, cur:null, ...o});
+  snap(0, {vars:{target}});
+  for (let i = 0; i < arr.length; i++){
+    snap(1, {vars:{target, i}});
+    steps++; checked.push(i);
+    snap(2, {cur:i, check:true, vars:{target, i, 'samples[i]':arr[i]}});
+    if (arr[i] === target){ snap(3, {cur:i, result:'found', vars:{target, i}}); return T; }
+  }
+  snap(4, {result:'missed', vars:{target}});
+  return T;
+}
+function traceBinary(arr, target){
+  const T = []; const checked = []; let steps = 0, low = 0, high = arr.length - 1, mid = null;
+  const snap = (line, o) => T.push({line, checked:checked.slice(), steps, low, high, cur:null, ...o});
+  snap(0, {vars:{target}});
+  snap(1, {vars:{target, low}});
+  snap(2, {vars:{target, low, high}});
+  while (true){
+    snap(3, {vars:{target, low, high}});
+    if (low > high) break;
+    mid = Math.floor((low + high) * 0.5);
+    snap(4, {cur:mid, vars:{target, low, high, mid}});
+    steps++; checked.push(mid);
+    snap(5, {cur:mid, check:true, vars:{target, low, high, mid, 'samples[mid]':arr[mid]}});
+    if (arr[mid] === target){ snap(6, {cur:mid, result:'found', vars:{target, mid}}); return T; }
+    snap(7, {cur:mid, vars:{target, low, high, mid, 'samples[mid]':arr[mid]}});
+    if (arr[mid] < target){ low = mid + 1; snap(8, {cur:mid, vars:{target, low, high, mid}}); }
+    else { snap(9, {cur:mid, vars:{target, low, high, mid}}); high = mid - 1; snap(10, {cur:mid, vars:{target, low, high, mid}}); }
+  }
+  snap(11, {result:'missed', vars:{target}});
+  return T;
+}
+// The Grade 8 race moves one sample check per tick, so both rovers are timed by the same clock.
+function raceFrames(T){
+  const F = T.filter(t => t.check).map(t => ({...t}));
+  const last = T[T.length - 1];
+  if (last.result === 'found') F[F.length - 1].result = 'found';
+  else F.push(last);
+  return F;
+}
+const shelfStart = arr => ({line:-1, checked:[], steps:0, cur:null, low:0, high:arr.length - 1, vars:{}});
+
+/* =========================================================
+   DATA
+   ========================================================= */
+function makeValues(n){
+  const v = []; let x = 100 + Math.floor(Math.random() * 20);
+  for (let i = 0; i < n; i++){ v.push(x); x += 1 + Math.floor(Math.random() * 6); }
+  return v;
+}
+function shuffle(a){
+  const b = a.slice();
+  for (let i = b.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; }
+  return b;
+}
+const pick = a => a[Math.floor(Math.random() * a.length)];
+function newShelf(){
+  S.values = makeValues(S.n);
+  S.shuffled = shuffle(S.values);
+  S.target = pick(S.values);
+}
+function newSoil(){
+  let s;
+  do { s = Array.from({length:PATCHES}, () => Math.random() < 0.5 ? 1 : 0); }
+  while (s.filter(Boolean).length < 2 || s.filter(x => !x).length < 2 || s.join() === S.soil.join());
+  return s;
+}
+
+/* =========================================================
+   PLAYERS: one per rover. idx −1 = before the first line.
+   ========================================================= */
+function buildPlayers(){
+  stop();
+  if (S.grade === '56'){
+    S.players = S.lanes.map(kind => {
+      const prog = fieldProgram(kind);
+      return {kind, prog, frames:traceField(kind, prog, S.soil), idx:-1, start:fieldStart()};
+    });
+  } else if (S.grade === '8' && S.view8 === 'search'){
+    const arr = S.sorted ? S.values : S.shuffled;
+    S.players = [
+      {key:'lin', arr, frames:raceFrames(traceLinear(arr, S.target)), idx:-1, start:shelfStart(arr)},
+      {key:'bin', arr, frames:raceFrames(traceBinary(arr, S.target)), idx:-1, start:shelfStart(arr)},
+    ];
+  } else if (S.grade === '9'){
+    if (S.p9 === 'field'){
+      const prog = fieldProgram('ifelse');
+      S.players = [{kind:'ifelse', prog, frames:traceField('ifelse', prog, S.soil), idx:-1, start:fieldStart()}];
+    } else {
+      const prog = S.p9 === 'linear' ? LINEAR : BINARY;
+      const T = S.p9 === 'linear' ? traceLinear(S.shelf9, S.target9) : traceBinary(S.shelf9, S.target9);
+      S.players = [{key:S.p9 === 'linear' ? 'lin' : 'bin', prog, arr:S.shelf9, frames:T, idx:-1, start:shelfStart(S.shelf9)}];
+    }
+  } else S.players = [];
+}
+const frameOf = p => p.idx < 0 ? p.start : p.frames[p.idx];
+const allDone = () => S.players.every(p => p.idx >= p.frames.length - 1);
+
+function tick(){
+  let moved = false;
+  for (const p of S.players) if (p.idx < p.frames.length - 1){ p.idx++; moved = true; }
+  render();
+  if (!moved || allDone()) stop();
+}
+function schedule(){ S.timer = setTimeout(() => { tick(); if (S.running) schedule(); }, SPEED_MS[+$('speed').value]); }
+function run(){
+  if (S.running){ stop(); return; }
+  if (!S.players.length) return;
+  if (allDone()){ S.players.forEach(p => p.idx = -1); }
+  S.running = true; setRunBtn(); tick(); if (S.running) schedule();
+}
+function stop(){ S.running = false; clearTimeout(S.timer); setRunBtn(); }
+function setRunBtn(){ $('runBtn').textContent = S.running ? '❚❚ Pause' : '▶ Run'; }
+
+/* =========================================================
+   BLOCKS (HTML)
+   ========================================================= */
+function blocksHTML(prog, flow){
+  if (flow) return prog.map((l, i) => blockEl(l, i)).join('');
+  // Rails show what a block sits inside: one coloured rail per enclosing loop or decision.
+  const stack = [];
+  return prog.map((l, i) => {
+    stack.length = l.ind;
+    const rails = stack.map(k => `<span class="rail" style="--rail:var(--k-${k === 'else' ? 'if' : k})"></span>`).join('');
+    stack[l.ind] = l.k;
+    return `<div class="row">${rails}${blockEl(l, i)}</div>`;
+  }).join('');
+}
+function blockEl(l, i){
+  const ico = l.act ? `<span class="ico" aria-hidden="true">${ICON[l.act]}</span>` : '';
+  return `<span class="blk k-${l.k}" data-line="${i}">${ico}${esc(l.b)}</span>`;
+}
+function markLine(root, line){
+  root.querySelectorAll('.on').forEach(e => e.classList.remove('on'));
+  if (line >= 0) root.querySelectorAll(`[data-line="${line}"]`).forEach(e => e.classList.add('on'));
+}
+
+/* =========================================================
+   PYTHON (HTML, with simple colouring)
+   ========================================================= */
+const KW = new Set(['def', 'for', 'in', 'if', 'elif', 'else', 'while', 'return']);
+function pyColour(src){
+  return src.replace(/[A-Za-z_]\w*|\d+(?:\.\d+)?|[^\sA-Za-z_\d]+|\s+/g, (t, off) => {
+    if (KW.has(t)) return `<span class="py-kw">${t}</span>`;
+    if (/^\d/.test(t)) return `<span class="py-num">${t}</span>`;
+    if (/^[A-Za-z_]/.test(t)) return src[off + t.length] === '(' && !KW.has(t) ? `<span class="py-fn">${t}</span>` : t;
+    return esc(t);
+  });
+}
+function codeHTML(prog){
+  return prog.map((l, i) => `<div class="pl k-${l.k}" data-line="${i}"><span class="ln">${i + 1}</span><span>${'    '.repeat(l.ind)}${pyColour(l.py)}</span></div>`).join('');
+}
+
+/* =========================================================
+   CANVAS
+   ========================================================= */
+function fitCanvas(cv){
+  const r = cv.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+  const w = Math.max(1, Math.round(r.width * dpr)), h = Math.max(1, Math.round(r.height * dpr));
+  if (cv.width !== w || cv.height !== h){ cv.width = w; cv.height = h; }
+  const ctx = cv.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, r.width, r.height);
+  return {ctx, w:r.width, h:r.height};
+}
+function rr(ctx, x, y, w, h, r){ ctx.beginPath(); ctx.roundRect(x, y, w, h, r); }
+
+const SOIL = {dry:'#d8b57a', dryLine:'#a9844a', wet:'#6e4b2e', wetDot:'#5fa8e8', watered:'#c49a5c', sprout:'#2e9a4e', wilt:'#9a7b3f'};
+
+function drawField(cv, soil, fr){
+  const {ctx, w, h} = fitCanvas(cv);
+  const ink = css('--ink'), muted = css('--muted');
+  const cols = PATCHES + 1, pad = 10;
+  const colW = (w - pad * 2) / cols;
+  const size = Math.min(colW - 6, h * 0.36);
+  const roverH = Math.min(colW * 0.9, size * 1.1) * 0.75;
+  const py = Math.max(roverH + 4, (h - size - 26 - roverH) / 2 + roverH);   // patch top: rover, patches and labels sit centred
+  const font = Math.max(11, Math.min(14, colW * 0.2));
+  for (let i = 0; i < PATCHES; i++){
+    const cx = pad + colW * (i + 0.5), x = cx - size / 2;
+    const dry = soil[i], o = fr.out[i];
+    rr(ctx, x, py, size, size, 6);
+    ctx.fillStyle = dry ? (o === 'water' ? SOIL.watered : SOIL.dry) : SOIL.wet; ctx.fill();
+    ctx.lineWidth = 1.5; ctx.strokeStyle = ink; ctx.stroke();
+    if (dry && o !== 'water'){
+      ctx.strokeStyle = SOIL.dryLine; ctx.lineWidth = 1.5; ctx.beginPath();
+      ctx.moveTo(x + size * .2, py + size * .3); ctx.lineTo(x + size * .45, py + size * .5); ctx.lineTo(x + size * .4, py + size * .8);
+      ctx.moveTo(x + size * .45, py + size * .5); ctx.lineTo(x + size * .8, py + size * .55);
+      ctx.stroke();
+    }
+    if (!dry){
+      ctx.fillStyle = SOIL.wetDot;
+      [[.28, .3], [.7, .4], [.4, .72], [.75, .78]].forEach(([a, b]) => { ctx.beginPath(); ctx.arc(x + size * a, py + size * b, Math.max(1.5, size * .05), 0, 7); ctx.fill(); });
+    }
+    if (o === 'water'){
+      if (!dry){ ctx.fillStyle = 'rgba(61,143,224,.55)'; ctx.beginPath(); ctx.ellipse(cx, py + size * .55, size * .48, size * .3, 0, 0, 7); ctx.fill(); }
+      drop(ctx, cx, py + size * .5, size * .22);
+    }
+    if (o === 'plant') sprout(ctx, cx, py + size * .78, size * .5, dry ? SOIL.wilt : SOIL.sprout, dry);
+    ctx.fillStyle = muted; ctx.font = `700 ${font}px ${css('--font-ui')}`; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillText(dry ? 'Dry' : 'Wet', cx, py + size + 5);
+    if (o){
+      const ok = (dry && o === 'water') || (!dry && o === 'plant');
+      const r = Math.max(8, size * .16);
+      ctx.fillStyle = css(ok ? '--ok' : '--bad');
+      ctx.beginPath(); ctx.arc(x + size - 2, py + 2, r, 0, 7); ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.font = `800 ${r * 1.3}px ${css('--font-ui')}`; ctx.textBaseline = 'middle';
+      ctx.fillText(ok ? '✓' : '✗', x + size - 2, py + 3);
+    }
+  }
+  // Finish flag
+  const fx = pad + colW * (PATCHES + 0.5);
+  ctx.strokeStyle = ink; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(fx - size * .25, py + size); ctx.lineTo(fx - size * .25, py + size * .1); ctx.stroke();
+  const fs = size * .14;
+  for (let r = 0; r < 3; r++) for (let c = 0; c < 4; c++){
+    ctx.fillStyle = (r + c) % 2 ? ink : css('--surface');
+    ctx.fillRect(fx - size * .25 + c * fs, py + size * .1 + r * fs, fs, fs);
+  }
+  ctx.strokeRect(fx - size * .25, py + size * .1, fs * 4, fs * 3);
+  // Rover above its patch
+  const rx = pad + colW * (Math.min(fr.pos, PATCHES) + 0.5);
+  rover(ctx, rx, py - 6, Math.min(colW * 0.9, size * 1.1));
+}
+function drop(ctx, x, y, r){
+  ctx.fillStyle = css('--water');
+  ctx.beginPath(); ctx.moveTo(x, y - r * 1.5); ctx.quadraticCurveTo(x + r * 1.1, y - r * .1, x, y + r); ctx.quadraticCurveTo(x - r * 1.1, y - r * .1, x, y - r * 1.5); ctx.fill();
+  ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.2; ctx.stroke();
+}
+function sprout(ctx, x, y, s, col, wilted){
+  ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = Math.max(2, s * .1); ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(x, y);
+  if (wilted) ctx.quadraticCurveTo(x, y - s * .7, x + s * .35, y - s * .45); else ctx.lineTo(x, y - s * .75);
+  ctx.stroke();
+  const ty = wilted ? y - s * .45 : y - s * .75, tx = wilted ? x + s * .35 : x;
+  ctx.beginPath(); ctx.ellipse(tx - s * .2, ty + (wilted ? s * .12 : 0), s * .22, s * .1, wilted ? .9 : -.5, 0, 7); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(tx + s * .2, ty + (wilted ? s * .18 : 0), s * .22, s * .1, wilted ? 1.3 : .5, 0, 7); ctx.fill();
+}
+function rover(ctx, x, base, s){
+  const ink = css('--ink'), body = css('--pt');
+  const bw = s * .8, bh = s * .32, by = base - s * .12 - bh;
+  ctx.fillStyle = ink;
+  [-.3, 0, .3].forEach(k => { ctx.beginPath(); ctx.arc(x + bw * k, base - s * .08, s * .08, 0, 7); ctx.fill(); });
+  rr(ctx, x - bw / 2, by, bw, bh, 5); ctx.fillStyle = body; ctx.fill(); ctx.lineWidth = 1.5; ctx.strokeStyle = ink; ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x - bw * .25, by); ctx.lineTo(x - bw * .25, by - s * .22); ctx.stroke();
+  ctx.beginPath(); ctx.arc(x - bw * .25, by - s * .26, s * .06, 0, 7); ctx.fillStyle = css('--k-loop'); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#fff';
+  rr(ctx, x + bw * .05, by + bh * .25, bw * .3, bh * .45, 3); ctx.fill();
+}
+
+function drawShelf(cv, arr, fr, mode){
+  const {ctx, w, h} = fitCanvas(cv);
+  const n = arr.length, gap = n > 64 ? 3 : 5;
+  // Pick the column count that gives the largest tiles (tiles are a little wider than tall).
+  let best = {cols:1, tw:0, th:0};
+  for (let cols = 1; cols <= n; cols++){
+    const rows = Math.ceil(n / cols);
+    const tw = (w - gap * (cols - 1)) / cols, th = Math.min(tw * .7, 64, (h - gap * (rows - 1)) / rows);
+    const twUse = Math.min(tw, th * 1.6);
+    if (th > 0 && twUse * th > best.tw * best.th) best = {cols, tw:twUse, th};
+  }
+  const {cols, tw, th} = best;
+  const rows = Math.ceil(n / cols);
+  const ox = (w - (cols * tw + (cols - 1) * gap)) / 2, oy = (h - (rows * th + (rows - 1) * gap)) / 2;
+  const ink = css('--ink'), muted = css('--muted'), s2 = css('--surface-2'), surf = css('--surface'), pt = css('--pt'), ok = css('--ok');
+  const checked = new Set(fr.checked);
+  const fontPx = Math.max(9, Math.min(18, th * .42, tw * .3));
+  for (let i = 0; i < n; i++){
+    const c = i % cols, r = Math.floor(i / cols);
+    const x = ox + c * (tw + gap), y = oy + r * (th + gap);
+    const out = mode === 'bin' && fr.low != null && (i < fr.low || i > fr.high) && !(fr.result === 'found' && i === fr.cur);
+    const isCur = i === fr.cur, found = isCur && fr.result === 'found';
+    ctx.globalAlpha = out ? .22 : 1;
+    rr(ctx, x, y, tw, th, Math.min(6, th * .2));
+    ctx.fillStyle = found ? ok : isCur ? pt : checked.has(i) ? css('--line-strong') : s2;
+    ctx.fill();
+    if (isCur){ ctx.lineWidth = 2.5; ctx.strokeStyle = ink; ctx.stroke(); }
+    ctx.fillStyle = found || isCur ? '#fff' : checked.has(i) ? muted : ink;
+    ctx.font = `700 ${fontPx}px ${css('--font-num')}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(arr[i], x + tw / 2, y + th / 2 + 1);
+  }
+  ctx.globalAlpha = 1;
+}
+
+/* =========================================================
+   GRADE 5–6 RENDER
+   ========================================================= */
+function lane56HTML(li){
+  const kind = S.lanes[li];
+  const segs = Object.keys(PROG_NAME).map(k => `<button type="button" role="radio" data-prog="${k}" aria-checked="${k === kind}">${PROG_NAME[k]}</button>`).join('');
+  return `<div class="lane-head">
+      <div class="seg" role="radiogroup" aria-label="${li ? 'Right' : 'Left'} rover program">${segs}</div>
+      <span class="chip">Blocks <b data-k="count"></b></span>
+    </div>
+    <div class="cv-wrap cv-field"><canvas aria-label="Field and rover"></canvas></div>
+    <div class="prog" data-k="prog"></div>
+    <p class="result" data-k="res" aria-live="polite"></p>`;
+}
+function setupLanes56(){
+  document.querySelectorAll('#view56 .lane').forEach((el, li) => {
+    el.innerHTML = lane56HTML(li);
+    el.querySelectorAll('[data-prog]').forEach(b => b.addEventListener('click', () => {
+      S.lanes[li] = b.dataset.prog; setupLanes56(); buildPlayers(); render();
+    }));
+  });
+  S.players.length = 0;
+}
+function render56(){
+  document.querySelectorAll('#view56 .lane').forEach((el, li) => {
+    const p = S.players[li]; if (!p) return;
+    const fr = frameOf(p), prog = el.querySelector('[data-k="prog"]');
+    if (prog.dataset.built !== p.kind + S.seqSoil.join('')){
+      const note = p.kind === 'seq' ? `<span class="note">Written for Field 1</span>` : '';
+      prog.className = 'prog' + (p.kind === 'seq' ? ' flow' : '');
+      prog.innerHTML = note + blocksHTML(p.prog, p.kind === 'seq');
+      prog.dataset.built = p.kind + S.seqSoil.join('');
+    }
+    markLine(prog, fr.line);
+    el.querySelector('[data-k="count"]').textContent = blockCount(p.prog);
+    drawField(el.querySelector('canvas'), S.soil, fr);
+    const res = el.querySelector('[data-k="res"]');
+    if (p.idx >= p.frames.length - 1){
+      const good = correctCount(fr, S.soil);
+      res.textContent = good === PATCHES ? `✓ All ${PATCHES} patches right` : `✗ ${PATCHES - good} of ${PATCHES} patches wrong`;
+      res.className = 'result ' + (good === PATCHES ? 'ok' : 'bad');
+    } else { res.textContent = ''; res.className = 'result'; }
+  });
+}
+
+/* =========================================================
+   GRADE 8 SEARCH RENDER
+   ========================================================= */
+function render8s(){
+  const n = S.n;
+  $('targetOut').textContent = S.target;
+  const req = $('req');
+  req.className = 'req ' + (S.sorted ? 'ok' : 'bad');
+  req.textContent = S.sorted ? '✓ Needs sorted samples' : '✗ Needs sorted samples';
+  // Sorting is not free: a good sort of n samples takes about n × log₂ n checks, paid once before any binary search.
+  $('sortCost').querySelector('b').textContent = '+' + n * Math.log2(n);
+  $('sortCost').style.visibility = S.sorted ? 'visible' : 'hidden';
+  const most = {lin:n, bin:Math.ceil(Math.log2(n + 1))};
+  S.players.forEach(p => {
+    const el = document.querySelector(`[data-slane="${p.key}"]`);
+    const fr = frameOf(p), q = k => el.querySelector(`[data-k="${k}"]`);
+    q('steps').textContent = fr.steps;
+    q('most').textContent = `Most possible: ${most[p.key]}`;
+    q('bat').style.width = (100 * fr.steps / n) + '%';
+    q('J').textContent = `${fr.steps * J_PER_CHECK} J`;
+    drawShelf(el.querySelector('canvas'), p.arr, fr, p.key);
+    const res = q('res');
+    if (fr.result === 'found'){ res.textContent = `✓ Found ${S.target} in ${fr.steps} steps`; res.className = 'result ok'; }
+    else if (fr.result === 'missed'){ res.textContent = p.key === 'bin' && !S.sorted ? `✗ Missed it: the samples are not sorted` : `✗ Not found`; res.className = 'result bad'; }
+    else { res.textContent = ''; res.className = 'result'; }
+  });
+}
+
+/* =========================================================
+   GRADE 8 AI BIAS
+   The "AI" here is a simple learner: it only accepts colours and shapes it saw in training.
+   ========================================================= */
+const COLOURS = {
+  purple:{name:'Purple', fill:'#8e5bd0', edge:'#4b2a80'},
+  clear: {name:'Clear',  fill:'#eef5fa', edge:'#7f98ad'},
+  smoky: {name:'Smoky',  fill:'#7a6252', edge:'#3e2f25'},
+  green: {name:'Green',  fill:'#4cae7a', edge:'#21603f'},
+  honey: {name:'Honey',  fill:'#e2b25a', edge:'#8a6420'},
+};
+const SHAPE_NAME = {hex:'Six-sided point', cube:'Cube'};
+const TEST = [
+  {group:'Purple quartz', quartz:true, items:[['purple', 'hex', 0], ['purple', 'hex', .12], ['purple', 'hex', -.1]]},
+  {group:'Clear quartz',  quartz:true, items:[['clear', 'hex', 0], ['clear', 'hex', -.05], ['clear', 'hex', .04]]},
+  {group:'Smoky quartz',  quartz:true, items:[['smoky', 'hex', 0], ['smoky', 'hex', .12], ['smoky', 'hex', -.08]]},
+  {group:'Not quartz',    quartz:false, items:[['purple', 'cube', 0], ['green', 'cube', 0], ['honey', 'cube', 0]]},
+];
+function shade(hex, amt){
+  const n = parseInt(hex.slice(1), 16);
+  const f = c => Math.max(0, Math.min(255, Math.round(c + (amt > 0 ? (255 - c) * amt : c * amt))));
+  return '#' + [f(n >> 16), f((n >> 8) & 255), f(n & 255)].map(v => v.toString(16).padStart(2, '0')).join('');
+}
+function crystalSVG(col, shape, amt = 0){
+  const c = COLOURS[col], fill = shade(c.fill, amt), e = c.edge;
+  if (shape === 'cube') return `<svg viewBox="0 0 40 56" aria-hidden="true">
+    <path d="M20 14L36 22V42L20 50L4 42V22Z" fill="${fill}" stroke="${e}" stroke-width="1.6" stroke-linejoin="round"/>
+    <path d="M4 22L20 30L36 22M20 30V50" fill="none" stroke="${e}" stroke-width="1.4"/>
+    <path d="M20 14L36 22L20 30L4 22Z" fill="#fff" fill-opacity=".35"/><path d="M20 30L36 22V42L20 50Z" fill="#000" fill-opacity=".14"/></svg>`;
+  return `<svg viewBox="0 0 40 56" aria-hidden="true">
+    <path d="M20 3L32 17V50L24 54H16L8 50V17Z" fill="${fill}" stroke="${e}" stroke-width="1.6" stroke-linejoin="round"/>
+    <path d="M8 17L16 21L20 3L24 21L32 17M16 21V54M24 21V54M16 21H24" fill="none" stroke="${e}" stroke-width="1.2" stroke-linejoin="round"/>
+    <path d="M16 21L20 3L24 21Z" fill="#fff" fill-opacity=".35"/><path d="M24 21L32 17V50L24 54Z" fill="#000" fill-opacity=".14"/></svg>`;
+}
+function learned(){
+  const cols = Object.keys(S.train).filter(k => S.train[k]);
+  return {colours:new Set(cols), shapes:new Set(['hex'])};
+}
+function setupAI(){
+  $('trainBtns').innerHTML = ['purple', 'clear', 'smoky'].map(k => `<button type="button" class="tog" data-train="${k}" aria-pressed="${S.train[k]}">
+      <span class="box" aria-hidden="true">${S.train[k] ? '✓' : ''}</span>${crystalSVG(k, 'hex').replace('<svg', '<svg width="16" height="22"')}${COLOURS[k].name} quartz</button>`).join('');
+  $('trainBtns').querySelectorAll('[data-train]').forEach(b => b.addEventListener('click', () => {
+    const k = b.dataset.train, on = Object.values(S.train).filter(Boolean).length;
+    if (S.train[k] && on === 1) return;     // the AI needs at least one kind of photo
+    S.train[k] = !S.train[k]; setupAI();
+  }));
+  renderAI();
+}
+function renderAI(){
+  const kinds = Object.keys(S.train).filter(k => S.train[k]);
+  const amts = [0, .14, -.1, .07, -.16, .2];
+  $('trainGal').innerHTML = kinds.flatMap(k => amts.map(a => crystalSVG(k, 'hex', a))).join('');
+  const m = learned();
+  const sw = (col, shape) => `<span class="sw">${crystalSVG(col, shape)}${shape === 'hex' && col ? COLOURS[col].name : SHAPE_NAME[shape]}</span>`;
+  $('ruleBox').innerHTML = `<div class="rule-line"><span class="k">Colour</span>${[...m.colours].map(c => sw(c, 'hex')).join('')}</div>
+    <div class="rule-line"><span class="k">Shape</span><span class="sw">${crystalSVG('clear', 'hex')}${SHAPE_NAME.hex}</span></div>`;
+  let right = 0, all = 0;
+  $('testGrid').innerHTML = TEST.map(g => {
+    let gr = 0;
+    const cells = g.items.map(([col, shape, a]) => {
+      const says = m.colours.has(col) && m.shapes.has(shape);
+      const ok = says === g.quartz; if (ok) gr++;
+      return `<div class="cell ${ok ? 'ok' : 'bad'}">${crystalSVG(col, shape, a)}<span class="ans">${says ? 'Quartz' : 'Not quartz'}</span><span class="mk">${ok ? '✓ right' : '✗ wrong'}</span></div>`;
+    }).join('');
+    right += gr; all += g.items.length;
+    return `<span class="tl">${g.group}</span><div class="cells">${cells}</div>
+      <div class="score"><span class="bar ${gr < g.items.length ? 'low' : ''}"><i style="width:${100 * gr / g.items.length}%"></i></span><b>${gr} of ${g.items.length}</b></div>`;
+  }).join('');
+  $('aiTotal').textContent = `AI is right on ${right} of ${all} crystals`;
+}
+
+/* =========================================================
+   GRADE 9 RENDER
+   ========================================================= */
+function setup9(){
+  const p = S.players[0];
+  $('blocks9').innerHTML = blocksHTML(p.prog, false);
+  $('code9').innerHTML = codeHTML(p.prog);
+}
+function render9(){
+  const p = S.players[0]; if (!p) return;
+  const fr = frameOf(p), cv = $('cv9');
+  $('targetOut').textContent = S.target9;
+  if (S.p9 === 'field') drawField(cv, S.soil, fr); else drawShelf(cv, p.arr, fr, p.key);
+  markLine($('blocks9'), fr.line); markLine($('code9'), fr.line);
+  ['blocks9', 'code9'].forEach(id => { const on = $(id).querySelector('.on'); if (on) on.scrollIntoView({block:'nearest'}); });
+  const prev = p.idx > 0 ? p.frames[p.idx - 1].vars : {};
+  const v = Object.entries(fr.vars || {});
+  let resHTML = '';
+  if (fr.result === 'found') resHTML = `<span class="chip ok">Found at position ${fr.cur}</span>`;
+  else if (fr.result === 'missed') resHTML = `<span class="chip bad">Not found</span>`;
+  else if (S.p9 === 'field' && p.idx >= p.frames.length - 1){
+    const good = correctCount(fr, S.soil);
+    resHTML = `<span class="chip ${good === PATCHES ? 'ok' : 'bad'}">${good} of ${PATCHES} patches right</span>`;
+  }
+  $('vars9').innerHTML = (v.length ? '<span class="lab">Variables</span>' : '') +
+    v.map(([k, val]) => `<span class="var${prev[k] !== val ? ' chg' : ''}">${esc(k)} = ${esc(val)}</span>`).join('') + resHTML;
+}
+
+/* =========================================================
+   MODE SWITCHING, GUIDE
+   ========================================================= */
+const GUIDE = {
+  '56':{steps:['Each rover gets a program. Pick one with the buttons above it.', 'Press Run. Watch the glowing block. Count the blocks.', 'Press New field. Which program still works?'],
+        outcome:'Alberta Science 5: translate algorithms into code. Science 6: coding structures (sequence, loops, decisions).'},
+  '8s':{steps:['Both rovers look for the same sample.', 'Press Run and compare CPU steps and energy.', 'Try 128 samples, then try Shuffled.'],
+        outcome:'Alberta Science 8 (2026 draft): investigate efficiency in programming and artificial intelligence.'},
+  '8a':{steps:['Pick which quartz photos the AI trains on.', 'Read what the AI learned.', 'Check the test. Which crystals does it get wrong, and why?'],
+        outcome:'Alberta Science 8 (2026 draft): artificial intelligence, including bias.'},
+  '9':{steps:['Pick a program.', 'Press Step. The block and its Python line light up together.', 'Watch the variables change.'],
+       outcome:'Alberta Science 9 (2026 draft): examine text-based programming languages.'},
+};
+const modeKey = () => S.grade === '8' ? (S.view8 === 'search' ? '8s' : '8a') : S.grade === '9' ? (S.p9 === 'field' ? '9' : '9s') : '56';
+function applyMode(){
+  stop();
+  const key = modeKey(), grp = S.grade;   // grp = all views of one grade
+  document.querySelectorAll('[data-show]').forEach(el => {
+    const tags = el.dataset.show.split(' ');
+    el.hidden = !(tags.includes(key) || tags.includes(grp));
+  });
+  $('view56').hidden = key !== '56';
+  $('view8s').hidden = key !== '8s';
+  $('view8a').hidden = key !== '8a';
+  $('view9').hidden = !key.startsWith('9');
+  const g = GUIDE[key.startsWith('9') ? '9' : key];
+  $('guideList').innerHTML = g.steps.map((t, i) => `<li><span class="n">${i + 1}</span><span>${t}</span></li>`).join('');
+  $('guideOutcome').textContent = g.outcome;
+  if (key === '56') setupLanes56();
+  if (key === '9s'){ S.shelf9 = makeValues(16); S.target9 = pick(S.shelf9); }
+  buildPlayers();
+  if (key.startsWith('9')) setup9();
+  if (key === '8a') setupAI();
+  render();
+}
+function render(){
+  const key = modeKey();
+  if (key === '56') render56();
+  else if (key === '8s') render8s();
+  else if (key.startsWith('9')) render9();
+}
+function radio(groupSel, attr, onPick){
+  document.querySelectorAll(`${groupSel} [data-${attr}]`).forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll(`${groupSel} [data-${attr}]`).forEach(x => x.setAttribute('aria-checked', x === b));
+    onPick(b.dataset[attr]);
+  }));
+}
+
+radio('.mode', 'grade', v => { S.grade = v; applyMode(); });
+radio('#viewSeg', 'view', v => { S.view8 = v; applyMode(); });
+radio('#nSeg', 'n', v => { S.n = +v; newShelf(); buildPlayers(); render(); });
+radio('#ordSeg', 'sorted', v => { S.sorted = v === '1'; buildPlayers(); render(); });
+radio('#p9Seg', 'p9', v => { S.p9 = v; applyMode(); });
+
+$('newField').addEventListener('click', () => {
+  S.soil = newSoil(); S.field++; $('fieldNo').textContent = S.field;
+  buildPlayers(); render();
+});
+$('runBtn').addEventListener('click', run);
+$('stepBtn').addEventListener('click', () => { stop(); if (allDone()) S.players.forEach(p => p.idx = -1); tick(); });
+$('resetBtn').addEventListener('click', () => {
+  const key = modeKey();
+  if (key === '8s') newShelf();
+  if (key === '9s'){ S.target9 = pick(S.shelf9); }
+  buildPlayers(); if (key.startsWith('9')) setup9(); render();
+});
+
+$('guideBtn').addEventListener('click', e => {
+  e.stopPropagation();
+  const open = $('guidePop').hidden;
+  $('guidePop').hidden = !open; $('guideBtn').setAttribute('aria-expanded', String(open));
+});
+document.addEventListener('click', e => { if (!e.target.closest('.guide-wrap')){ $('guidePop').hidden = true; $('guideBtn').setAttribute('aria-expanded', 'false'); } });
+document.addEventListener('keydown', e => { if (e.key === 'Escape'){ $('guidePop').hidden = true; $('guideBtn').setAttribute('aria-expanded', 'false'); } });
+
+new ResizeObserver(() => render()).observe(document.body);
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', render);
+if (document.fonts) document.fonts.ready.then(render);
+
+newShelf();
+applyMode();
+</script>
+</body>
+</html>
