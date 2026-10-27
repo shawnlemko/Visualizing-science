@@ -1,0 +1,1023 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<script data-goatcounter="https://shawnlemko.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
+</head>
+<body>
+<title>Series and Parallel Builder</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Atkinson+Hyperlegible:wght@400;700&family=Spline+Sans+Mono:wght@500;700&display=swap">
+<style>
+/* MathBoard look (shared with the math visuals site).
+   Wires in both views are coloured by potential: 0 V cyan, middle purple, near the top amber, the battery's + terminal red.
+   Store and pathway colours match the Energy Stores and Pathways tool.
+   Layout: one-screen lab bench. Top = board and battery controls. Left (50%) = parts tray + slot workbench (schematic).
+   Right (50%) = 3D elevation canvas, with the mode's math cards underneath. */
+:root{
+  --bg:#f5f8fb; --surface:#ffffff; --surface-2:#eaf0f6; --ink:#1b2733; --muted:#5b6b7a; --line:#dbe5ee; --line-strong:#b9c9d8; --pt:#2f5fd0;
+  --btn:#2f5fd0; --btn-ink:#ffffff;
+  --chem:#2f9e44; --kin:#d2620a; --therm:#d1343a; --p-elec:#2f5fd0; --light:#c98a00;
+  --v-col:#d9480f; --i-col:#2f5fd0; --warn:#c92a2a; --warn-bg:#fff0f0; --news-bg:#eef3ff;
+  --font-ui:'Atkinson Hyperlegible', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-display:'Bricolage Grotesque', 'Segoe UI', system-ui, sans-serif;
+  --font-num:'Spline Sans Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0f161d; --surface:#151f29; --surface-2:#1d2935; --ink:#e6edf3; --muted:#9aabbb; --line:#1f2c38; --line-strong:#2e3f50; --pt:#7aa2ff;
+  --btn:#7aa2ff; --btn-ink:#0f161d;
+  --chem:#5cc979; --kin:#ff9a45; --therm:#ff6b6b; --p-elec:#7aa2ff; --light:#f3c04a;
+  --v-col:#ff8a4c; --i-col:#7aa2ff; --warn:#ff7b7b; --warn-bg:#3a1c20; --news-bg:#18233a; color-scheme:dark; } }
+:root[data-theme="dark"]{
+  --bg:#0f161d; --surface:#151f29; --surface-2:#1d2935; --ink:#e6edf3; --muted:#9aabbb; --line:#1f2c38; --line-strong:#2e3f50; --pt:#7aa2ff;
+  --btn:#7aa2ff; --btn-ink:#0f161d;
+  --chem:#5cc979; --kin:#ff9a45; --therm:#ff6b6b; --p-elec:#7aa2ff; --light:#f3c04a;
+  --v-col:#ff8a4c; --i-col:#7aa2ff; --warn:#ff7b7b; --warn-bg:#3a1c20; --news-bg:#18233a; color-scheme:dark; }
+
+*,*::before,*::after{box-sizing:border-box}
+h1,h2,p,ol{margin:0} ol{padding:0; list-style:none}
+button,select,input{font:inherit; color:inherit}
+button{border:0; background:none; cursor:pointer}
+html,body{height:100%}
+body{background:var(--bg); color:var(--ink); font-family:var(--font-ui); font-size:14px;
+  padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); padding-block:0}
+#app{display:flex; flex-direction:column; gap:8px; min-height:100%; padding-block:8px}
+@media (min-width:1024px){ #app{height:100%} }
+.num{font-family:var(--font-num); font-variant-numeric:tabular-nums}
+
+/* Header */
+.topbar{display:flex; flex-wrap:wrap; align-items:center; gap:10px 20px; justify-content:space-between}
+.brand{display:flex; flex-wrap:wrap; align-items:center; gap:8px 20px}
+.brand h1{font-family:var(--font-display); font-weight:800; font-size:clamp(20px, 2vw, 26px); line-height:1.1; letter-spacing:-.01em; text-wrap:balance}
+a.main-btn{display:inline-flex; align-items:center; gap:8px; padding:8px 16px; min-height:42px; background:var(--pt); color:#fff; font-family:var(--font-display); font-weight:800; font-size:16px; text-decoration:none; border-radius:10px; border:2px solid var(--pt); flex:none}
+a.main-btn span{font-size:19px; line-height:1}
+a.main-btn:hover{background:var(--surface); color:var(--pt)}
+a.main-btn:focus-visible{outline:3px solid var(--pt); outline-offset:3px}
+.top-right{display:flex; flex-wrap:wrap; align-items:center; gap:10px}
+.mode{display:flex; flex-wrap:wrap; align-items:center; gap:4px; background:var(--surface); border:1px solid var(--line); border-radius:999px; padding:4px}
+.mode-label{font-size:12px; color:var(--muted); padding:0 6px 0 10px; letter-spacing:.04em; text-transform:uppercase}
+.mode button{border-radius:999px; padding:6px 14px; font-weight:700; font-size:14px; color:var(--muted); line-height:1.1}
+.mode button small{font-weight:400; font-size:12px; margin-left:4px}
+.mode button[aria-checked="true"]{background:var(--btn); color:var(--btn-ink)}
+.guide-wrap{position:relative}
+.btn-outline{border:1.5px solid var(--ink); border-radius:8px; padding:7px 12px; font-weight:700; font-size:14px; background:var(--surface)}
+.pop{position:absolute; right:0; top:calc(100% + 8px); width:min(380px, calc(100vw - 32px)); z-index:20; background:var(--surface);
+  border:1px solid var(--line); border-radius:10px; box-shadow:0 12px 32px rgba(10,20,30,.18); padding:14px 16px}
+.pop h2{font-weight:700; font-size:15px; margin-bottom:8px}
+.pop ol{display:flex; flex-direction:column; gap:10px}
+.pop li{display:grid; grid-template-columns:24px 1fr; gap:8px; line-height:1.4}
+.pop .n{width:22px; height:22px; border-radius:50%; background:var(--btn); color:var(--btn-ink); font-weight:700; font-size:12px; display:grid; place-items:center}
+
+.panel{background:var(--surface); border:1px solid var(--line-strong); border-radius:10px; min-width:0}
+button:focus-visible, input:focus-visible{outline:2.5px solid var(--pt); outline-offset:2px}
+
+/* Controls */
+.controls{display:flex; flex-wrap:wrap; gap:8px 22px; padding:8px 14px; align-items:flex-end}
+.ctl{display:flex; flex-direction:column; gap:4px; min-width:0}
+.ctl-top{display:flex; align-items:baseline; justify-content:space-between; gap:8px}
+.ctl label, .ctl .lab{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.07em; font-weight:700}
+.ctl output{font-family:var(--font-num); font-variant-numeric:tabular-nums; font-weight:700; font-size:15px}
+.ctl input[type=range]{width:100%; accent-color:var(--pt); margin:2px 0}
+.ctl.sl{flex:1 1 200px; max-width:300px}
+.seg{display:flex; flex-wrap:wrap; gap:4px}
+.seg button{border:1.5px solid var(--line-strong); border-radius:8px; padding:6px 12px; font-weight:700; font-size:14px; background:var(--surface); color:var(--ink); white-space:nowrap}
+.seg button[aria-checked="true"]{background:var(--ink); color:var(--surface); border-color:var(--ink)}
+.btn-ghost{border:1px solid var(--line-strong); border-radius:8px; padding:6px 10px; font-size:13px; background:var(--surface-2); white-space:nowrap}
+
+/* Main split: 50 : 50 */
+.layout{display:grid; grid-template-columns:1fr; gap:10px; flex:1; min-height:0}
+@media (min-width:1024px){ .layout{grid-template-columns:1fr 1fr; grid-template-rows:minmax(0,1fr)} }
+.bench{display:flex; flex-direction:column; gap:8px; padding:10px 12px; min-height:0; overflow:auto}
+.bench > *{flex-shrink:0}
+.ptitle{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.07em; font-weight:700}
+
+/* Parts tray */
+.tray{display:flex; flex-wrap:wrap; gap:6px; align-items:stretch}
+.part{display:flex; align-items:center; gap:6px; border:1.5px solid var(--line-strong); border-radius:8px; padding:5px 10px 5px 6px; background:var(--surface); font-weight:700; font-size:13.5px; cursor:grab; touch-action:manipulation; user-select:none}
+.part svg{width:34px; height:22px; flex:none}
+.part .zz{fill:none; stroke:currentColor; stroke-width:2; stroke-linejoin:round}
+.part[aria-pressed="true"]{border-color:var(--pt); box-shadow:0 0 0 2px var(--pt) inset; background:var(--news-bg)}
+.part .sw{display:inline-block}
+.custom{display:flex; align-items:center; gap:6px; border:1.5px dashed var(--line-strong); border-radius:8px; padding:3px 8px}
+.custom input{width:84px; accent-color:var(--pt)}
+.custom output{font-family:var(--font-num); font-weight:700; font-size:13px; min-width:4.2ch}
+.hint{font-size:12.5px; color:var(--muted); min-height:18px}
+.hint b{color:var(--ink)}
+
+/* Schematic workbench */
+.board svg{display:block; width:100%; height:auto; max-height:470px; touch-action:manipulation}
+.board .w{fill:none; stroke-width:4.5; stroke-linecap:round; stroke-linejoin:round}
+.board .ghost{fill:none; stroke:var(--line-strong); stroke-width:2.5; stroke-dasharray:5 5}
+.board .sym{fill:none; stroke:var(--ink); stroke-width:2.5; stroke-linecap:round; stroke-linejoin:round}
+.board .lead{fill:none; stroke:var(--muted); stroke-width:1.5; stroke-dasharray:4 3}
+.board .meter{fill:var(--surface); stroke:var(--ink); stroke-width:2}
+.board text{fill:var(--ink); font-family:var(--font-ui); font-size:13px}
+.board .t-num{font-family:var(--font-num); font-weight:700; font-size:12px}
+.board .t-meter{font-weight:700; font-size:13px; text-anchor:middle; dominant-baseline:central}
+.board .dot{fill:var(--ink)}
+.board .zone{fill:transparent; stroke:var(--line-strong); stroke-width:1.5; stroke-dasharray:4 4; rx:8}
+.board .zone.full{stroke:transparent}
+.board .zone.hot{stroke:var(--pt); stroke-width:2.5; stroke-dasharray:none; fill:var(--news-bg); fill-opacity:.5}
+.board .zone.target{stroke:var(--pt); stroke-width:2}
+.board .drop-lab{fill:var(--muted); font-size:11.5px; text-anchor:middle; pointer-events:none}
+.board [data-drop]{cursor:pointer}
+.board .pill rect{fill:var(--surface); stroke:var(--line-strong); stroke-width:1.5}
+.board .pill text{font-size:11px; font-weight:700; text-anchor:middle; dominant-baseline:central; pointer-events:none}
+.board .pill.open rect{fill:var(--warn-bg); stroke:var(--warn)}
+.board .pill.open text{fill:var(--warn)}
+.board .pill{cursor:pointer}
+.board .badge rect{fill:var(--surface-2); stroke:var(--line); stroke-width:1}
+.board .b-r{fill:var(--ink)} .board .b-v{fill:var(--v-col)} .board .b-i{fill:var(--i-col)}
+.board .socket{fill:transparent; stroke:var(--pt); stroke-width:1.5; stroke-dasharray:3 3; cursor:pointer}
+.board .kir{font-family:var(--font-num); font-size:11px; font-weight:700; fill:var(--pt); paint-order:stroke; stroke:var(--surface); stroke-width:4px; stroke-linejoin:round; text-anchor:middle}
+.board .warn{fill:var(--warn); font-weight:700; font-size:14px; text-anchor:middle}
+
+/* "What just happened?" banner */
+.news{border:1px solid var(--line); border-left:5px solid var(--pt); background:var(--news-bg); border-radius:10px; padding:8px 12px; font-size:14.5px; line-height:1.4; min-height:48px}
+.news b{font-weight:700}
+.news.warn{border-left-color:var(--warn); background:var(--warn-bg)}
+
+/* Right: 3D view + cards */
+.right{display:flex; flex-direction:column; min-height:0; overflow:hidden}
+.stage{position:relative; flex:1 1 auto; min-height:360px}
+.stage canvas{position:absolute; inset:0; width:100%; height:100%; display:block; touch-action:none}
+.cards{flex:0 1 auto; max-height:52%; overflow:auto; border-top:1px solid var(--line); padding:8px 12px; display:flex; flex-direction:column; gap:8px}
+@media (max-width:1023px){ .cards{max-height:none} }
+.card{border:1px solid var(--line); border-left:5px solid var(--ink); border-radius:10px; padding:8px 12px; background:var(--surface); display:flex; flex-direction:column; gap:6px}
+.c-rule{border-left-color:#a855f7} .c-eng{border-left-color:var(--chem)} .c-req{border-left-color:var(--p-elec)}
+.ln{font-size:15.5px; line-height:2.2}
+.ln .num{font-size:14.5px}
+.rows{display:grid; grid-template-columns:auto minmax(0,1fr); gap:0 14px; align-items:center}
+.rows b{font-weight:700; white-space:nowrap}
+/* Stacked fraction: numerator over a division bar (no slashes anywhere in the math) */
+.fr{display:inline-flex; flex-direction:column; align-items:center; vertical-align:middle; line-height:1.15; margin:0 2px}
+.fr > span{padding:0 2px}
+.fr > span:first-child{border-bottom:1.5px solid currentColor}
+.mute{color:var(--muted)}
+.ledger{display:grid; grid-template-columns:minmax(0,200px) 1fr auto; gap:6px 10px; align-items:center}
+.lname{font-size:13px; line-height:1.2}
+.lname b{font-size:13.5px}
+.bar{height:16px; border-radius:4px; background:var(--surface-2); border:1px solid var(--line-strong); overflow:hidden}
+.bar i{display:block; height:100%}
+.lval{font-family:var(--font-num); font-weight:700; font-size:13px; text-align:right; min-width:9ch}
+.pathway{grid-column:1 / -1; display:flex; align-items:center; gap:8px; font-size:13px; color:var(--p-elec); font-weight:700; padding-left:6px}
+.pathway .pipe{width:4px; height:22px; border-radius:2px; background:var(--p-elec)}
+.mini{display:flex; flex-wrap:wrap; gap:6px 18px; align-items:flex-end}
+.mini .ctl{flex:1 1 140px}
+.btn-primary{background:var(--btn); color:var(--btn-ink); border-radius:8px; padding:6px 14px; font-weight:700; font-size:14px; white-space:nowrap}
+.price{display:flex; align-items:center; gap:6px}
+.price input{width:76px; padding:4px 6px; border:1.5px solid var(--line-strong); border-radius:6px; background:var(--surface); font-family:var(--font-num); font-weight:700}
+.ex{font-size:11.5px; color:var(--muted)}
+.foot{font-size:11.5px; color:var(--muted); line-height:1.45}
+@media (max-width:640px){ .mode-label{display:none} .mode button small{display:block; margin-left:0} }
+@media (prefers-reduced-motion: reduce){ *{transition:none !important} }
+</style>
+
+<div id="app">
+  <header class="topbar">
+    <div class="brand">
+      <a class="main-btn" href="index.html"><span aria-hidden="true">←</span> Return to Main Page</a>
+      <h1>Series and Parallel Builder</h1>
+    </div>
+    <div class="top-right">
+      <div class="mode" role="radiogroup" aria-label="Mode">
+        <span class="mode-label">Mode</span>
+        <button type="button" role="radio" data-mode="g9" aria-checked="true">Grade 9 Core<small>V = I × R</small></button>
+        <button type="button" role="radio" data-mode="g9e" aria-checked="false">Grade 9 Energy<small>Stores, power, cost</small></button>
+        <button type="button" role="radio" data-mode="br" aria-checked="false">Science 20 · Physics 30<small>R<sub>eq</sub> and Kirchhoff</small></button>
+      </div>
+      <div class="guide-wrap">
+        <button type="button" id="guideBtn" class="btn-outline" aria-expanded="false" aria-controls="guidePop">Step-by-Step Guide</button>
+        <div id="guidePop" class="pop" hidden>
+          <h2>How to use this</h2>
+          <ol>
+            <li><span class="n">1</span><span>Pick a <b>board</b>: Series, Parallel or Combo.</span></li>
+            <li><span class="n">2</span><span><b>Drag</b> a part onto a dashed slot. Or tap the part, then tap the slot.</span></li>
+            <li><span class="n">3</span><span>Tap a part on the board to <b>remove</b> it.</span></li>
+            <li><span class="n">4</span><span>Tap a slot’s <b>closed</b> tag to open its switch.</span></li>
+            <li><span class="n">5</span><span>Watch the 3D view. Height is voltage. Dot flow is current. A narrow channel is resistance.</span></li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <section class="panel controls" aria-label="Board and battery">
+    <div class="ctl">
+      <span class="lab" id="boardLab">Board</span>
+      <div class="seg" role="radiogroup" aria-labelledby="boardLab" id="boardSeg">
+        <button type="button" role="radio" data-board="series" aria-checked="true">Series · 3 slots</button>
+        <button type="button" role="radio" data-board="parallel" aria-checked="false">Parallel · 3 rungs</button>
+        <button type="button" role="radio" data-board="combo" aria-checked="false">Combo challenge</button>
+      </div>
+    </div>
+    <div class="ctl sl">
+      <div class="ctl-top"><label for="vIn">Battery, V</label><output id="vOut" for="vIn"></output></div>
+      <input type="range" id="vIn" min="3" max="24" step="1" value="12">
+    </div>
+    <div class="ctl">
+      <span class="lab">&nbsp;</span>
+      <button type="button" class="btn-ghost" id="clearBtn">Clear board</button>
+    </div>
+  </section>
+
+  <main class="layout">
+    <section class="panel bench" aria-label="Workbench">
+      <span class="ptitle">Parts</span>
+      <div class="tray" id="tray">
+        <button type="button" class="part" draggable="true" data-part="r3" aria-pressed="false"><svg viewBox="0 0 34 22"><path class="zz" d="M1 11H7L9 5L13 17L17 5L21 17L25 5L27 11H33"/></svg>3 Ω</button>
+        <button type="button" class="part" draggable="true" data-part="r6" aria-pressed="false"><svg viewBox="0 0 34 22"><path class="zz" d="M1 11H7L9 5L13 17L17 5L21 17L25 5L27 11H33"/></svg>6 Ω</button>
+        <button type="button" class="part" draggable="true" data-part="r12" aria-pressed="false"><svg viewBox="0 0 34 22"><path class="zz" d="M1 11H7L9 5L13 17L17 5L21 17L25 5L27 11H33"/></svg>12 Ω</button>
+        <span class="custom">
+          <button type="button" class="part" draggable="true" data-part="rc" aria-pressed="false"><svg viewBox="0 0 34 22"><path class="zz" d="M1 11H7L9 5L13 17L17 5L21 17L25 5L27 11H33"/></svg>Custom</button>
+          <input type="range" id="rcIn" min="1" max="24" step="1" value="8" aria-label="Custom resistance"><output id="rcOut" for="rcIn"></output>
+        </span>
+        <button type="button" class="part" draggable="true" data-part="bulb" aria-pressed="false"><svg viewBox="0 0 34 22"><path class="zz" d="M1 11H9M25 11H33"/><circle class="zz" cx="17" cy="11" r="8"/><path class="zz" d="M11.3 5.3L22.7 16.7M22.7 5.3L11.3 16.7"/></svg>Bulb 6 Ω</button>
+        <button type="button" class="part" draggable="true" data-part="amm" aria-pressed="false"><svg viewBox="0 0 34 22"><path class="zz" d="M1 11H8M26 11H33"/><circle class="zz" cx="17" cy="11" r="9"/><text x="17" y="15.5" text-anchor="middle" style="font:700 12px var(--font-ui); fill:currentColor">A</text></svg>Ammeter</button>
+        <button type="button" class="part" draggable="true" data-part="volt" aria-pressed="false"><svg viewBox="0 0 34 22"><circle class="zz" cx="17" cy="11" r="9"/><text x="17" y="15.5" text-anchor="middle" style="font:700 12px var(--font-ui); fill:currentColor">V</text></svg>Voltmeter</button>
+      </div>
+      <p class="hint" id="hint"></p>
+      <div class="board" id="board"></div>
+      <div class="news" id="news" aria-live="polite"></div>
+      <p class="foot" id="foot"></p>
+    </section>
+
+    <section class="panel right" aria-label="3D voltage elevation and math">
+      <div class="stage"><canvas id="cv" aria-label="3D view: height is voltage, dot flow is current"></canvas></div>
+      <div class="cards">
+        <div class="card c-rule" id="ruleCard"></div>
+        <div class="card c-eng" id="engCard" hidden>
+          <span class="ptitle">Energy stores and pathways</span>
+          <div class="ledger" id="ledger"></div>
+          <div class="mini">
+            <div class="ctl">
+              <div class="ctl-top"><label for="tIn">Time, t</label><output id="tOut" for="tIn"></output></div>
+              <input type="range" id="tIn" min="0.25" max="12" step="0.25" value="1">
+            </div>
+            <div class="ctl">
+              <label for="priceIn">Price</label>
+              <div class="price"><span>$</span><input type="number" id="priceIn" min="0" max="5" step="0.01" value="0.30"><span>per kWh</span></div>
+              <span class="ex">Example Alberta rate. Edit it.</span>
+            </div>
+            <button type="button" class="btn-primary" id="runBtn">▶ Run</button>
+          </div>
+          <div id="eMath"></div>
+        </div>
+        <div class="card c-req" id="reqCard" hidden></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+/* =========================================================
+   PARTS AND BOARDS
+   A board is a list of slots. 'ser' slots sit on the main line, in order from the battery's + terminal.
+   'par' slots are rungs between the top and bottom rails. An empty ser slot is a plain wire; an empty rung is open.
+   ========================================================= */
+const PART = {
+  r3:{R:3, name:'3 Ω resistor'}, r6:{R:6, name:'6 Ω resistor'}, r12:{R:12, name:'12 Ω resistor'},
+  rc:{R:null, name:'custom resistor'}, bulb:{R:6, bulb:true, name:'6 Ω bulb'},
+};
+const BULB_EFF = 0.10;          // a filament bulb gives about 10% of its energy out as light
+const slot = (id, role, comp = null) => ({id, role, comp, closed:true, volt:false});
+const comp = (part, R) => ({part, R:R ?? PART[part].R, bulb:!!PART[part].bulb});
+function freshBoards(){
+  return {
+    series:{slots:[slot('s1','ser',comp('r6')), slot('s2','ser'), slot('s3','ser')], amm:{main:true}},
+    parallel:{slots:[slot('b1','par',comp('r6')), slot('b2','par'), slot('b3','par')], amm:{main:true}},
+    combo:{slots:[slot('s1','ser',comp('r3')), slot('b1','par',comp('r6')), slot('b2','par',comp('r6'))], amm:{main:true}},
+  };
+}
+
+/* =========================================================
+   STATE
+   ========================================================= */
+const S = { mode:'g9', board:'series', V:12, custom:8, boards:freshBoards(), pick:null, drag:null, hot:null, news:null,
+  t:1, price:0.30, clock:1, running:false, off:[], spin:{} };
+const $ = id => document.getElementById(id);
+const lerp = (a, b, f) => a + (b - a) * f;
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const fr = (n, d) => `<span class="fr"><span>${n}</span><span>${d}</span></span>`;
+const f1 = v => v.toFixed(1), f2 = v => v.toFixed(2);
+const fR = v => (Math.abs(v - Math.round(v)) < 1e-9 ? String(Math.round(v)) : sig(v));
+const fmtJ = v => String(Math.round(v)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+const sig = (v, n = 3) => v === 0 ? '0' : v >= 10 ** n ? String(Math.round(v)) : Number(v.toPrecision(n)).toString();
+const B = () => S.boards[S.board];
+const subN = id => '₁₂₃'[+id.slice(1) - 1];
+const slotName = s => (s.role === 'ser' ? (S.board === 'combo' ? 'series slot' : 'slot ' + s.id.slice(1)) : 'branch ' + s.id.slice(1));
+
+/* =========================================================
+   CIRCUIT SOLVER (ideal battery: internal resistance ignored)
+   Returns totals, each slot's V, I, P, and the potentials the 3D view needs.
+   ========================================================= */
+function solve(board = B(), V = S.V){
+  const ser = board.slots.filter(s => s.role === 'ser'), par = board.slots.filter(s => s.role === 'par');
+  const Rser = ser.reduce((a, s) => a + (s.comp ? s.comp.R : 0), 0);
+  const serOpen = ser.findIndex(s => !s.closed);
+  const live = par.filter(s => s.comp && s.closed);
+  const G = live.reduce((a, s) => a + 1 / s.comp.R, 0);
+  const hasPar = par.length > 0;
+  const Rpar = hasPar ? (G > 0 ? 1 / G : Infinity) : 0;
+  const Rt = Rser + Rpar;
+  const c = {Rser, Rpar, Rt, slot:{}, short:false, open:false};
+  if (serOpen >= 0 || (hasPar && G === 0)) { c.open = true; c.It = 0; }
+  else if (Rt === 0) { c.short = true; c.It = 0; }
+  else c.It = V / Rt;
+  const I = c.It;
+  c.Vpar = hasPar ? I * (isFinite(Rpar) ? Rpar : 0) : 0;
+  // potentials along the main line
+  let phi = V; c.pre = [];
+  ser.forEach((s, k) => {
+    const R = s.comp ? s.comp.R : 0;
+    c.pre.push(phi);
+    const zin = I > 0 || s.closed ? (serOpen >= 0 && k > serOpen ? 0 : phi) : 0;
+    const drop = I * R;
+    const zout = I > 0 ? phi - drop : (serOpen >= 0 && k >= serOpen ? 0 : phi);
+    c.slot[s.id] = {R, V:drop, I, P:I * I * R, zin, zout, pre:(serOpen >= 0 && k > serOpen) ? 0 : phi};
+    phi = zout;
+  });
+  c.mid = c.short ? V : phi;                    // potential of the top rail (or the end of the main line)
+  par.forEach(s => {
+    const on = s.comp && s.closed, Ik = on && I > 0 ? c.Vpar / s.comp.R : 0;
+    c.slot[s.id] = {R:s.comp ? s.comp.R : 0, V:Ik * (s.comp ? s.comp.R : 0), I:Ik, P:Ik * Ik * (s.comp ? s.comp.R : 0), zin:s.closed ? c.mid : 0, zout:0, pre:c.mid};
+  });
+  c.P = I * V;
+  return c;
+}
+
+/* =========================================================
+   POTENTIAL COLOUR MAP (fraction of the battery voltage)
+   ========================================================= */
+const STOPS = [[0,[6,182,212]], [.5,[168,85,247]], [.8,[245,158,11]], [1,[239,68,68]]];
+function potRGB(f){
+  f = clamp(f, 0, 1);
+  for (let i = 1; i < STOPS.length; i++){
+    const [b, cb] = STOPS[i], [a, ca] = STOPS[i - 1];
+    if (f <= b){ const k = (f - a) / (b - a); return ca.map((v, j) => Math.round(lerp(v, cb[j], k))); }
+  }
+  return STOPS[STOPS.length - 1][1];
+}
+const potCol = (phi, a = 1) => { const [r, g, b] = potRGB(S.V ? phi / S.V : 0); return a === 1 ? `rgb(${r},${g},${b})` : `rgba(${r},${g},${b},${a})`; };
+/* Bulb brightness from P = I²R, compared with one 6 Ω bulb across 12 V (24 W). */
+const glow = P => clamp(Math.pow(P / 24, .6), 0, 1);
+
+/* =========================================================
+   3D GEOMETRY
+   Plan: x along the back-right edge, y along the back-left edge, z = potential in volts.
+   Battery = a vertical lift on the left edge. Each vertex's tag names the piece that starts there:
+   'bat' battery lift, 'gap' an open switch, a slot id = that slot's component ramp, anything else = wire.
+   ========================================================= */
+const WX = 1.2, WY = 1.0, ZW = 0.03, BY = .72;
+const p3 = (x, y, z, tag) => ({x, y, z, tag});
+function geometry(c){
+  const V = S.V, b = B(), cond = [], res = [], ghosts = [];
+  const addRes = (s, x, y, z) => { if (s.comp) res.push({id:s.id, x, y, z, ...c.slot[s.id], bulb:s.comp.bulb}); };
+  if (S.board === 'series'){
+    const pts = [p3(0,WY,0,'w'), p3(0,BY,0,'bat'), p3(0,BY,V,'w'), p3(0,0,V,'w'), p3(WX,0,V,'w')];
+    b.slots.forEach((s, k) => {
+      const d = c.slot[s.id], yc = .22 + .28 * k, y0 = yc - .11, y1 = yc + .11;
+      pts.push(p3(WX, y0, d.pre, s.closed ? 'w' : 'gap'), p3(WX, y0 + .04, d.zin, s.comp ? s.id : 'w'), p3(WX, y1, d.zout, 'w'));
+      addRes(s, WX, (y0 + .04 + y1) / 2, (d.zin + d.zout) / 2);
+    });
+    pts.push(p3(WX, WY, c.mid, c.short ? 'short' : 'w'), p3(0, WY, 0));
+    cond.push({I:c.It, pts});
+    return {cond, res, ghosts};
+  }
+  const par = b.slots.filter(s => s.role === 'par'), RX = par.length === 3 ? [.42, .8, 1.18] : [.62, 1.18];
+  const main = [p3(RX[0],WY,0,'w'), p3(0,WY,0,'w'), p3(0,BY,0,'bat'), p3(0,BY,V,'w')];
+  main.push(p3(0, 0, V, 'w'));
+  if (S.board === 'combo'){
+    const s = b.slots[0], d = c.slot[s.id];
+    main.push(p3(.08, 0, V, s.closed ? 'w' : 'gap'), p3(.12, 0, d.zin, s.comp ? s.id : 'w'), p3(.42, 0, d.zout, 'w'));
+    addRes(s, .27, 0, (d.zin + d.zout) / 2);
+  }
+  main.push(p3(RX[0], 0, c.mid));
+  cond.push({I:c.It, pts:main});
+  // rails between rungs carry the current of every rung to their right
+  for (let j = 1; j < par.length; j++){
+    const Ir = par.slice(j).reduce((a, s) => a + c.slot[s.id].I, 0);
+    cond.push({I:Ir, pts:[p3(RX[j-1],0,c.mid,'w'), p3(RX[j],0,c.mid)]});
+    cond.push({I:Ir, pts:[p3(RX[j],WY,0,'w'), p3(RX[j-1],WY,0)]});
+  }
+  par.forEach((s, k) => {
+    const d = c.slot[s.id], x = RX[k];
+    if (!s.comp){ ghosts.push({x, z:c.mid}); return; }
+    cond.push({I:d.I, pts:[p3(x,0,c.mid,'w'), p3(x,.3,c.mid, s.closed ? 'w' : 'gap'), p3(x,.36,d.zin,s.id), p3(x,.64,0,'w'), p3(x,WY,0)]});
+    addRes(s, x, .5, d.zin / 2);
+  });
+  return {cond, res, ghosts};
+}
+const segLen = (a, b) => Math.hypot(b.x - a.x, b.y - a.y, (b.z - a.z) * ZW);
+
+/* =========================================================
+   CANVAS
+   ========================================================= */
+const cv = $('cv'), ctx = cv.getContext('2d');
+let W = 0, H = 0, L = {}, C = {}, hits = [];
+function readColours(){
+  const cs = getComputedStyle(document.documentElement);
+  ['bg','surface','surface-2','ink','muted','line','line-strong','pt','v-col','i-col','warn'].forEach(k => C[k] = cs.getPropertyValue('--' + k).trim());
+}
+function resize(){
+  const r = cv.getBoundingClientRect(), d = devicePixelRatio || 1;
+  W = r.width; H = r.height;
+  cv.width = Math.round(W * d); cv.height = Math.round(H * d);
+  ctx.setTransform(d, 0, 0, d, 0, 0);
+  // Fit the plan diamond plus the tallest possible battery (24 V), with room for the ruler and labels.
+  const ml = W < 600 ? 44 : 64, mr = W < 600 ? 64 : 84, mt = 26, mb = 40, PW = WX + WY + .56;
+  const S1 = (W - ml - mr) / (PW * .866), S2 = (H - mt - mb) / ((WX + WY) * .5 + 24 * ZW);
+  L.S = Math.max(50, Math.min(S1, S2));
+  L.cx = ml + (WY + .28) * .866 * L.S + Math.max(0, (W - ml - mr) - PW * .866 * L.S) / 2;
+  L.cy = mt + 24 * ZW * L.S + Math.max(0, (H - mt - mb) - ((WX + WY) * .5 + 24 * ZW) * L.S) / 2;
+}
+const proj = (x, y, z) => [L.cx + (x - y) * .866 * L.S, L.cy + (x + y) * .5 * L.S - z * ZW * L.S];
+const FONT = (wt, px, fam) => `${wt} ${px}px ${fam === 'num' ? "'Spline Sans Mono', monospace" : "'Atkinson Hyperlegible', system-ui, sans-serif"}`;
+function label(x, y, text, col, opt = {}){
+  ctx.font = FONT(opt.wt || 700, opt.px || 13, opt.fam); ctx.textAlign = opt.align || 'left'; ctx.textBaseline = 'middle';
+  ctx.lineWidth = 4; ctx.strokeStyle = C.surface; ctx.lineJoin = 'round'; ctx.strokeText(text, x, y);
+  ctx.fillStyle = col; ctx.fillText(text, x, y);
+}
+function line(x1, y1, x2, y2){ ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); }
+
+function draw(c, G, K){
+  ctx.clearRect(0, 0, W, H);
+  const sc = L.S / 280, wT = clamp(11 * sc, 6, 14);
+  hits = [];
+
+  // Ground plane
+  ctx.beginPath();
+  [[-.14,-.14],[WX+.14,-.14],[WX+.14,WY+.14],[-.14,WY+.14]].forEach(([x, y], i) => { const [sx, sy] = proj(x, y, 0); i ? ctx.lineTo(sx, sy) : ctx.moveTo(sx, sy); });
+  ctx.closePath(); ctx.fillStyle = C['surface-2']; ctx.fill(); ctx.strokeStyle = C.line; ctx.lineWidth = 1; ctx.stroke();
+
+  // Voltage ruler (fixed scale: 24 V is the tallest cliff)
+  const [bx, by] = proj(0, BY, 0), rx = proj(-.14, WY + .14, 0)[0] - 20;
+  ctx.strokeStyle = C.muted; ctx.lineWidth = 1.5; line(rx, by, rx, by - 24 * ZW * L.S);
+  for (let v = 0; v <= 24; v += 6){
+    const y = by - v * ZW * L.S;
+    line(rx - 5, y, rx, y);
+    label(rx - 7, y, String(v), C.muted, {px:11, fam:'num', align:'right', wt:500});
+  }
+  label(rx, by - 24 * ZW * L.S - 14, 'V', C.muted, {px:12, fam:'num', align:'center'});
+  const topY = by - S.V * ZW * L.S;
+  ctx.setLineDash([3, 4]); ctx.strokeStyle = potCol(S.V, .9); line(rx, topY, bx, topY); ctx.setLineDash([]);
+
+  // Empty rungs: dashed outline on the ground
+  G.ghosts.forEach(g => {
+    const [x1, y1] = proj(g.x, 0, 0), [x2, y2] = proj(g.x, WY, 0);
+    ctx.setLineDash([5, 6]); ctx.strokeStyle = C['line-strong']; ctx.lineWidth = 2; line(x1, y1, x2, y2); ctx.setLineDash([]);
+    const [mx, my] = proj(g.x, .5, 0); label(mx + 8, my, 'empty rung', C.muted, {px:11.5, wt:400});
+  });
+
+  // Depth-sorted draw items
+  const items = [];
+  G.cond.forEach(cd => {
+    for (let k = 0; k < cd.pts.length - 1; k++){
+      const a = cd.pts[k], b = cd.pts[k + 1], tag = a.tag;
+      if (tag === 'gap') continue;
+      const s = slotById(tag);
+      const w = s ? wT * (1 - .72 * (s.comp.R - 1) / 23) : wT;
+      const n = tag === 'bat' ? 1 : Math.max(1, Math.ceil(Math.hypot(b.x - a.x, b.y - a.y) / .04));
+      for (let j = 0; j < n; j++){
+        const u0 = j / n, u1 = (j + 1) / n;
+        const A = {x:lerp(a.x, b.x, u0), y:lerp(a.y, b.y, u0), z:lerp(a.z, b.z, u0)};
+        const Bp = {x:lerp(a.x, b.x, u1), y:lerp(a.y, b.y, u1), z:lerp(a.z, b.z, u1)};
+        items.push({d:(A.x + Bp.x + A.y + Bp.y) / 2 + (tag === 'bat' ? .001 : 0), f:() => drawPiece(A, Bp, w, tag, !!s)});
+      }
+    }
+  });
+  items.push({d:BY - .0005, f:drawBattery});
+  G.res.forEach(r => items.push({d:r.x + r.y + .002, f:() => drawLoad(r, sc)}));
+  G.cond.forEach((cd, ci) => {
+    const pts = cd.pts, lens = []; let tot = 0;
+    for (let k = 0; k < pts.length - 1; k++){ const l = segLen(pts[k], pts[k + 1]); lens.push(l); tot += l; }
+    const n = Math.max(2, Math.round(tot / .075)), gap = tot / n, off = S.off[ci] || 0;
+    for (let i = 0; i < n; i++){
+      let s = ((off + i * gap) % tot + tot) % tot, k = 0;
+      while (k < lens.length - 1 && s > lens[k]){ s -= lens[k]; k++; }
+      const a = pts[k], b = pts[k + 1];
+      if (a.tag === 'gap') continue;
+      const u = lens[k] ? s / lens[k] : 0;
+      const P = {x:lerp(a.x, b.x, u), y:lerp(a.y, b.y, u), z:lerp(a.z, b.z, u)};
+      items.push({d:P.x + P.y + .003, f:() => drawDot(P, sc)});
+    }
+  });
+  items.sort((p, q) => p.d - q.d).forEach(it => it.f());
+
+  // Open switches
+  G.cond.forEach(cd => cd.pts.forEach((a, k) => {
+    if (a.tag !== 'gap') return;
+    const [x, y] = proj(a.x, a.y, a.z);
+    ctx.strokeStyle = C.ink; ctx.lineWidth = 3; ctx.lineCap = 'round'; line(x - 6, y + 3, x + 7, y - 13);
+    label(x + 10, y - 15, 'open', C.warn, {px:12});
+  }));
+
+  // Labels
+  const [tx, ty] = proj(.05, BY - .05, S.V);
+  label(tx + 12, ty - 6, f1(S.V) + ' V', potCol(S.V), {px:16, fam:'num'});
+  const [gx, gy] = proj(.1, BY + .02, 0);
+  label(gx + 4, gy - 8, 'I = ' + f2(c.It) + ' A', C['i-col'], {px:13, fam:'num'});
+  G.res.forEach(r => {
+    const [x, y] = proj(r.x, r.y, r.z);
+    label(x + 16, y - 8, `↓ ${f1(r.V)} V`, C['v-col'], {px:12, fam:'num'});
+    label(x + 16, y + 8, `${f2(r.I)} A`, C['i-col'], {px:12, fam:'num'});
+  });
+  if (c.short){ const [x, y] = proj(WX, WY, S.V / 2); label(x + 12, y, 'Short circuit!', C.warn, {px:14}); }
+
+  // Legend
+  const lx = 12, ly = H - 16, lw = 96;
+  const grad = ctx.createLinearGradient(lx, 0, lx + lw, 0);
+  STOPS.forEach(([f, [r, g, b]]) => grad.addColorStop(f, `rgb(${r},${g},${b})`));
+  ctx.fillStyle = grad; ctx.fillRect(lx, ly - 5, lw, 10);
+  label(lx, ly - 15, '0 V', C.muted, {px:11, fam:'num'});
+  label(lx + lw, ly - 15, f1(S.V) + ' V', C.muted, {px:11, fam:'num', align:'right'});
+  ctx.beginPath(); ctx.arc(lx + lw + 20, ly, 4.5, 0, 7); ctx.fillStyle = '#fff7d6'; ctx.fill(); ctx.strokeStyle = 'rgba(0,0,0,.45)'; ctx.lineWidth = 1; ctx.stroke();
+  label(lx + lw + 30, ly, '+ charge (conventional current)', C.muted, {px:11.5, wt:400});
+  if (K.scaled) label(W - 10, ly, 'Dots slowed to fit', C.muted, {px:11.5, wt:400, align:'right'});
+}
+function slotById(id){ const s = B().slots.find(s => s.id === id); return s && s.comp ? s : null; }
+
+function drawPiece(A, B2, w, tag, isLoad){
+  const [x1, y1] = proj(A.x, A.y, A.z), [x2, y2] = proj(B2.x, B2.y, B2.z), zm = (A.z + B2.z) / 2;
+  if (tag !== 'bat' && (A.z > .01 || B2.z > .01)){
+    const [g1x, g1y] = proj(A.x, A.y, 0), [g2x, g2y] = proj(B2.x, B2.y, 0);
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.lineTo(g2x, g2y); ctx.lineTo(g1x, g1y); ctx.closePath();
+    ctx.fillStyle = potCol(zm, .13); ctx.fill();
+  }
+  if (isLoad) hits.push({tag, x1, y1, x2, y2});
+  if (tag === 'bat') return;
+  ctx.lineCap = 'butt';
+  if (isLoad && S.hot === tag){ ctx.strokeStyle = C.pt; ctx.globalAlpha = .45; ctx.lineWidth = w + 12; line(x1, y1, x2, y2); ctx.globalAlpha = 1; }
+  ctx.strokeStyle = 'rgba(0,0,0,.4)'; ctx.lineWidth = w + 3; line(x1, y1, x2, y2);
+  ctx.lineCap = 'round';
+  if (tag === 'short'){ ctx.setLineDash([6, 5]); ctx.strokeStyle = C.warn; }
+  else ctx.strokeStyle = potCol(zm);
+  ctx.lineWidth = w; line(x1, y1, x2, y2); ctx.setLineDash([]);
+}
+function drawBattery(){
+  const b = .055, V = S.V;
+  const q = pts => { ctx.beginPath(); pts.forEach(([x, y, z], i) => { const [sx, sy] = proj(x, y, z); i ? ctx.lineTo(sx, sy) : ctx.moveTo(sx, sy); }); ctx.closePath(); };
+  const [, yb] = proj(0, BY, 0), [, yt] = proj(0, BY, V);
+  const grad = ctx.createLinearGradient(0, yb, 0, yt);
+  STOPS.forEach(([f, [r, g, bb]]) => grad.addColorStop(f, `rgb(${r},${g},${bb})`));
+  ctx.globalAlpha = .82; ctx.fillStyle = grad; ctx.strokeStyle = 'rgba(0,0,0,.5)'; ctx.lineWidth = 1.2;
+  q([[b, BY - b, 0], [b, BY + b, 0], [b, BY + b, V], [b, BY - b, V]]); ctx.fill(); ctx.stroke();
+  q([[-b, BY + b, 0], [b, BY + b, 0], [b, BY + b, V], [-b, BY + b, V]]); ctx.fill(); ctx.stroke();
+  ctx.globalAlpha = 1; ctx.fillStyle = 'rgb(239,68,68)';
+  q([[-b, BY - b, V], [b, BY - b, V], [b, BY + b, V], [-b, BY + b, V]]); ctx.fill(); ctx.stroke();
+  const [px, py] = proj(0, BY, V), [mx, my] = proj(b, BY + b, 0);
+  ctx.font = FONT(700, 15); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#fff';
+  ctx.fillText('+', px, py); ctx.fillText('−', mx - 7, my - 9);
+}
+/* A resistor is a turbine in the waterfall; a bulb glows with its power. */
+function drawLoad(r, sc){
+  const [x, y] = proj(r.x, r.y, r.z), rad = clamp(9 * sc, 6, 12);
+  if (r.bulb){
+    const a = glow(r.P);
+    if (a > 0){ const g = ctx.createRadialGradient(x, y, 0, x, y, rad * 4); g.addColorStop(0, `rgba(250,204,21,${.85 * a})`); g.addColorStop(1, 'rgba(250,204,21,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, rad * 4, 0, 7); ctx.fill(); }
+    ctx.beginPath(); ctx.arc(x, y, rad, 0, 7); ctx.fillStyle = `rgba(250,204,21,${.25 + .75 * a})`; ctx.fill();
+    ctx.strokeStyle = C.ink; ctx.lineWidth = 2; ctx.stroke();
+    const k = rad * .7; line(x - k, y - k, x + k, y + k); line(x + k, y - k, x - k, y + k);
+    return;
+  }
+  ctx.beginPath(); ctx.arc(x, y, rad, 0, 7); ctx.fillStyle = C.surface; ctx.fill();
+  ctx.strokeStyle = C.ink; ctx.lineWidth = 2; ctx.stroke();
+  const th = S.spin[r.id] || 0;
+  for (let k = 0; k < 4; k++){ const a = th + k * Math.PI / 2; line(x, y, x + Math.cos(a) * rad, y + Math.sin(a) * rad * .8); }
+}
+function drawDot(P, sc){
+  const [x, y] = proj(P.x, P.y, P.z), r = clamp(4 * sc, 3, 5);
+  ctx.beginPath(); ctx.arc(x, y, r, 0, 7);
+  ctx.fillStyle = '#fff7d6'; ctx.fill(); ctx.strokeStyle = 'rgba(0,0,0,.5)'; ctx.lineWidth = 1; ctx.stroke();
+}
+/* Dot speed is proportional to current (same spacing everywhere, so dots per second = current).
+   Above a cap, every wire is slowed by the same factor, so the ratios stay true. */
+function flowScale(c){
+  const k = .12, cap = 2.2, Imax = Math.max(c.It, ...Object.values(c.slot).map(s => s.I));
+  return k * Imax > cap ? {k:cap / Imax, scaled:true} : {k, scaled:false};
+}
+
+/* =========================================================
+   SCHEMATIC WORKBENCH (SVG)
+   Every slot is a drop zone. A filled slot shows its part, a switch and a live badge (R, V, I).
+   ========================================================= */
+const VB = {w:540, h:360};
+function zig(x1, y1, x2, y2){
+  const n = 6, len = Math.hypot(x2 - x1, y2 - y1), ux = (x2 - x1) / len, uy = (y2 - y1) / len, px = -uy, py = ux, lead = 6, amp = 8;
+  let d = `M${x1} ${y1}L${x1 + ux * lead} ${y1 + uy * lead}`;
+  const st = (len - 2 * lead) / n;
+  for (let i = 0; i < n; i++){ const t = lead + st * (i + .5), s = i % 2 ? -1 : 1; d += `L${(x1 + ux * t + px * amp * s).toFixed(1)} ${(y1 + uy * t + py * amp * s).toFixed(1)}`; }
+  return d + `L${x2 - ux * lead} ${y2 - uy * lead}L${x2} ${y2}`;
+}
+/* Part symbol between two points (horizontal or vertical). Returns SVG. */
+function partSym(s, x1, y1, x2, y2, d){
+  if (!s.comp) return '';
+  if (s.comp.bulb){
+    const cx = (x1 + x2) / 2, cy = (y1 + y2) / 2, r = 13, horiz = y1 === y2, k = r * .7, a = glow(d.P);
+    const lead = horiz ? `M${x1} ${y1}H${cx - r}M${cx + r} ${y1}H${x2}` : `M${x1} ${y1}V${cy - r}M${x1} ${cy + r}V${y2}`;
+    return `<circle cx="${cx}" cy="${cy}" r="${r + 9}" fill="rgba(250,204,21,${.55 * a})"/><circle cx="${cx}" cy="${cy}" r="${r}" fill="rgba(250,204,21,${.15 + .85 * a})" stroke="var(--ink)" stroke-width="2.5"/>
+      <path class="sym" d="${lead}M${cx - k} ${cy - k}L${cx + k} ${cy + k}M${cx + k} ${cy - k}L${cx - k} ${cy + k}"/>`;
+  }
+  return `<path class="sym" d="${zig(x1, y1, x2, y2)}"/>`;
+}
+/* Switch symbol on the wire just before the part. */
+function swSym(s, x1, y1, x2, y2){
+  const horiz = y1 === y2;
+  const end = s.closed ? [x2, y2] : horiz ? [x2 - 3, y2 - 13] : [x2 + 13, y2 - 3];
+  return `<circle class="dot" cx="${x1}" cy="${y1}" r="3"/><circle class="dot" cx="${x2}" cy="${y2}" r="3"/><path class="sym" d="M${x1} ${y1}L${end[0]} ${end[1]}"/>`;
+}
+function pill(s, x, y){
+  return `<g class="pill${s.closed ? '' : ' open'}" data-sw="${s.id}" role="button" aria-label="Switch on ${slotName(s)}: ${s.closed ? 'closed' : 'open'}">
+    <rect x="${x - 27}" y="${y - 10}" width="54" height="20" rx="10"/><text x="${x}" y="${y}">${s.closed ? 'closed' : 'open'}</text></g>`;
+}
+function badge(s, d, x, y, anchor = 'middle'){
+  if (!s.comp) return '';
+  const w = 74, bx = anchor === 'middle' ? x - w / 2 : x;
+  const tx = bx + 8;
+  return `<g class="badge"><rect x="${bx}" y="${y}" width="${w}" height="50" rx="6"/>
+    <text class="t-num b-r" x="${tx}" y="${y + 14}">R ${fR(s.comp.R)} Ω</text>
+    <text class="t-num b-v" x="${tx}" y="${y + 29}">V ${f1(d.V)} V</text>
+    <text class="t-num b-i" x="${tx}" y="${y + 44}">I ${f2(d.I)} A</text></g>`;
+}
+function ammeter(key, x, y, reading, on){
+  const picking = S.pick === 'amm' || S.drag === 'amm';
+  if (!on) return picking ? `<circle class="socket" data-amm="${key}" data-drop="amm:${key}" cx="${x}" cy="${y}" r="13"/>` : '';
+  return `<g data-amm="${key}" data-drop="amm:${key}" style="cursor:pointer"><circle class="meter" cx="${x}" cy="${y}" r="12"/><text class="t-meter" x="${x}" y="${y}">A</text></g>
+    <text class="t-num" x="${x}" y="${y + 26}" text-anchor="middle" style="fill:var(--i-col)">${f2(reading)} A</text>`;
+}
+function voltmeter(lead, cx, cy, reading){
+  return `<path class="lead" d="${lead}"/><circle class="meter" cx="${cx}" cy="${cy}" r="12"/><text class="t-meter" x="${cx}" y="${cy}">V</text>
+    <text class="t-num" x="${cx}" y="${cy + 26}" text-anchor="middle" style="fill:var(--v-col)">${f1(reading)} V</text>`;
+}
+
+function renderBoard(c){
+  const b = B(), out = [], wires = [], top = [];
+  const W_ = (phi, d) => wires.push(`<path class="w" d="${d}" stroke="${potCol(phi)}"/>`);
+  const zone = (s, x, y, w, h) => {
+    const cls = 'zone' + (s.comp ? ' full' : '') + (S.hot === s.id ? ' hot' : '') + ((S.pick || S.drag) && !s.comp && PART[S.pick || S.drag] ? ' target' : '');
+    top.push(`<rect class="${cls}" data-drop="${s.id}" x="${x}" y="${y}" width="${w}" height="${h}" rx="8"/>` +
+      (s.comp ? '' : `<text class="drop-lab" x="${x + w / 2}" y="${s.role === 'par' ? y + h / 2 + 4 : y - 6}">${s.role === 'par' ? 'drop' : 'drop here'}</text>`));
+  };
+  // Battery: + plate (long) on top
+  const batt = (TOP, BOT) => {
+    W_(S.V, `M46 160V${TOP}H90`);
+    out.push(`<path class="sym" d="M30 160H62"/><path class="sym" d="M39 176H53" style="stroke-width:6"/>`,
+      `<text x="24" y="158" text-anchor="end" style="font-weight:700">+</text><text x="24" y="182" text-anchor="end" style="font-weight:700">−</text>`,
+      `<text class="t-num" x="68" y="172" style="fill:${potCol(S.V)}">${f1(S.V)} V</text>`);
+    W_(0, `M46 176V${BOT}`);
+  };
+
+  if (S.board === 'series'){
+    const TOP = 96, BOT = 300, XS = [170, 290, 410];
+    batt(TOP, BOT);
+    W_(S.V, `M90 ${TOP}H${XS[0] - 40}`);
+    b.slots.forEach((s, k) => {
+      const d = c.slot[s.id], x = XS[k], x0 = x - 40, x1 = x + 40;
+      // switch from x0 to x0+20, then the part (or a plain wire) to x1
+      out.push(swSym(s, x0, TOP, x0 + 20, TOP));
+      W_(d.zin, `M${x0 + 20} ${TOP}H${x0 + 22}`);
+      if (s.comp) out.push(partSym(s, x0 + 22, TOP, x1, TOP, d)); else W_(d.zin, `M${x0 + 22} ${TOP}H${x1}`);
+      const next = k < 2 ? XS[k + 1] - 40 : 490;
+      W_(d.zout, `M${x1} ${TOP}H${next}`);
+      zone(s, x0 - 4, TOP - 24, 88, 48);
+      if (s.volt && s.comp) out.push(voltmeter(`M${x0 + 22} ${TOP}V214H${x - 12}M${x + 12} 214H${x1}V${TOP}`, x, 214, d.V));
+      out.push(pill(s, x, TOP - 42), badge(s, d, x, TOP + 30));
+    });
+    W_(c.mid, `M490 ${TOP}V${BOT}`);
+    W_(0, `M490 ${BOT}H${270 + 12}M${270 - 12} ${BOT}H46`);
+    if (!b.amm.main) W_(0, `M${270 - 12} ${BOT}H${270 + 12}`);
+    out.push(ammeter('main', 270, BOT, c.It, b.amm.main));
+    if (S.mode === 'br' && !c.open && !c.short) out.push(`<text class="kir" x="270" y="${BOT - 40}">Loop: ΣV = +${f1(S.V)}${b.slots.filter(s => s.comp).map(s => ' − ' + f1(c.slot[s.id].V)).join('')} = 0</text>`);
+    if (c.short) out.push(`<text class="warn" x="270" y="${BOT - 30}">Short circuit: no resistance at all. Add a part.</text>`);
+  } else {
+    const TOP = 60, BOT = 316, par = b.slots.filter(s => s.role === 'par');
+    const XR = par.length === 3 ? [180, 310, 440] : [300, 430];
+    batt(TOP, BOT);
+    let xStart = 90;
+    if (S.board === 'combo'){
+      const s = b.slots[0], d = c.slot[s.id], x = 160, x0 = x - 40, x1 = x + 40;
+      W_(S.V, `M90 ${TOP}H${x0}`);
+      out.push(swSym(s, x0, TOP, x0 + 20, TOP));
+      W_(d.zin, `M${x0 + 20} ${TOP}H${x0 + 22}`);
+      if (s.comp) out.push(partSym(s, x0 + 22, TOP, x1, TOP, d)); else W_(d.zin, `M${x0 + 22} ${TOP}H${x1}`);
+      zone(s, x0 - 4, TOP - 24, 88, 48);
+      if (s.volt && s.comp) out.push(voltmeter(`M${x0 + 22} ${TOP}V150H${x - 12}M${x + 12} 150H${x1}V${TOP}`, x, 150, d.V));
+      out.push(pill(s, x, TOP - 42), badge(s, d, x, TOP + 30));
+      xStart = x1;
+    }
+    W_(c.mid, `M${xStart} ${TOP}H${XR[XR.length - 1]}`);
+    W_(0, `M${XR[XR.length - 1]} ${BOT}H${XR[0]}`);
+    // main line ammeter on the bottom wire between the battery and the first rung
+    const AX = S.board === 'combo' ? 180 : 120;
+    W_(0, `M${XR[0]} ${BOT}H${AX + 12}M${AX - 12} ${BOT}H46`);
+    if (!b.amm.main) W_(0, `M${AX - 12} ${BOT}H${AX + 12}`);
+    out.push(ammeter('main', AX, BOT, c.It, b.amm.main));
+    par.forEach((s, k) => {
+      const d = c.slot[s.id], x = XR[k], y0 = 150, y1 = 226;
+      if (k < par.length - 1) out.push(`<circle class="dot" cx="${x}" cy="${TOP}" r="4"/><circle class="dot" cx="${x}" cy="${BOT}" r="4"/>`);
+      if (!s.comp){
+        out.push(`<path class="ghost" d="M${x} ${TOP}V${BOT}"/>`);
+        zone(s, x - 26, y0 - 4, 52, y1 - y0 + 8);
+        return;
+      }
+      W_(c.mid, `M${x} ${TOP}V${y0 - 30}`);
+      out.push(swSym(s, x, y0 - 30, x, y0 - 8));
+      W_(d.zin, `M${x} ${y0 - 8}V${y0}`);
+      out.push(partSym(s, x, y0, x, y1, d));
+      const ak = 'b' + (k + 1), aOn = !!b.amm[ak], AY = 268;
+      W_(0, `M${x} ${y1}V${AY - 12}M${x} ${AY + 12}V${BOT}`);
+      if (!aOn) W_(0, `M${x} ${AY - 12}V${AY + 12}`);
+      out.push(ammeter(ak, x, AY, d.I, aOn));
+      zone(s, x - 26, y0 - 4, 52, y1 - y0 + 8);
+      out.push(pill(s, x - 40, y0 - 20), badge(s, d, x + 16, y0 + 6, 'start'));
+      if (s.volt) out.push(voltmeter(`M${x} ${y0 + 2}H${x - 42}V${(y0 + y1) / 2 - 12}M${x - 42} ${(y0 + y1) / 2 + 12}V${y1 - 2}H${x}`, x - 42, (y0 + y1) / 2, d.V));
+    });
+    if (S.mode === 'br' && !c.open){
+      const live = par.filter(s => s.comp && s.closed);
+      out.push(`<text class="kir" x="${XR[0]}" y="${TOP - 14}">${f2(c.It)} A in = ${live.map(s => f2(c.slot[s.id].I)).join(' + ')} A out</text>`);
+      out.push(`<text class="kir" x="${XR[0]}" y="${BOT + 40}">${live.map(s => f2(c.slot[s.id].I)).join(' + ')} A in = ${f2(c.It)} A out</text>`);
+    }
+  }
+  $('board').innerHTML = `<svg viewBox="0 0 ${VB.w} ${VB.h}" role="img" aria-label="Circuit workbench">${wires.join('')}${out.join('')}${top.join('')}</svg>`;
+}
+
+/* =========================================================
+   "WHAT JUST HAPPENED?" (Grade 9 Core)
+   Compare the circuit before and after a change and say what moved.
+   ========================================================= */
+function explain(before, after, act){
+  const b = B(), s = b.slots.find(x => x.id === act.id);
+  const A = v => f2(v) + ' A', Vv = v => f1(v) + ' V', Om = v => fR(v) + ' Ω';
+  const others = b.slots.filter(x => x.role === 'par' && x.id !== act.id && x.comp && x.closed);
+  const first = others[0];
+  const keep = first ? ` Branch ${first.id.slice(1)} went from ${Vv(before.slot[first.id].V)} and ${A(before.slot[first.id].I)} to ${Vv(after.slot[first.id].V)} and ${A(after.slot[first.id].I)}.` : '';
+  const total = before.It !== after.It ? ` Battery current: <b>${A(before.It)} → ${A(after.It)}</b>.` : ` Battery current stays <b>${A(after.It)}</b>.`;
+  if (after.short) return {warn:true, html:'<b>Short circuit.</b> With no part on the line there is no resistance, so the current would be huge. Add a part.'};
+  if (act.kind === 'add' || act.kind === 'remove'){
+    const what = act.kind === 'add' ? `You added a ${act.name}` : `You removed the ${act.name}`;
+    if (s.role === 'ser' && S.board === 'series'){
+      return {html:`${what} in series. Total resistance: <b>${Om(before.Rt)} → ${Om(after.Rt)}</b>.${total} The same current flows through every part.`};
+    }
+    if (s.role === 'ser'){
+      return {html:`${what} on the main line.${total} The branches now share <b>${Vv(after.Vpar)}</b> instead of ${Vv(before.Vpar)}.`};
+    }
+    if (S.board === 'parallel' && first){
+      return {html:`${what} in parallel. Branch ${first.id.slice(1)} kept its full <b>${Vv(after.slot[first.id].V)}</b> and <b>${A(after.slot[first.id].I)}</b>.${total}`};
+    }
+    if (S.board === 'combo' && first) return {html:`${what} in parallel.${total}${keep} The series part takes ${Vv(after.slot.s1.V)} now.`};
+    return {html:`${what} in parallel.${total}`};
+  }
+  if (act.kind === 'switch'){
+    const st = s.closed ? 'closed' : 'opened';
+    if (s.role === 'ser') return {html:`You ${st} the switch on ${slotName(s)}. ${s.closed ? 'The path is complete again.' : 'The only path is broken, so the current stops everywhere.'}${total}`};
+    if (S.board === 'parallel' && first) return {html:`You ${st} the switch on branch ${s.id.slice(1)}. ${s.closed ? 'Its waterfall flows again.' : 'Only that waterfall stopped.'} Branch ${first.id.slice(1)} still has <b>${Vv(after.slot[first.id].V)}</b> and <b>${A(after.slot[first.id].I)}</b>.${total}`};
+    return {html:`You ${st} the switch on branch ${s.id.slice(1)}.${total}${keep}`};
+  }
+  return null;
+}
+
+/* =========================================================
+   RIGHT-SIDE CARDS
+   ========================================================= */
+function ruleCard(c){
+  const b = B(), el = $('ruleCard');
+  el.hidden = S.mode !== 'g9';
+  if (el.hidden) return;
+  const ser = b.slots.filter(s => s.role === 'ser' && s.comp), live = b.slots.filter(s => s.role === 'par' && s.comp && s.closed);
+  const sub = s => subN(s.id), pre = s => s.role === 'par' ? 'b' : '';
+  const rows = [['V = I × R<sub>T</sub>', c.open || c.short ? 'I = 0 A' : `${f1(S.V)} V = ${f2(c.It)} A × ${fR(c.Rt)} Ω`]];
+  if (!c.open && !c.short){
+    if (S.board === 'series' && ser.length){
+      rows.push(['V = ' + ser.map(s => 'V' + sub(s)).join(' + '), `${f1(S.V)} V = ${ser.map(s => f1(c.slot[s.id].V) + ' V').join(' + ')}`]);
+      rows.push(['I<sub>T</sub> = ' + ser.map(s => 'I' + sub(s)).join(' = '), `${f2(c.It)} A = ${ser.map(s => f2(c.slot[s.id].I) + ' A').join(' = ')}`]);
+    }
+    if (S.board !== 'series' && live.length){
+      const vb = S.board === 'combo' ? 'V<sub>branch</sub>' : 'V';
+      rows.push([`${vb} = ` + live.map(s => 'V<sub>b' + s.id.slice(1) + '</sub>').join(' = '), `${f1(c.Vpar)} V = ${live.map(s => f1(c.slot[s.id].V) + ' V').join(' = ')}`]);
+      rows.push(['I<sub>T</sub> = ' + live.map(s => 'I<sub>b' + s.id.slice(1) + '</sub>').join(' + '), `${f2(c.It)} A = ${live.map(s => f2(c.slot[s.id].I) + ' A').join(' + ')}`]);
+      if (S.board === 'combo' && ser.length) rows.push(['V = V<sub>series</sub> + V<sub>branch</sub>', `${f1(S.V)} V = ${f1(c.slot.s1.V)} V + ${f1(c.Vpar)} V`]);
+    }
+  }
+  el.innerHTML = `<span class="ptitle">${({series:'Series rules', parallel:'Parallel rules', combo:'Combo rules'})[S.board]}</span>
+    <div class="rows ln">${rows.map(([f, s]) => `<b>${f}</b><span class="num">${s}</span>`).join('')}</div>`;
+}
+
+/* Grade 9 Energy: stores and pathways for the energy used in time t (same names as the Energy Stores and Pathways tool). */
+function energyCards(c){
+  $('engCard').hidden = S.mode !== 'g9e';
+  if (S.mode !== 'g9e') return;
+  const b = B(), E = c.P * S.t * 3600, k = S.clock;
+  const Pb = b.slots.filter(s => s.comp && s.comp.bulb).reduce((a, s) => a + c.slot[s.id].P, 0);
+  const useFrac = c.P ? Pb * BULB_EFF / c.P : 0;
+  const chem = E * (1 - k), use = E * k * useFrac, heat = E * k * (1 - useFrac);
+  const bar = (v, col) => `<div class="bar"><i style="width:${E ? 100 * v / E : 0}%; background:${col}"></i></div>`;
+  $('ledger').innerHTML = c.It === 0 ? `<p class="mute" style="grid-column:1 / -1">No current, so no energy moves.</p>` : `
+    <span class="lname"><b style="color:var(--chem)">Chemical store</b> · battery</span>${bar(chem, 'var(--chem)')}<span class="lval">${fmtJ(chem)} J</span>
+    <div class="pathway"><span class="pipe"></span>Electrical pathway: ${sig(c.P)} W</div>
+    <span class="lname"><b style="color:var(--light)">Useful</b> · light from bulbs</span>${bar(use, 'var(--light)')}<span class="lval">${fmtJ(use)} J</span>
+    <span class="lname"><b style="color:var(--therm)">Thermal store</b> · surroundings</span>${bar(heat, 'var(--therm)')}<span class="lval">${fmtJ(heat)} J</span>
+    <span class="lname mute">Total (never changes)</span><span></span><span class="lval">${fmtJ(E)} J</span>`;
+  $('tOut').textContent = f2(S.t) + ' h';
+  const kWh = c.P / 1000 * S.t, cost = kWh * S.price;
+  const money = cost >= 1 ? '$' + cost.toFixed(2) : (cost * 100).toFixed(cost * 100 >= 10 ? 1 : 2) + '¢';
+  $('eMath').innerHTML = `<div class="rows ln">
+    <b>P = I × V</b><span class="num">${f2(c.It)} A × ${f1(S.V)} V = ${sig(c.P)} W</span>
+    <b>E = P × t</b><span class="num">${sig(c.P)} W × ${fmtJ(S.t * 3600)} s = ${fmtJ(E)} J</span>
+    <b></b><span class="num">${sig(c.P / 1000)} kW × ${f2(S.t)} h = ${sig(kWh)} kWh</span>
+    <b>Cost = kWh × price</b><span class="num">${sig(kWh)} kWh × $${S.price.toFixed(2)} = ${money}</span>
+  </div>`;
+}
+
+/* Science 20 · Physics 30: equivalent resistance, with fraction and decimal steps. */
+function gcd(a, b){ return b ? gcd(b, a % b) : a; }
+function reqCard(c){
+  const el = $('reqCard');
+  el.hidden = S.mode !== 'br';
+  if (el.hidden) return;
+  const b = B(), ser = b.slots.filter(s => s.role === 'ser' && s.comp), live = b.slots.filter(s => s.role === 'par' && s.comp && s.closed);
+  const rows = [];
+  if (S.board === 'series'){
+    rows.push(['R<sub>eq</sub> = ' + ser.map(s => 'R' + subN(s.id)).join(' + '), ser.length ? ser.map(s => fR(s.comp.R) + ' Ω').join(' + ') + ` = ${fR(c.Rser)} Ω` : '0 Ω']);
+  } else {
+    if (S.board === 'combo') rows.push(['R<sub>series</sub>', `${fR(c.Rser)} Ω`]);
+    if (live.length){
+      const Rs = live.map(s => s.comp.R), nm = 'R<sub>' + (S.board === 'combo' ? 'branches' : 'eq') + '</sub>';
+      rows.push([`${fr('1', nm)} = ` + live.map(s => fr('1', 'R<sub>b' + s.id.slice(1) + '</sub>')).join(' + '), Rs.map(R => fr('1', fR(R) + ' Ω')).join(' + ')]);
+      // common denominator (all parts are whole ohms)
+      const lcd = Rs.reduce((a, R) => a * R / gcd(a, R), 1), num = Rs.reduce((a, R) => a + lcd / R, 0), g = gcd(num, lcd);
+      rows.push(['', '= ' + Rs.map(R => fr(String(lcd / R), lcd + ' Ω')).join(' + ') + ' = ' + fr(String(num / g), (lcd / g) + ' Ω')]);
+      rows.push(['', '= ' + Rs.map(R => (1 / R).toFixed(3)).join(' + ') + ` = ${(num / lcd).toFixed(3)} ` + fr('1', 'Ω')]);
+      rows.push([nm, `${fr('1', (num / lcd).toFixed(3))} = ${sig(lcd / num)} Ω`]);
+    } else rows.push(['', 'No closed branch: no current.']);
+    if (S.board === 'combo' && live.length) rows.push(['R<sub>eq</sub> = R<sub>series</sub> + R<sub>branches</sub>', `${fR(c.Rser)} Ω + ${sig(c.Rpar)} Ω = ${sig(c.Rt)} Ω`]);
+  }
+  if (!c.open && !c.short){
+    rows.push(['I<sub>T</sub> = ' + fr('V', 'R<sub>eq</sub>'), `${fr(f1(S.V) + ' V', sig(c.Rt) + ' Ω')} = ${f2(c.It)} A`]);
+    const drops = [...ser.map(s => c.slot[s.id].V), ...(S.board === 'series' ? [] : [c.Vpar])];
+    rows.push(['Loop: ΣV = 0', `+${f1(S.V)}${drops.map(v => ' − ' + f1(v)).join('')} = 0`]);
+  }
+  el.innerHTML = `<span class="ptitle">Equivalent resistance and Kirchhoff’s laws</span><div class="rows ln">${rows.map(([f, s]) => `<b>${f}</b><span class="num">${s}</span>`).join('')}</div>`;
+}
+
+function hint(){
+  const p = S.pick;
+  $('hint').innerHTML = !p ? 'Drag a part onto a dashed slot, or tap a part and then a slot. Tap a part on the board to remove it.'
+    : p === 'amm' ? '<b>Ammeter:</b> tap a dashed circle on a wire to put it in line.'
+    : p === 'volt' ? '<b>Voltmeter:</b> tap a part on the board to clip the probes across it.'
+    : `<b>${PART[p].name.replace('custom', fR(S.custom) + ' Ω')}:</b> tap an empty slot.`;
+}
+function foot(){
+  const bits = ['Dots are + charges moving the conventional way, + to −.', 'The battery’s internal resistance is ignored.'];
+  if (S.board === 'parallel') bits.push('A second branch doubles the battery current only when both branches have the same resistance.');
+  if (S.mode === 'g9e') bits.push('Bulbs give about 10% of their energy as light; resistors give it all to the thermal store.');
+  $('foot').textContent = bits.join(' ');
+}
+function newsBox(){
+  const n = $('news');
+  n.hidden = S.mode !== 'g9';
+  n.className = 'news' + (S.news && S.news.warn ? ' warn' : '');
+  n.innerHTML = S.news ? `<b>What just happened?</b> ${S.news.html}` : '<b>What just happened?</b> Add, remove or switch a part. This box explains the change.';
+}
+
+/* =========================================================
+   UPDATE + LOOP
+   ========================================================= */
+function render(){
+  const c = solve();
+  $('vOut').textContent = f1(S.V) + ' V';
+  $('rcOut').textContent = S.custom + ' Ω';
+  document.querySelectorAll('.part').forEach(p => p.setAttribute('aria-pressed', S.pick === p.dataset.part));
+  renderBoard(c); hint(); foot(); newsBox();
+  ruleCard(c); energyCards(c); reqCard(c);
+}
+/* Every change to a slot goes through here, so the banner can compare before and after. */
+function act(fn, info){
+  const before = solve();
+  fn();
+  const after = solve();
+  if (info) S.news = explain(before, after, info);
+  if (S.mode === 'g9e') startRun();
+  render();
+}
+
+let last = performance.now();
+function frame(now){
+  const dt = Math.min(.05, (now - last) / 1000); last = now;
+  const c = solve(), G = geometry(c), K = flowScale(c);
+  if (!matchMedia('(prefers-reduced-motion: reduce)').matches){
+    G.cond.forEach((cd, i) => S.off[i] = (S.off[i] || 0) + K.k * cd.I * dt);
+    G.res.forEach(r => S.spin[r.id] = (S.spin[r.id] || 0) + K.k * r.I * dt * 9);
+  }
+  if (S.running){
+    S.clock = Math.min(1, S.clock + dt / 4);
+    if (S.clock >= 1) S.running = false;
+    energyCards(c);
+  }
+  if (W && H) draw(c, G, K);
+  requestAnimationFrame(frame);
+}
+function startRun(){ S.clock = 0; S.running = true; }
+
+/* =========================================================
+   PLACING PARTS (drag-and-drop and tap-to-place share this)
+   ========================================================= */
+function place(part, target){
+  const b = B();
+  if (part === 'amm'){
+    const key = target.startsWith('amm:') ? target.slice(4) : null;
+    if (!key) return false;
+    b.amm[key] = !b.amm[key]; render(); return true;
+  }
+  const s = b.slots.find(x => x.id === target);
+  if (!s) return false;
+  if (part === 'volt'){ if (!s.comp) return false; s.volt = !s.volt; render(); return true; }
+  if (!PART[part] || s.comp) return false;
+  const R = part === 'rc' ? S.custom : PART[part].R;
+  const name = part === 'rc' ? `${R} Ω resistor` : PART[part].name;
+  act(() => { s.comp = comp(part, R); }, {kind:'add', id:s.id, name});
+  return true;
+}
+function removeFrom(id){
+  const s = B().slots.find(x => x.id === id);
+  if (!s || !s.comp) return;
+  const name = s.comp.part === 'rc' ? `${fR(s.comp.R)} Ω resistor` : PART[s.comp.part].name;
+  act(() => { s.comp = null; s.volt = false; if (s.role === 'par') delete B().amm['b' + id.slice(1)]; }, {kind:'remove', id, name});
+}
+
+// Tray: tap to pick, or drag
+const tray = $('tray');
+tray.addEventListener('click', e => { const p = e.target.closest('.part'); if (!p) return; S.pick = S.pick === p.dataset.part ? null : p.dataset.part; render(); });
+tray.addEventListener('dragstart', e => { const p = e.target.closest('.part'); if (!p) return; S.drag = p.dataset.part; e.dataTransfer.setData('text/plain', p.dataset.part); e.dataTransfer.effectAllowed = 'copy'; render(); });
+document.addEventListener('dragend', () => { if (S.drag){ S.drag = null; render(); } });
+
+// Board: drop, tap, hover
+const boardEl = $('board');
+boardEl.addEventListener('dragover', e => { if (e.target.closest('[data-drop]')){ e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; } });
+boardEl.addEventListener('drop', e => {
+  const t = e.target.closest('[data-drop]'); if (!t) return;
+  e.preventDefault();
+  const part = e.dataTransfer.getData('text/plain') || S.drag; S.drag = null;
+  if (!place(part, t.dataset.drop)) render();
+});
+boardEl.addEventListener('click', e => {
+  const sw = e.target.closest('[data-sw]');
+  if (sw){ const s = B().slots.find(x => x.id === sw.dataset.sw); act(() => { s.closed = !s.closed; }, {kind:'switch', id:s.id}); return; }
+  const t = e.target.closest('[data-drop]'); if (!t) return;
+  const id = t.dataset.drop;
+  if (S.pick){ if (place(S.pick, id)){ S.pick = null; render(); } return; }
+  if (id.startsWith('amm:')){ B().amm[id.slice(4)] = false; render(); return; }
+  removeFrom(id);
+});
+boardEl.addEventListener('pointerover', e => { const t = e.target.closest('[data-drop]'); const id = t && !t.dataset.drop.startsWith('amm:') ? t.dataset.drop : null; if (id !== S.hot){ S.hot = id; render(); } });
+boardEl.addEventListener('pointerleave', () => { if (S.hot){ S.hot = null; render(); } });
+
+// 3D hover highlights the slot on the board
+cv.addEventListener('pointermove', ev => {
+  const r = cv.getBoundingClientRect(), x = ev.clientX - r.left, y = ev.clientY - r.top;
+  let best = null, bd = 12;
+  hits.forEach(h => {
+    const dx = h.x2 - h.x1, dy = h.y2 - h.y1, l2 = dx * dx + dy * dy || 1, u = clamp(((x - h.x1) * dx + (y - h.y1) * dy) / l2, 0, 1);
+    const d = Math.hypot(x - (h.x1 + u * dx), y - (h.y1 + u * dy)); if (d < bd){ bd = d; best = h.tag; }
+  });
+  if (best !== S.hot){ S.hot = best; render(); }
+});
+cv.addEventListener('pointerleave', () => { if (S.hot){ S.hot = null; render(); } });
+
+// Top controls
+document.querySelectorAll('.mode button').forEach(b => b.addEventListener('click', () => {
+  S.mode = b.dataset.mode;
+  document.querySelectorAll('.mode button').forEach(x => x.setAttribute('aria-checked', x === b));
+  if (S.mode === 'g9e') startRun();
+  render();
+}));
+document.querySelectorAll('#boardSeg button').forEach(b => b.addEventListener('click', () => {
+  S.board = b.dataset.board; S.off = []; S.hot = null; S.news = null;
+  document.querySelectorAll('#boardSeg button').forEach(x => x.setAttribute('aria-checked', x === b));
+  if (S.mode === 'g9e') startRun();
+  render();
+}));
+$('vIn').addEventListener('input', e => { S.V = +e.target.value; render(); });
+$('rcIn').addEventListener('input', e => { S.custom = +e.target.value; render(); });
+$('clearBtn').addEventListener('click', () => { const b = B(); b.slots.forEach(s => { s.comp = null; s.closed = true; s.volt = false; }); b.amm = {main:true}; S.news = null; render(); });
+$('tIn').addEventListener('input', e => { S.t = +e.target.value; S.clock = 1; S.running = false; render(); });
+$('priceIn').addEventListener('input', e => { const v = parseFloat(e.target.value); if (isFinite(v) && v >= 0){ S.price = v; render(); } });
+$('runBtn').addEventListener('click', startRun);
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && S.pick){ S.pick = null; render(); } });
+
+const guideBtn = $('guideBtn'), guidePop = $('guidePop');
+guideBtn.addEventListener('click', () => { const open = guidePop.hidden; guidePop.hidden = !open; guideBtn.setAttribute('aria-expanded', open); });
+document.addEventListener('click', e => { if (!guidePop.hidden && !e.target.closest('.guide-wrap')){ guidePop.hidden = true; guideBtn.setAttribute('aria-expanded', false); } });
+
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { readColours(); render(); });
+new ResizeObserver(resize).observe(cv);
+readColours();
+resize();
+render();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

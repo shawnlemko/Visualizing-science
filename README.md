@@ -28,4 +28,4 @@ It is set up the same way as the math site, [shawnlemko/mathvisuals](https://git
 | `forces-fluids.html` | Forces in Water and Air (buoyancy, lift, drag) | K-6 and 7-9, Energy (also Matter) |
 | `rover-algorithms.html` | Rover Algorithms and AI (blocks, search race, AI training bias, Python) | K-6 and 7-9, Computer Science |
 | `energy-stores.html` | Energy Stores and Pathways | 7-9 and 10-12, Energy |
-| `circuit-elevation.html` | Voltage and Current Elevation (series, parallel, Kirchhoff) | 7-9 and 10-12, Energy |
+| `circuit-builder.html` | Series and Parallel Builder (drag-and-drop slots, 3D voltage elevation, Kirchhoff) | 7-9 and 10-12, Energy |
