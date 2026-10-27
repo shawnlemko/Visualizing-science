@@ -1,0 +1,644 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<script data-goatcounter="https://shawnlemko.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
+</head>
+<body>
+<title>Cell Size Diffusion Race</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Atkinson+Hyperlegible:wght@400;700&family=Spline+Sans+Mono:wght@500;700&display=swap">
+<style>
+/* MathBoard look (shared with the math visuals site), plus the diffusion colours:
+   magenta = the fed (diffused) part of a cell, cream = agar the nutrient has not reached yet,
+   green nucleus = fed core, red nucleus = starving core.
+   Layout: one-screen lab bench. Top = controls. Left = cells above the bars. Right = math cards. */
+:root{
+  --bg:#f5f8fb; --surface:#ffffff; --surface-2:#eaf0f6; --ink:#1b2733; --muted:#5b6b7a; --line:#dbe5ee; --line-strong:#b9c9d8; --pt:#2f5fd0;
+  --btn:#2f5fd0; --btn-ink:#ffffff;
+  --mag:#c2187a; --mag-soft:rgba(194,24,122,.14); --agar:#f3ead0; --fed:#1f8a5a; --starve:#c62d2d; --wait:#9aabbb; --core:#5b6b7a;
+  --air:#e8f1fb; --blood:#f9e1e1; --o2:#2f5fd0; --memb:#b4577a;
+  --font-ui:'Atkinson Hyperlegible', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-display:'Bricolage Grotesque', 'Segoe UI', system-ui, sans-serif;
+  --font-num:'Spline Sans Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0f161d; --surface:#151f29; --surface-2:#1d2935; --ink:#e6edf3; --muted:#9aabbb; --line:#1f2c38; --line-strong:#2e3f50; --pt:#7aa2ff;
+  --btn:#7aa2ff; --btn-ink:#0f161d;
+  --mag:#ff5fae; --mag-soft:rgba(255,95,174,.16); --agar:#3a3426; --fed:#4cc49a; --starve:#ff7a6b; --wait:#5f7080; --core:#9aabbb;
+  --air:#16263a; --blood:#3a1d24; --o2:#7aa2ff; --memb:#e08aaa; color-scheme:dark; } }
+:root[data-theme="dark"]{
+  --bg:#0f161d; --surface:#151f29; --surface-2:#1d2935; --ink:#e6edf3; --muted:#9aabbb; --line:#1f2c38; --line-strong:#2e3f50; --pt:#7aa2ff;
+  --btn:#7aa2ff; --btn-ink:#0f161d;
+  --mag:#ff5fae; --mag-soft:rgba(255,95,174,.16); --agar:#3a3426; --fed:#4cc49a; --starve:#ff7a6b; --wait:#5f7080; --core:#9aabbb;
+  --air:#16263a; --blood:#3a1d24; --o2:#7aa2ff; --memb:#e08aaa; color-scheme:dark; }
+
+*,*::before,*::after{box-sizing:border-box}
+h1,h2,p,ol{margin:0} ol{padding:0; list-style:none}
+button,select,input{font:inherit; color:inherit}
+button{border:0; background:none; cursor:pointer}
+button:disabled{cursor:default; opacity:.45}
+html,body{height:100%}
+body{background:var(--bg); color:var(--ink); font-family:var(--font-ui); font-size:14px;
+  padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); padding-block:0}
+#app{display:flex; flex-direction:column; gap:8px; min-height:100%; padding-block:8px}
+@media (min-width:1024px){ #app{height:100%} }
+.num{font-family:var(--font-num); font-variant-numeric:tabular-nums}
+
+/* Header */
+.topbar{display:flex; flex-wrap:wrap; align-items:center; gap:10px 20px; justify-content:space-between}
+.brand{display:flex; flex-wrap:wrap; align-items:center; gap:8px 20px}
+.brand h1{font-family:var(--font-display); font-weight:800; font-size:clamp(20px, 2vw, 26px); line-height:1.1; letter-spacing:-.01em; text-wrap:balance}
+a.main-btn{display:inline-flex; align-items:center; gap:8px; padding:8px 16px; min-height:42px; background:var(--pt); color:#fff; font-family:var(--font-display); font-weight:800; font-size:16px; text-decoration:none; border-radius:10px; border:2px solid var(--pt); flex:none}
+a.main-btn span{font-size:19px; line-height:1}
+a.main-btn:hover{background:var(--surface); color:var(--pt)}
+a.main-btn:focus-visible{outline:3px solid var(--pt); outline-offset:3px}
+.top-right{display:flex; flex-wrap:wrap; align-items:center; gap:10px}
+.mode{display:flex; align-items:center; gap:4px; background:var(--surface); border:1px solid var(--line); border-radius:999px; padding:4px}
+.mode-label{font-size:12px; color:var(--muted); padding:0 6px 0 10px; letter-spacing:.04em; text-transform:uppercase}
+.mode button{border-radius:999px; padding:6px 14px; font-weight:700; font-size:14px; color:var(--muted); line-height:1.1}
+.mode button small{font-weight:400; font-size:12px; margin-left:4px}
+.mode button[aria-checked="true"]{background:var(--btn); color:var(--btn-ink)}
+.guide-wrap{position:relative}
+.btn-outline{border:1.5px solid var(--ink); border-radius:8px; padding:7px 12px; font-weight:700; font-size:14px; background:var(--surface)}
+.pop{position:absolute; right:0; top:calc(100% + 8px); width:min(380px, calc(100vw - 32px)); z-index:20; background:var(--surface);
+  border:1px solid var(--line); border-radius:10px; box-shadow:0 12px 32px rgba(10,20,30,.18); padding:14px 16px}
+.pop h2{font-weight:700; font-size:15px; margin-bottom:8px}
+.pop ol{display:flex; flex-direction:column; gap:10px}
+.pop li{display:grid; grid-template-columns:24px 1fr; gap:8px; line-height:1.4}
+.pop .n{width:22px; height:22px; border-radius:50%; background:var(--btn); color:var(--btn-ink); font-weight:700; font-size:12px; display:grid; place-items:center}
+
+.panel{background:var(--surface); border:1px solid var(--line-strong); border-radius:10px; min-width:0}
+button:focus-visible, input:focus-visible{outline:2.5px solid var(--pt); outline-offset:2px}
+
+/* Controls */
+.controls{display:flex; flex-wrap:wrap; gap:8px 22px; padding:8px 14px; align-items:end}
+.ctl{display:flex; flex-direction:column; gap:3px; min-width:0}
+.ctl.grow{flex:1 1 220px}
+.ctl-top{display:flex; align-items:baseline; justify-content:space-between; gap:8px; flex-wrap:wrap}
+.ctl label, .ctl .lab{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.07em; font-weight:700}
+.ctl .lab .sym{text-transform:none}
+.ctl output{font-family:var(--font-num); font-variant-numeric:tabular-nums; font-weight:700; font-size:15px; display:inline-flex; align-items:center; gap:4px}
+.ctl input[type=range]{width:100%; accent-color:var(--pt); margin:2px 0}
+.btnrow{display:flex; gap:6px; flex-wrap:wrap}
+.btn-primary{background:var(--btn); color:var(--btn-ink); border-radius:8px; padding:8px 16px; font-weight:700; font-size:15px; white-space:nowrap; min-height:38px}
+.btn-ghost{border:1px solid var(--line-strong); border-radius:8px; padding:7px 11px; font-size:13.5px; background:var(--surface-2); white-space:nowrap; min-height:36px}
+.btn-ghost[aria-pressed="true"]{background:var(--ink); color:var(--surface); border-color:var(--ink)}
+.rate{font-family:var(--font-num); font-weight:700; font-size:15px; display:inline-flex; align-items:center; gap:4px; color:var(--mag)}
+
+/* Main split */
+.layout{display:grid; grid-template-columns:1fr; gap:10px; flex:1; min-height:0}
+@media (min-width:1024px){ .layout{grid-template-columns:60fr 40fr; grid-template-rows:minmax(0,1fr)} }
+.left{display:flex; flex-direction:column; gap:10px; min-height:0; min-width:0}
+.ptitle{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.07em; font-weight:700}
+
+.stage{display:flex; flex-direction:column; flex:1; min-height:300px; padding:8px 12px 8px}
+@media (min-width:1024px){ .stage{min-height:0} }
+.s-head{display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; min-height:26px}
+.clock{font-family:var(--font-num); font-weight:700; font-size:16px}
+.key{display:flex; flex-wrap:wrap; gap:4px 14px; font-size:12px; color:var(--muted)}
+.key i{display:inline-block; width:12px; height:12px; border-radius:3px; vertical-align:-2px; margin-right:5px; border:1px solid var(--line-strong)}
+.key i.dot{border-radius:50%}
+.s-canvas{position:relative; flex:1; min-height:0}
+.s-canvas canvas{position:absolute; inset:0; width:100%; height:100%; display:block}
+
+/* Bars */
+.bars{padding:8px 12px 10px; display:grid; grid-template-columns:auto 1fr 1fr; gap:6px 14px; align-items:center}
+.bars .ptitle{align-self:end}
+.flag{grid-column:1 / -1; display:flex; align-items:center; gap:8px; font-weight:700; font-size:14px; color:var(--mag); background:var(--mag-soft); border-radius:8px; padding:5px 10px}
+.rowlab{font-family:var(--font-display); font-weight:800; font-size:17px; width:22px; text-align:center}
+.track{position:relative; height:22px; background:var(--surface-2); border:1px solid var(--line-strong); border-radius:6px; overflow:hidden}
+.track .fill{position:absolute; left:0; top:0; bottom:0}
+.track.fedT .fill{background:var(--mag)}
+.track.coreT .fill{background:var(--core); opacity:.55}
+.track .val{position:absolute; right:6px; top:50%; transform:translateY(-50%); font-family:var(--font-num); font-weight:700; font-size:13px}
+.track.full{box-shadow:0 0 0 2px var(--fed)}
+.track.zero .val{color:var(--fed)}
+.mark{position:absolute; top:-2px; bottom:-2px; border-left:2px dashed var(--ink); opacity:.55}
+.mark span{position:absolute; left:4px; top:50%; transform:translateY(-50%); font-size:11px; white-space:nowrap}
+.bars.bio{grid-template-columns:auto 1fr}
+
+/* Ledger */
+.ledger{display:flex; flex-direction:column; gap:8px; padding:10px 14px; overflow:auto; min-height:0}
+.ledger > *{flex-shrink:0}
+.lcard{border:1px solid var(--line); border-left:5px solid var(--mag); border-radius:10px; padding:7px 12px 7px; background:var(--surface)}
+.lcard.plain{border-left-color:var(--pt)}
+.lcard.done{box-shadow:0 0 0 2px var(--fed)}
+.lc-head{display:flex; align-items:center; gap:8px; margin-bottom:3px}
+.badge{min-width:22px; height:22px; border-radius:11px; padding:0 6px; display:grid; place-items:center; font-weight:700; font-size:12px; color:#fff; background:var(--mag); flex:none}
+.plain .badge{background:var(--pt)}
+.lc-title{font-weight:700; font-size:14px; flex:1; min-width:0}
+.lc-title small{font-weight:400; color:var(--muted); font-size:12.5px; margin-left:4px}
+.lc-q{font-family:var(--font-num); font-weight:700; font-size:15px; white-space:nowrap}
+.ln{display:flex; flex-wrap:wrap; align-items:center; gap:2px 6px; font-size:15px; line-height:1.3; padding-left:30px; min-height:2em}
+.ln .f{font-weight:700}
+.ln .num{font-family:var(--font-num); font-variant-numeric:tabular-nums; font-size:14px; white-space:nowrap; display:inline-flex; align-items:center; gap:3px}
+.ln .num > b{font-weight:700}
+/* Stacked fraction: numerator over a division bar (no slashes anywhere in the math) */
+.fr{display:inline-flex; flex-direction:column; align-items:center; vertical-align:middle; line-height:1.15; margin:0 2px}
+.fr > span{padding:0 2px; white-space:nowrap}
+.fr > span:first-child{border-bottom:1.5px solid currentColor}
+.c-mag{color:var(--mag)} .c-fed{color:var(--fed)} .c-starve{color:var(--starve)}
+.foot{font-size:11.5px; color:var(--muted); line-height:1.45}
+@media (max-width:480px){ .mode-label{display:none} .mode button{padding:6px 10px} .mode button small{display:block; margin-left:0} .bars{grid-template-columns:auto 1fr} .bars .h2{display:none} }
+@media (prefers-reduced-motion: reduce){ *{transition:none !important} }
+</style>
+
+<div id="app">
+  <header class="topbar">
+    <div class="brand">
+      <a class="main-btn" href="index.html"><span aria-hidden="true">←</span> Return to Main Page</a>
+      <h1 id="title">Cell Size Diffusion Race</h1>
+    </div>
+    <div class="top-right">
+      <div class="mode" role="radiogroup" aria-label="Mode">
+        <span class="mode-label">Mode</span>
+        <button type="button" id="modeSci" role="radio" aria-checked="true">Science 10<small>Agar cubes</small></button>
+        <button type="button" id="modeBio" role="radio" aria-checked="false">Biology 20<small>Alveoli and microvilli</small></button>
+      </div>
+      <div class="guide-wrap">
+        <button type="button" id="guideBtn" class="btn-outline" aria-expanded="false" aria-controls="guidePop">Step-by-Step Guide</button>
+        <div id="guidePop" class="pop" hidden>
+          <h2>How to use this</h2>
+          <ol id="guideSci">
+            <li><span class="n">1</span><span>Press <b>Start</b>. The <b class="c-mag">pink</b> nutrient moves into every cell at the <b>same speed</b>.</span></li>
+            <li><span class="n">2</span><span>It stops when cell <b>A</b> is full. Read the bars: B and C are not full yet.</span></li>
+            <li><span class="n">3</span><span>Press <b>Start</b> again. Watch which nucleus turns <b class="c-starve">red</b> (starving) and which turns <b class="c-fed">green</b> (fed).</span></li>
+            <li><span class="n">4</span><span>Drag the <b>Cell C size</b> slider and race again.</span></li>
+            <li><span class="n">5</span><span>Press <b>Lock V at 64 cm³</b>. Change C's shape. Same volume, more surface area, fed sooner.</span></li>
+          </ol>
+          <ol id="guideBio" hidden>
+            <li><span class="n">1</span><span>Drag <b>Membrane folding</b>. The surface area grows, the volume stays the same.</span></li>
+            <li><span class="n">2</span><span>Drag <b>ΔC</b>. A bigger difference in O₂ moves more O₂ across.</span></li>
+            <li><span class="n">3</span><span>Drag <b>Membrane thickness</b>. A thicker membrane slows diffusion.</span></li>
+            <li><span class="n">4</span><span>Try <b>Pulmonary edema</b> and <b>Emphysema</b>. Compare the rate with healthy.</span></li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Science 10 controls -->
+  <section class="panel controls" id="ctlSci" aria-label="Science 10 controls">
+    <div class="ctl">
+      <span class="lab">Race</span>
+      <div class="btnrow">
+        <button type="button" id="play" class="btn-primary">▶ Start Nutrient Diffusion</button>
+        <button type="button" id="reset" class="btn-ghost">Reset</button>
+      </div>
+    </div>
+    <div class="ctl grow">
+      <div class="ctl-top"><label for="tSlider">Time</label><output id="tOut" for="tSlider">0.0 min</output></div>
+      <input type="range" id="tSlider" min="0" max="20" step="0.1" value="0">
+    </div>
+    <div class="ctl">
+      <span class="lab">Diffusion rate (all cells)</span>
+      <span class="rate" id="rateOut"></span>
+    </div>
+    <div class="ctl grow">
+      <div class="ctl-top"><label for="cSlider">Cell C size</label><output id="cOut" for="cSlider">4 cm</output></div>
+      <input type="range" id="cSlider" min="0.5" max="6" step="0.5" value="4">
+    </div>
+    <div class="ctl">
+      <span class="lab">Cell C shape</span>
+      <div class="btnrow">
+        <button type="button" id="lockBtn" class="btn-ghost" aria-pressed="false">Lock V at 64 cm³</button>
+        <span id="shapeRow" class="btnrow" role="radiogroup" aria-label="Cell C shape" hidden>
+          <button type="button" class="btn-ghost" data-shape="cube" role="radio" aria-pressed="true">Cube</button>
+          <button type="button" class="btn-ghost" data-shape="rod" role="radio" aria-pressed="false">Long rod</button>
+          <button type="button" class="btn-ghost" data-shape="sheet" role="radio" aria-pressed="false">Flat sheet</button>
+          <button type="button" class="btn-ghost" data-shape="cluster" role="radio" aria-pressed="false">64 small cubes</button>
+        </span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Biology 20 controls -->
+  <section class="panel controls" id="ctlBio" aria-label="Biology 20 controls" hidden>
+    <div class="ctl">
+      <span class="lab">Lung</span>
+      <div class="btnrow" role="radiogroup" aria-label="Lung condition">
+        <button type="button" class="btn-ghost" data-preset="healthy" aria-pressed="true">Healthy</button>
+        <button type="button" class="btn-ghost" data-preset="edema" aria-pressed="false">Pulmonary edema</button>
+        <button type="button" class="btn-ghost" data-preset="emph" aria-pressed="false">Emphysema</button>
+      </div>
+    </div>
+    <div class="ctl grow">
+      <div class="ctl-top"><label for="fSlider">Membrane folding (microvilli, alveolar sacs)</label><output id="fOut" for="fSlider">× 20</output></div>
+      <input type="range" id="fSlider" min="1" max="20" step="1" value="20">
+    </div>
+    <div class="ctl grow">
+      <div class="ctl-top"><label for="cgSlider"><span class="sym">ΔC</span> (O₂ difference)</label><output id="cgOut" for="cgSlider">8 kPa</output></div>
+      <input type="range" id="cgSlider" min="1" max="12" step="1" value="8">
+    </div>
+    <div class="ctl grow">
+      <div class="ctl-top"><label for="thSlider">Membrane thickness</label><output id="thOut" for="thSlider">0.5 µm</output></div>
+      <input type="range" id="thSlider" min="0.5" max="5" step="0.5" value="0.5">
+    </div>
+  </section>
+
+  <main class="layout">
+    <div class="left">
+      <section class="panel stage" aria-label="Cells">
+        <div class="s-head">
+          <span class="clock" id="clock">t = 0.0 min</span>
+          <span class="key" id="keySci">
+            <span><i style="background:var(--mag)"></i>Fed (nutrient)</span>
+            <span><i style="background:var(--agar)"></i>Not reached</span>
+            <span><i class="dot" style="background:var(--fed)"></i>Nucleus fed</span>
+            <span><i class="dot" style="background:var(--starve)"></i>Nucleus starving</span>
+          </span>
+          <span class="key" id="keyBio" hidden>
+            <span><i class="dot" style="background:var(--o2)"></i>O₂</span>
+            <span><i style="background:var(--memb)"></i>Membrane</span>
+          </span>
+        </div>
+        <div class="s-canvas"><canvas id="cv" role="img" aria-label="Cross-sections of the cells"></canvas></div>
+      </section>
+      <section class="panel bars" id="barsSci" aria-label="Bars">
+        <span></span><span class="ptitle">% of cell volume fed</span><span class="ptitle h2">Distance left to the core</span>
+        <div class="flag" id="flag" hidden>Cell A is 100% fed. Compare B and C.</div>
+        <div id="barRows" style="display:contents"></div>
+      </section>
+      <section class="panel bars bio" id="barsBio" aria-label="Diffusion rate" hidden>
+        <span></span><span class="ptitle">Rate of O₂ diffusion, compared with a healthy lung</span>
+        <span class="rowlab">O₂</span>
+        <div class="track fedT" id="bioTrack"><div class="fill" id="bioFill"></div><div class="mark" id="bioMark"><span>healthy</span></div><span class="val" id="bioVal">100%</span></div>
+      </section>
+    </div>
+    <section class="panel ledger" id="ledger" aria-label="Math" aria-live="polite"></section>
+  </main>
+</div>
+
+<script>
+/* =========================================================
+   SETTINGS
+   One diffusion rate for every cell: 1 mm per minute (0.1 cm per minute),
+   about what NaOH does in a phenolphthalein agar cube lab. The clock runs fast: 1 minute per second.
+   ========================================================= */
+const RATE_MM = 1;            // mm per min
+const RATE = RATE_MM / 10;    // cm per min
+const SPEED = 1;              // simulated minutes per real second
+const VLOCK = 64;             // cm³
+const SHAPES = {
+  cube:    {dims:[4, 4, 4],  n:1,  name:'Cube'},
+  rod:     {dims:[1, 1, 64], n:1,  name:'Long rod'},
+  sheet:   {dims:[8, 8, 1],  n:1,  name:'Flat sheet'},
+  cluster: {dims:[1, 1, 1],  n:64, name:'64 small cubes'},
+};
+/* Biology 20: rate is proportional to SA × ΔC over T (Fick). Healthy = folding 20, ΔC 8 kPa, T 0.5 µm. */
+const PRESETS = { healthy:{F:20, dC:8, T:0.5}, edema:{F:20, dC:8, T:2.5}, emph:{F:5, dC:8, T:0.5} };
+const HEALTHY = PRESETS.healthy.F * PRESETS.healthy.dC / PRESETS.healthy.T;
+
+const S = { bio:false, t:0, playing:false, cSize:4, lock:false, shape:'cube', stopA:true, F:20, dC:8, T:0.5 };
+const $ = id => document.getElementById(id);
+const fr = (top, bot) => `<span class="fr"><span>${top}</span><span>${bot}</span></span>`;
+const n2 = x => String(Number(x.toFixed(2)));
+const n1 = x => x.toFixed(1);
+const pct = x => (Math.round(x * 1000) / 10).toFixed(1) + '%';
+
+/* =========================================================
+   GEOMETRY. A cell is n boxes of l × w × h (cm). Nutrient moves in d cm from every face.
+   ========================================================= */
+function cells(){
+  const C = S.lock ? {...SHAPES[S.shape], view:S.shape} : {dims:[S.cSize, S.cSize, S.cSize], n:1, view:'cube'};
+  return [{id:'A', dims:[1,1,1], n:1, view:'cube'}, {id:'B', dims:[2,2,2], n:1, view:'cube'}, {id:'C', ...C}];
+}
+const vol  = c => c.n * c.dims[0] * c.dims[1] * c.dims[2];
+const area = c => { const [l, w, h] = c.dims; return c.n * 2 * (l*w + l*h + w*h); };
+const core = (c, d) => c.n * c.dims.reduce((p, x) => p * Math.max(0, x - 2*d), 1);
+const fed  = (c, d) => 1 - core(c, d) / vol(c);
+const half = c => Math.min(...c.dims) / 2;                 // cm from the surface to the centre
+const left = (c, d) => Math.max(0, half(c) - d);           // cm still to go
+const T_A = 0.5 / RATE;                                     // cell A is full at 5 min
+const tMax = () => Math.ceil(Math.max(...cells().map(half)) / RATE);
+
+/* =========================================================
+   COLOURS + CANVAS
+   ========================================================= */
+let COL = {};
+function readColours(){
+  const cs = getComputedStyle(document.documentElement), g = k => cs.getPropertyValue(k).trim();
+  COL = {ink:g('--ink'), muted:g('--muted'), surface:g('--surface'), surface2:g('--surface-2'), line:g('--line-strong'),
+    mag:g('--mag'), agar:g('--agar'), fed:g('--fed'), starve:g('--starve'), wait:g('--wait'),
+    air:g('--air'), blood:g('--blood'), o2:g('--o2'), memb:g('--memb'),
+    display:g('--font-display'), ui:g('--font-ui'), num:g('--font-num')};
+}
+const cv = $('cv'), ctx = cv.getContext('2d');
+function fit(){
+  const r = cv.getBoundingClientRect(), d = devicePixelRatio || 1;
+  if (cv.width !== Math.round(r.width * d) || cv.height !== Math.round(r.height * d)){ cv.width = Math.round(r.width * d); cv.height = Math.round(r.height * d); }
+  ctx.setTransform(d, 0, 0, d, 0, 0);
+  return {W:r.width, H:r.height};
+}
+
+/* ---------- Science 10: cross-sections of the three cells ---------- */
+const ROD_SHOWN = 12;   // the 64 cm rod is drawn 12 cm long with a break mark
+const GAP = 0.3;        // cm between the small cubes of the cluster
+function footprint(c){  // drawn width and height in cm
+  const s = c.dims[0];
+  if (c.view === 'rod') return [ROD_SHOWN, 1];
+  if (c.view === 'sheet') return [8, 1];
+  if (c.view === 'cluster') return [4 + 3*GAP, 4 + 3*GAP];
+  return [s, s];
+}
+function caption(c){
+  if (c.view === 'rod') return '1 × 1 × 64 cm';
+  if (c.view === 'sheet') return '8 × 8 × 1 cm, side view';
+  if (c.view === 'cluster') return '64 cubes of 1 cm';
+  return 's = ' + n2(c.dims[0]) + ' cm';
+}
+function nucleus(x, y, r, state, glow){
+  ctx.save();
+  const col = state === 'fed' ? COL.fed : state === 'starve' ? COL.starve : COL.wait;
+  if (state !== 'wait'){ ctx.shadowColor = col; ctx.shadowBlur = glow; }
+  ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2); ctx.fillStyle = col; ctx.fill();
+  ctx.shadowBlur = 0; ctx.lineWidth = 1.5; ctx.strokeStyle = COL.surface; ctx.stroke();
+  ctx.restore();
+}
+function box(x, y, w, h, dpx){
+  ctx.fillStyle = COL.mag; ctx.fillRect(x, y, w, h);
+  const iw = w - 2*dpx, ih = h - 2*dpx;
+  if (iw > 0 && ih > 0){
+    ctx.fillStyle = COL.agar; ctx.fillRect(x + dpx, y + dpx, iw, ih);
+    if (dpx > 0){ ctx.save(); ctx.shadowColor = COL.mag; ctx.shadowBlur = 8; ctx.strokeStyle = COL.mag; ctx.lineWidth = 2; ctx.strokeRect(x + dpx, y + dpx, iw, ih); ctx.restore(); }
+  }
+  ctx.strokeStyle = COL.ink; ctx.lineWidth = 1.5; ctx.strokeRect(x, y, w, h);
+}
+function drawSci(){
+  const {W, H} = fit(); ctx.clearRect(0, 0, W, H);
+  const cs = cells(), d = RATE * S.t, pulse = 10 + 6 * Math.sin(performance.now() / 220);
+  const fps = cs.map(footprint), pad = 14, gapPx = 34, capH = 40;
+  const sumW = fps.reduce((a, f) => a + f[0], 0), maxH = Math.max(...fps.map(f => f[1]));
+  const k = Math.min((W - 2*pad - gapPx*(cs.length - 1)) / sumW, (H - pad - capH) / maxH, 110);   // px per cm
+  let x = (W - (sumW*k + gapPx*(cs.length - 1))) / 2;
+  const mid = pad + (H - pad - capH) / 2;
+  cs.forEach((c, i) => {
+    const [fw, fh] = fps[i], w = fw*k, h = fh*k, y = mid - h/2, dpx = d*k;
+    const state = left(c, d) <= 1e-9 ? 'fed' : S.t >= T_A - 1e-9 ? 'starve' : 'wait';
+    if (c.view === 'cluster'){
+      const s = k, g = GAP*k;
+      for (let r = 0; r < 4; r++) for (let q = 0; q < 4; q++){
+        const bx = x + q*(s + g), by = y + r*(s + g);
+        box(bx, by, s, s, Math.min(dpx, s/2));
+        nucleus(bx + s/2, by + s/2, Math.max(2.5, s*0.1), state, state === 'starve' ? pulse*0.6 : 8);
+      }
+    } else {
+      box(x, y, w, h, Math.min(dpx, Math.min(w, h)/2));
+      if (c.view === 'rod'){       // break mark: the rod keeps going to 64 cm
+        const bx = x + w*0.62;
+        ctx.save(); ctx.strokeStyle = COL.surface; ctx.lineWidth = 7;
+        ctx.beginPath(); ctx.moveTo(bx - 5, y + h + 6); ctx.lineTo(bx + 5, y - 6); ctx.stroke();
+        ctx.strokeStyle = COL.ink; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.moveTo(bx - 9, y + h + 6); ctx.lineTo(bx + 1, y - 6); ctx.moveTo(bx - 1, y + h + 6); ctx.lineTo(bx + 9, y - 6); ctx.stroke();
+        ctx.restore();
+      }
+      const cx = c.view === 'rod' ? x + w*0.3 : x + w/2;
+      nucleus(cx, y + h/2, Math.max(3.5, Math.min(w, h)*0.09), state, state === 'starve' ? pulse : 14);
+    }
+    ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'center'; ctx.fillStyle = COL.ink;
+    ctx.font = `800 17px ${COL.display}`; ctx.fillText(c.id, x + w/2, H - capH + 18);
+    ctx.font = `400 12.5px ${COL.ui}`; ctx.fillStyle = COL.muted; ctx.fillText(caption(c), x + w/2, H - capH + 34);
+    x += w + gapPx;
+  });
+}
+
+/* ---------- Biology 20: a folded exchange membrane between air and blood ---------- */
+const bio = { air:[], cross:[], blood:[], acc:0, last:0, path:null };
+function membranePath(W, H){
+  const pad = 10, mid = H*0.55, Z = H*0.5, x0 = pad, x1 = W - pad, F = S.F, pts = [];
+  // Square wave about the midline: equal space above and below, so the volume on each side stays the same.
+  // Per period 2w the length is 2w + 4a, so folding F = 1 + 2a over w.
+  if (F <= 1){ pts.push([x0, mid], [x1, mid]); return {pts, mid, a:0}; }
+  let w = Math.min((x1 - x0) / 8, Z / (F - 1)), a = (F - 1) * w / 2;
+  const per = Math.max(1, Math.round((x1 - x0) / (2*w))); w = (x1 - x0) / (2*per); a = (F - 1) * w / 2;
+  const lo = mid + a, hi = mid - a;
+  let x = x0; pts.push([x, lo]);
+  for (let i = 0; i < per; i++){
+    x += w/2; pts.push([x, lo], [x, hi]); x += w; pts.push([x, hi], [x, lo]); x += w/2; pts.push([x, lo]);
+  }
+  return {pts, mid, a};
+}
+function pointOn(path){   // a random point on the membrane, with the normal that points into the blood
+  const p = path.pts, segs = []; let L = 0;
+  for (let i = 1; i < p.length; i++){ const l = Math.hypot(p[i][0] - p[i-1][0], p[i][1] - p[i-1][1]); if (l > 0){ segs.push([i, L, l]); L += l; } }
+  let r = Math.random() * L, s = segs.find(z => r < z[1] + z[2]) || segs[segs.length - 1];
+  const [i, start, l] = s, u = (r - start) / l, ax = p[i-1][0], ay = p[i-1][1], dx = (p[i][0] - ax) / l, dy = (p[i][1] - ay) / l;
+  return {x: ax + dx*u*l, y: ay + dy*u*l, nx: -dy, ny: dx};
+}
+function drawBio(now){
+  const {W, H} = fit(); ctx.clearRect(0, 0, W, H);
+  const dt = Math.min(0.05, (now - (bio.last || now)) / 1000); bio.last = now;
+  const path = membranePath(W, H), lw = 3 + (S.T - 0.5) / 4.5 * 17;
+  const rate = S.F * S.dC / S.T / HEALTHY;
+  // air above, blood below
+  ctx.fillStyle = COL.air; ctx.fillRect(0, 0, W, H);
+  ctx.beginPath(); ctx.moveTo(0, path.pts[0][1]); path.pts.forEach(p => ctx.lineTo(p[0], p[1])); ctx.lineTo(W, path.pts[path.pts.length-1][1]); ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.closePath();
+  ctx.fillStyle = COL.blood; ctx.fill();
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.strokeStyle = COL.memb; ctx.lineWidth = lw;
+  ctx.beginPath(); path.pts.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.stroke();
+  // O₂ in the air: more dots for a bigger ΔC
+  const top = Math.max(18, path.mid - path.a - lw/2 - 6), want = S.dC * 6;
+  while (bio.air.length < want) bio.air.push({x:Math.random()*W, y:12 + Math.random()*(top - 12), vx:(Math.random() - .5)*30, vy:(Math.random() - .5)*30});
+  bio.air.length = Math.min(bio.air.length, want);
+  ctx.fillStyle = COL.o2;
+  bio.air.forEach(p => {
+    p.x += p.vx*dt; p.y += p.vy*dt;
+    if (p.x < 0) p.x += W; if (p.x > W) p.x -= W;
+    if (p.y < 10 || p.y > top){ p.vy *= -1; p.y = Math.min(top, Math.max(10, p.y)); }
+    ctx.beginPath(); ctx.arc(p.x, p.y, 3.2, 0, Math.PI*2); ctx.fill();
+  });
+  // O₂ crossing: how many per second follows the rate; a thick membrane also makes each crossing slow
+  bio.acc += rate * 14 * dt;
+  while (bio.acc >= 1 && bio.cross.length < 120){ bio.acc -= 1; const q = pointOn(path); q.age = 0; q.dur = 0.35 + 0.3*S.T; bio.cross.push(q); }
+  if (bio.acc > 1) bio.acc = 1;
+  const reach = lw/2 + 6;
+  bio.cross = bio.cross.filter(q => {
+    q.age += dt; const u = Math.min(1, q.age / q.dur), s = -reach + 2*reach*u;
+    ctx.beginPath(); ctx.arc(q.x + q.nx*s, q.y + q.ny*s, 3.2, 0, Math.PI*2); ctx.fill();
+    if (u >= 1){ bio.blood.push({x:q.x + q.nx*reach, y:q.y + q.ny*reach, age:0}); return false; }
+    return true;
+  });
+  // O₂ in the blood is carried away to the right
+  bio.blood = bio.blood.filter(p => {
+    p.age += dt; p.x += 40*dt; p.y += 10*dt;
+    const o = 1 - p.age / 1.6; if (o <= 0 || p.y > H) return false;
+    ctx.globalAlpha = o; ctx.beginPath(); ctx.arc(p.x, p.y, 3.2, 0, Math.PI*2); ctx.fill(); ctx.globalAlpha = 1;
+    return true;
+  });
+  ctx.textAlign = 'left'; ctx.textBaseline = 'top'; ctx.font = `700 13px ${COL.ui}`;
+  ctx.fillStyle = COL.ink; ctx.fillText('Air: high O₂', 10, 8);
+  ctx.textBaseline = 'bottom'; ctx.fillText('Blood: low O₂', 10, H - 8);
+}
+
+/* =========================================================
+   BARS + MATH CARDS
+   ========================================================= */
+function renderSciBars(){
+  const cs = cells(), d = RATE * S.t, big = Math.max(...cs.map(half));
+  $('barRows').innerHTML = cs.map(c => {
+    const f = fed(c, d), l = left(c, d);
+    return `<span class="rowlab">${c.id}</span>
+      <div class="track fedT${f >= 1 - 1e-9 ? ' full' : ''}"><div class="fill" style="width:${f*100}%"></div><span class="val">${pct(f)}</span></div>
+      <div class="track coreT${l <= 1e-9 ? ' zero' : ''}"><div class="fill" style="width:${l / big * 100}%"></div><span class="val">${l <= 1e-9 ? 'reached at ' + n1(half(c) / RATE) + ' min' : n1(l*10) + ' mm'}</span></div>`;
+  }).join('');
+  $('flag').hidden = !(Math.abs(S.t - T_A) < 0.05);
+}
+function cellCard(c, d){
+  const [l, w, h] = c.dims, V = vol(c), A = area(c), Vc = core(c, d), f = fed(c, d), dd = n2(2*d);
+  const big = c.view === 'rod' || c.view === 'sheet', many = c.view === 'cluster';
+  const sub = x => `(${n2(x)} − ${dd})`;
+  let sa, v, vc;
+  if (big){
+    sa = `<span class="f">SA = 2(lw + lh + wh)</span><span class="num">= 2(${l}·${w} + ${l}·${h} + ${w}·${h})</span>`;
+    v  = `<span class="f">V = lwh</span><span class="num">= ${l} × ${w} × ${h}</span>`;
+    vc = `<span class="f">V<sub>core</sub> = (l − 2d)(w − 2d)(h − 2d)</span><span class="num">= ${sub(l)}${sub(w)}${sub(h)}</span>`;
+  } else if (many){
+    sa = `<span class="f">SA = 64 × 6s²</span><span class="num">= 64 × 6(1)²</span>`;
+    v  = `<span class="f">V = 64 × s³</span><span class="num">= 64 × (1)³</span>`;
+    vc = `<span class="f">V<sub>core</sub> = 64(s − 2d)³</span><span class="num">= 64${sub(1)}³</span>`;
+  } else {
+    sa = `<span class="f">SA = 6s²</span><span class="num">= 6(${n2(l)})²</span>`;
+    v  = `<span class="f">V = s³</span><span class="num">= (${n2(l)})³</span>`;
+    vc = `<span class="f">V<sub>core</sub> = (s − 2d)³</span><span class="num">= ${sub(l)}³</span>`;
+  }
+  const done = f >= 1 - 1e-9;
+  return `<article class="lcard${done ? ' done' : ''}">
+    <div class="lc-head"><span class="badge">${c.id}</span><span class="lc-title">Cell ${c.id}<small>${caption(c)}</small></span><span class="lc-q ${done ? 'c-fed' : ''}">${pct(f)} fed</span></div>
+    <div class="ln">${sa}<span class="num">= <b>${n2(A)} cm²</b></span></div>
+    <div class="ln">${v}<span class="num">= <b>${n2(V)} cm³</b></span></div>
+    <div class="ln"><span class="f">SA : V =</span><span class="num">${fr(n2(A), n2(V))} = <b>${n2(A / V)} : 1</b></span></div>
+    <div class="ln">${vc}<span class="num">= <b>${n2(Vc)} cm³</b></span></div>
+    <div class="ln"><span class="f">Fed =</span><span class="num">${fr('V − V<sub>core</sub>', 'V')} = ${fr(n2(V) + ' − ' + n2(Vc), n2(V))} = <b class="c-mag">${pct(f)}</b></span></div>
+  </article>`;
+}
+function renderSciLedger(){
+  const d = RATE * S.t;
+  $('ledger').innerHTML = `<article class="lcard plain">
+      <div class="lc-head"><span class="badge">d</span><span class="lc-title">Distance moved in<small>same in every cell</small></span><span class="lc-q">${n1(d*10)} mm</span></div>
+      <div class="ln"><span class="f">d = rate × t</span><span class="num">= (${fr(RATE_MM + ' mm', 'min')})(${n1(S.t)} min) = <b>${n1(d*10)} mm</b> = <b>${n2(d)} cm</b></span></div>
+    </article>` + cells().map(c => cellCard(c, d)).join('');
+}
+function renderBio(){
+  const flux = S.F * S.dC / S.T, r = flux / HEALTHY, max = 1.5;
+  $('bioFill').style.width = Math.min(100, r / max * 100) + '%';
+  $('bioMark').style.left = (1 / max * 100) + '%';
+  $('bioVal').textContent = Math.round(r * 100) + '%';
+  $('bioTrack').classList.toggle('full', r >= 1 - 1e-9);
+  $('ledger').innerHTML = `
+    <article class="lcard plain">
+      <div class="lc-head"><span class="badge">SA</span><span class="lc-title">Surface area<small>volume stays the same</small></span><span class="lc-q">× ${S.F}</span></div>
+      <div class="ln"><span class="f">SA = folding × SA<sub>flat</sub></span><span class="num">= ${S.F} × 1 cm² = <b>${S.F} cm²</b></span></div>
+      <div class="ln"><span class="f">V</span><span class="num">= <b>1 cm³</b></span></div>
+      <div class="ln"><span class="f">SA : V =</span><span class="num">${fr(S.F, 1)} = <b>${S.F} : 1</b></span></div>
+    </article>
+    <article class="lcard">
+      <div class="lc-head"><span class="badge">∝</span><span class="lc-title">Rate of diffusion</span><span class="lc-q">${n2(flux)}</span></div>
+      <div class="ln"><span class="f">Rate ∝ ${fr('SA × ΔC', 'T')}</span><span class="num">= ${fr(S.F + ' × ' + S.dC, n2(S.T))} = <b>${n2(flux)}</b></span></div>
+    </article>
+    <article class="lcard${r >= 1 - 1e-9 ? ' done' : ''}">
+      <div class="lc-head"><span class="badge">%</span><span class="lc-title">Compared with healthy</span><span class="lc-q">${Math.round(r*100)}%</span></div>
+      <div class="ln"><span class="f">Rate<sub>healthy</sub></span><span class="num">= ${fr(PRESETS.healthy.F + ' × ' + PRESETS.healthy.dC, PRESETS.healthy.T)} = <b>${HEALTHY}</b></span></div>
+      <div class="ln"><span class="f">${fr('Rate', 'Rate<sub>healthy</sub>')} × 100%</span><span class="num">= ${fr(n2(flux), HEALTHY)} × 100% = <b>${Math.round(r*100)}%</b></span></div>
+    </article>
+    <p class="foot">T = membrane thickness. SA<sub>flat</sub> = a flat 1 cm² patch of membrane.</p>`;
+}
+
+/* =========================================================
+   UPDATE + LOOP
+   ========================================================= */
+function syncSci(){
+  const m = tMax(), sl = $('tSlider');
+  sl.max = m; if (S.t > m) S.t = m; sl.value = S.t;
+  $('tOut').textContent = n1(S.t) + ' min';
+  $('clock').textContent = 't = ' + n1(S.t) + ' min';
+  $('play').textContent = S.playing ? '❚❚ Pause' : (S.t >= m ? '↺ Race Again' : S.t > 0 ? '▶ Continue' : '▶ Start Nutrient Diffusion');
+  $('cOut').textContent = S.lock ? '64 cm³' : n2(S.cSize) + ' cm';
+  $('cSlider').disabled = S.lock;
+  renderSciBars(); renderSciLedger();
+}
+function update(){
+  if (S.bio){ $('clock').textContent = 'Gas exchange'; renderBio(); }
+  else syncSci();
+}
+let lastT = 0;
+function frame(now){
+  if (S.bio) drawBio(now);
+  else {
+    if (S.playing){
+      const dt = Math.min(0.1, (now - lastT) / 1000), m = tMax(), before = S.t;
+      S.t = Math.min(m, S.t + dt * SPEED);
+      if (S.stopA && before < T_A && S.t >= T_A){ S.t = T_A; S.playing = false; S.stopA = false; }
+      if (S.t >= m) S.playing = false;
+      syncSci();
+    }
+    drawSci();
+  }
+  lastT = now;
+  requestAnimationFrame(frame);
+}
+function restart(){ S.t = 0; S.playing = false; S.stopA = true; update(); }
+
+$('play').addEventListener('click', () => {
+  if (S.playing){ S.playing = false; }
+  else { if (S.t >= tMax()) { S.t = 0; S.stopA = true; } if (S.t === 0) S.stopA = true; S.playing = true; }
+  syncSci();
+});
+$('reset').addEventListener('click', restart);
+$('tSlider').addEventListener('input', e => { S.t = +e.target.value; S.playing = false; S.stopA = S.t < T_A; syncSci(); });
+$('cSlider').addEventListener('input', e => { S.cSize = +e.target.value; restart(); });
+$('lockBtn').addEventListener('click', () => {
+  S.lock = !S.lock; $('lockBtn').setAttribute('aria-pressed', S.lock); $('shapeRow').hidden = !S.lock;
+  restart();
+});
+document.querySelectorAll('[data-shape]').forEach(b => b.addEventListener('click', () => {
+  S.shape = b.dataset.shape;
+  document.querySelectorAll('[data-shape]').forEach(x => x.setAttribute('aria-pressed', x === b));
+  restart();
+}));
+
+function setBio(F, dC, T){
+  S.F = F; S.dC = dC; S.T = T;
+  $('fSlider').value = F; $('cgSlider').value = dC; $('thSlider').value = T;
+  $('fOut').textContent = '× ' + F; $('cgOut').textContent = dC + ' kPa'; $('thOut').textContent = n1(T) + ' µm';
+  document.querySelectorAll('[data-preset]').forEach(b => { const p = PRESETS[b.dataset.preset]; b.setAttribute('aria-pressed', p.F === F && p.dC === dC && p.T === T); });
+  renderBio();
+}
+document.querySelectorAll('[data-preset]').forEach(b => b.addEventListener('click', () => { const p = PRESETS[b.dataset.preset]; setBio(p.F, p.dC, p.T); }));
+['fSlider', 'cgSlider', 'thSlider'].forEach(id => $(id).addEventListener('input', () => setBio(+$('fSlider').value, +$('cgSlider').value, +$('thSlider').value)));
+
+function setMode(bioMode){
+  S.bio = bioMode; S.playing = false;
+  $('modeSci').setAttribute('aria-checked', !bioMode); $('modeBio').setAttribute('aria-checked', bioMode);
+  $('ctlSci').hidden = bioMode; $('ctlBio').hidden = !bioMode;
+  $('barsSci').hidden = bioMode; $('barsBio').hidden = !bioMode;
+  $('keySci').hidden = bioMode; $('keyBio').hidden = !bioMode;
+  $('guideSci').hidden = bioMode; $('guideBio').hidden = !bioMode;
+  $('title').textContent = bioMode ? 'Gas Exchange Across a Membrane' : 'Cell Size Diffusion Race';
+  cv.setAttribute('aria-label', bioMode ? 'A folded membrane between air and blood, with oxygen crossing it' : 'Cross-sections of the cells');
+  update();
+}
+$('modeSci').addEventListener('click', () => setMode(false));
+$('modeBio').addEventListener('click', () => setMode(true));
+
+$('guideBtn').addEventListener('click', e => {
+  e.stopPropagation();
+  const p = $('guidePop'); p.hidden = !p.hidden; $('guideBtn').setAttribute('aria-expanded', !p.hidden);
+});
+document.addEventListener('click', e => { if (!e.target.closest('.guide-wrap')){ $('guidePop').hidden = true; $('guideBtn').setAttribute('aria-expanded', false); } });
+document.addEventListener('keydown', e => { if (e.key === 'Escape'){ $('guidePop').hidden = true; $('guideBtn').setAttribute('aria-expanded', false); } });
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', readColours);
+new MutationObserver(readColours).observe(document.documentElement, {attributes:true, attributeFilter:['data-theme']});
+document.fonts && document.fonts.ready.then(readColours);
+
+$('rateOut').innerHTML = `${RATE_MM} ${fr('mm', 'min')}`;
+readColours();
+update();
+requestAnimationFrame(t => { lastT = t; frame(t); });
+</script>
+</body>
+</html>
