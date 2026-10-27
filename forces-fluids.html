@@ -141,11 +141,11 @@ button:focus-visible, input:focus-visible{outline:2.5px solid var(--pt); outline
         <button type="button" data-env="air" role="radio" aria-checked="false">Air</button>
       </div>
       <div class="mode" role="radiogroup" aria-label="Grade">
-        <button type="button" data-grade="5" role="radio" aria-checked="true">Grade 5<small>Forces</small></button>
-        <button type="button" data-grade="8" role="radio" aria-checked="false">Grade 8<small>Pressure</small></button>
+        <button type="button" data-grade="5" role="radio" aria-checked="true">Grade 5</button>
+        <button type="button" data-grade="8" role="radio" aria-checked="false">Grade 8</button>
       </div>
       <div class="guide-wrap">
-        <button type="button" id="guideBtn" class="btn-outline" aria-expanded="false" aria-controls="guidePop">How to use</button>
+        <button type="button" id="guideBtn" class="btn-outline" aria-expanded="false" aria-controls="guidePop">Guide</button>
         <div id="guidePop" class="pop" hidden>
           <h2>How to use this</h2>
           <ol id="guideList"></ol>
@@ -198,7 +198,6 @@ button:focus-visible, input:focus-visible{outline:2.5px solid var(--pt); outline
   <main class="layout" id="layout">
     <section class="panel stage" id="stage">
       <div class="badge held" id="badge" aria-live="polite"><span class="b-main" id="bMain"></span><span class="b-sub" id="bSub"></span></div>
-      <span class="slowmo">Slow motion</span>
       <canvas id="cv" aria-label="Force arrows on the object"></canvas>
     </section>
     <section class="panel ledger" id="ledger" aria-label="Grade 8 math" hidden></section>
@@ -820,8 +819,7 @@ function ledgerAir(F){
     <span class="lc-title">Air speed</span>
     <div class="ln"><span>Faster above · lower pressure above</span></div>
     <div class="ln"><span>Air leaves the wing turned downward</span></div>
-  </div>
-  <p class="foot">Wind ${S.a.speed} ${ms} · wing area ${AIR.S.toFixed(3)} m²</p>`;
+  </div>`;
 }
 
 /* =========================================================

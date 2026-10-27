@@ -141,12 +141,12 @@ button:focus-visible, input:focus-visible{outline:2.5px solid var(--pt); outline
     <div class="top-right">
       <div class="mode" role="radiogroup" aria-label="Mode">
         <span class="mode-label">Mode</span>
-        <button type="button" role="radio" data-mode="g78" aria-checked="true">Grade 7–8<small>Stores and pathways</small></button>
-        <button type="button" role="radio" data-mode="g9" aria-checked="false">Grade 9<small>Power and efficiency</small></button>
-        <button type="button" role="radio" data-mode="s10" aria-checked="false">Science 10 Bridge<small>E<sub>p</sub> and E<sub>k</sub></small></button>
+        <button type="button" role="radio" data-mode="g78" aria-checked="true">Grade 7–8</button>
+        <button type="button" role="radio" data-mode="g9" aria-checked="false">Grade 9</button>
+        <button type="button" role="radio" data-mode="s10" aria-checked="false">Science 10 Bridge</button>
       </div>
       <div class="guide-wrap">
-        <button type="button" id="guideBtn" class="btn-outline" aria-expanded="false" aria-controls="guidePop">Step-by-Step Guide</button>
+        <button type="button" id="guideBtn" class="btn-outline" aria-expanded="false" aria-controls="guidePop">Guide</button>
         <div id="guidePop" class="pop" hidden>
           <h2>How to use this</h2>
           <ol>
@@ -155,6 +155,7 @@ button:focus-visible, input:focus-visible{outline:2.5px solid var(--pt); outline
             <li><span class="n">3</span><span>Click a <b>pipe</b> to see the pathway: how the energy moves.</span></li>
             <li><span class="n">4</span><span>Slide <b>friction</b> up. More energy ends in the <b>thermal store</b> of the surroundings.</span></li>
             <li><span class="n">5</span><span>Watch the <b>Total</b> bar at the bottom. It never changes.</span></li>
+            <li><span class="n">6</span><span>Science 10 Bridge: height <b>h</b> is measured from the lowest point.</span></li>
           </ol>
         </div>
       </div>
@@ -190,7 +191,7 @@ button:focus-visible, input:focus-visible{outline:2.5px solid var(--pt); outline
     <div class="ctl play">
       <button type="button" id="playBtn" class="btn-primary">▶ Play</button>
       <button type="button" id="resetBtn" class="btn-ghost">↺ Reset</button>
-      <input type="range" id="scrub" min="0" max="1000" step="1" value="0" aria-label="Time">
+      <input type="range" id="scrub" min="0" max="1000" step="1" value="0" aria-label="Time" hidden>
       <span class="clock" id="clock" hidden></span>
     </div>
   </section>
@@ -202,8 +203,8 @@ button:focus-visible, input:focus-visible{outline:2.5px solid var(--pt); outline
 
     <section class="panel side" aria-label="Pathway inspector and math">
       <div class="card" id="inspCard">
-        <span class="ptitle">Pathway inspector</span>
-        <div class="chips" id="chips"></div>
+        <span class="ptitle">Pathway · tap a pipe</span>
+        <div class="chips" id="chips" hidden></div>
         <div id="insp"></div>
       </div>
       <div class="card c-pow" id="powCard" hidden></div>
@@ -845,7 +846,7 @@ function renderSide(){
   const e = M.edges[S.sel], p = PATHWAY[e.path], num = S.mode !== 'g78';
   const insp = `<div class="insp-head">${ICON[e.path]}<div><div class="insp-name" style="color:var(--${p.css})">${p.name}</div>
       <div class="insp-route">${storeName(e.a)} (${e.a.obj || 'device'}) → ${storeName(e.b)} (${e.b.obj || 'device'})</div></div></div>
-    <p class="insp-how">${p.how}</p>${e.note ? `<p class="insp-how" style="color:var(--muted)">${e.note}</p>` : ''}
+    <p class="insp-how">${p.how}</p>
     ${num ? `<div class="insp-amt">Carried so far: ${fmtJ(ST.xfer[S.sel])} J</div>` : ''}`;
 
   // Grade 9: power and efficiency, using the energy that has left the start store so far
@@ -877,7 +878,7 @@ function renderSide(){
   $('powCard').innerHTML = pow; $('effCard').innerHTML = eff; $('epCard').innerHTML = ep; $('ekCard').innerHTML = ek;
   $('powCard').hidden = $('effCard').hidden = !num;
   $('epCard').hidden = !ep; $('ekCard').hidden = !ek;
-  $('foot').textContent = S.mode === 's10' && ep ? 'Height h is measured from the lowest point.' : '';
+  $('foot').textContent = '';
 }
 
 /* =========================================================

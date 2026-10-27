@@ -105,7 +105,6 @@ button:focus-visible, select:focus-visible, input:focus-visible{outline:2.5px so
 .stage{position:relative; flex:1; min-height:340px; overflow:hidden}
 @media (min-width:1024px){ .stage{min-height:0} }
 .stage canvas{position:absolute; inset:0; width:100%; height:100%; display:block}
-.water-toggle{position:absolute; bottom:8px; right:10px; display:flex; align-items:center; gap:6px; font-size:12px; color:var(--muted); background:var(--surface); padding:3px 8px; border-radius:999px; border:1px solid var(--line); cursor:pointer}
 .stage-hint{position:absolute; left:12px; top:8px; font-size:12px; color:var(--muted)}
 
 /* Equation bar */
@@ -165,8 +164,10 @@ table.sol{width:100%; border-collapse:separate; border-spacing:0; font-size:13px
 .card ol{display:flex; flex-direction:column; gap:4px; font-size:13px; line-height:1.4}
 .card li{display:grid; grid-template-columns:18px 1fr; gap:6px}
 .card .n{font-weight:700; color:var(--muted)}
-.placeholder{border:1px dashed var(--line); border-radius:10px; padding:14px; color:var(--muted); font-size:13px; line-height:1.5}
-.foot{font-size:11.5px; color:var(--muted); line-height:1.45}
+.frac{display:inline-flex; flex-direction:column; align-items:center; vertical-align:middle; line-height:1.1; font-size:.92em}
+.frac > span:first-child{border-bottom:1px solid currentColor; padding:0 2px}
+.pop .tip{font-size:13px; color:var(--muted); line-height:1.45; margin:0 0 10px}
+.pop ol + .tip{margin:10px 0 0}
 @media (prefers-reduced-motion: reduce){ *{transition:none !important} }
 </style>
 
@@ -178,11 +179,11 @@ table.sol{width:100%; border-collapse:separate; border-spacing:0; font-size:13px
     </div>
     <div class="mode" role="radiogroup" aria-label="Mode">
       <span class="mode-label">Mode</span>
-      <button type="button" id="modeSci" role="radio" aria-checked="true">Science 10<small>Molecular</small></button>
-      <button type="button" id="modeChem" role="radio" aria-checked="false">Chemistry 20<small>Net Ionic</small></button>
+      <button type="button" id="modeSci" role="radio" aria-checked="true">Science 10</button>
+      <button type="button" id="modeChem" role="radio" aria-checked="false">Chemistry 20</button>
     </div>
     <div class="guide-wrap">
-      <button type="button" id="guideBtn" class="btn-outline" aria-expanded="false" aria-controls="guidePop">Step-by-Step Guide</button>
+      <button type="button" id="guideBtn" class="btn-outline" aria-expanded="false" aria-controls="guidePop">Guide</button>
       <div id="guidePop" class="pop" hidden></div>
     </div>
   </header>
@@ -210,7 +211,6 @@ table.sol{width:100%; border-collapse:separate; border-spacing:0; font-size:13px
 
       <div class="panel stage" id="stage">
         <canvas id="beaker" aria-label="Particle view of the beakers"></canvas>
-        <label class="water-toggle" for="waterTgl"><input type="checkbox" id="waterTgl" checked> Water molecules</label>
       </div>
 
       <div class="panel eqbar" id="eqbar">
@@ -230,12 +230,10 @@ table.sol{width:100%; border-collapse:separate; border-spacing:0; font-size:13px
     <section class="panel right">
       <div class="tbl-head">
         <h2>Solubility of Some Common Ionic Compounds in Water at 298.15 K</h2>
-        <p>From the Alberta Chemistry Data Booklet (columns used in this simulator)</p>
       </div>
       <div class="tbl-wrap"><table class="sol" id="solTable"></table></div>
-      <div class="read-title">Reading the table</div>
+      <div class="read-title" id="readTitle" hidden>Reading the table</div>
       <div id="cards"></div>
-      <p class="foot">Read the column first (find the anion, or Group 1 / NH₄⁺ for the cation), then find the row that lists the cation. If the cation is not listed, it follows the word <i>most</i>. Columns for CH₃COO⁻, IO₃⁻ and C₂O₄²⁻ are not shown.</p>
     </section>
   </main>
 </div>
@@ -245,7 +243,7 @@ table.sol{width:100%; border-collapse:separate; border-spacing:0; font-size:13px
    CHEMISTRY DATA
    ========================================================= */
 // Cut-off used by the Alberta Data Booklet for both rows. Change here if your booklet differs.
-const CUTOFF = '0.1 mol/L';
+const CUTOFF = '0.1 <span class="frac"><span>mol</span><span>L</span></span>';
 
 const ION = {
   Pb:{html:'Pb', u:'Pb', q:2, name:'lead(II)'},
@@ -482,9 +480,10 @@ function cardHTML(cat, an, rc, ra, L){
 function renderCards(){
   const R = state.R;
   if (!state.mixed){
-    $('cards').innerHTML = `<div class="placeholder"><b>Predict first.</b> Press <b>Highlight Table</b> to see where to look for the two new partner pairs, ${cmpH(R.A,R.D,'A','D')} and ${cmpH(R.C,R.B,'C','B')}. Will each one be (s) or (aq)? Then press <b>Mix Solutions</b> to check, step by step.</div>`;
+    $('cards').innerHTML = ''; $('readTitle').hidden = true;
     return;
   }
+  $('readTitle').hidden = false;
   $('cards').innerHTML = `<div class="cards">${cardHTML(R.A,R.D,'A','D',R.AD)}${cardHTML(R.C,R.B,'C','B',R.CB)}</div>`;
 }
 
@@ -568,14 +567,16 @@ function applySpec(){
 /* ---------- Step-by-step guide ---------- */
 function renderGuide(){
   const R = state.R;
-  $('guidePop').innerHTML = `<h2>Predicting a precipitate in 3 steps</h2><ol>
+  $('guidePop').innerHTML = `<h2>Predicting a precipitate in 3 steps</h2>
+  <p class="tip"><b>Predict first.</b> Press <b>Highlight Table</b>, decide (s) or (aq) for each new pair, then press <b>Mix Solutions</b> to check.</p><ol>
     <li><span class="num">1</span><span><b>Swap partners.</b> The outside ions pair up and the inside ions pair up.
       <div class="yours">Here: ${ionChip(R.A,'A')} + ${ionChip(R.D,'D')} and ${ionChip(R.C,'C')} + ${ionChip(R.B,'B')}</div></span></li>
     <li><span class="num">2</span><span><b>Check the anion column.</b> Find the anion in the top row of the table. Group 1 and NH₄⁺ compounds use the first column.
       <div class="yours">Here: ${R.AD.g1 ? 'first column' : ionChip(R.D,'D') + ' column'} and ${R.CB.g1 ? 'first column for ' + ionChip(R.C,'C') : ionChip(R.B,'B') + ' column'}</div></span></li>
     <li><span class="num">3</span><span><b>Assign the state.</b> Find the row that lists the cation. Low solubility means <span class="st s">(s)</span>, a precipitate. High means <span class="st">(aq)</span>.
       <div class="yours">${state.mixed ? `Here: ${cmpU(R.A,R.D)}${R.AD.row === 'low' ? '(s)' : '(aq)'} and ${cmpU(R.C,R.B)}(aq)` : 'Press Mix Solutions to check your answer.'}</div></span></li>
-  </ol>`;
+  </ol>
+  <p class="tip">A cation that is not listed follows the word <i>most</i>. The table comes from the Alberta Chemistry Data Booklet; columns for CH₃COO⁻, IO₃⁻ and C₂O₄²⁻ are not shown.</p>`;
 }
 
 /* =========================================================
@@ -896,7 +897,7 @@ function draw(){
   // ---- captions in the main beaker ----
   if (sim.phase === 'ready'){
     ctx.fillStyle = TOKS.muted; ctx.font = `400 13px ${fam}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText('Press Mix Solutions to pour both into this beaker', M.cx, M.by - M.h*0.45);
+    ctx.fillText('Press Mix Solutions', M.cx, M.by - M.h*0.45);
   }
   if (R.precip && sim.units.some(u => u.state === 'settled')){
     const top = Math.max(...sim.cols);
@@ -953,7 +954,6 @@ $('hlBtn').addEventListener('click', highlightTable);
 $('resetBtn').addEventListener('click', resetAll);
 $('modeSci').addEventListener('click', () => setMode('sci'));
 $('modeChem').addEventListener('click', () => setMode('chem'));
-$('waterTgl').addEventListener('change', e => { state.water = e.target.checked; });
 $('specSlider').addEventListener('input', e => { state.spec = e.target.value/100; $('specOut').textContent = e.target.value + '%'; applySpec(); });
 $('guideBtn').addEventListener('click', e => { e.stopPropagation(); const p = $('guidePop'); p.hidden = !p.hidden; $('guideBtn').setAttribute('aria-expanded', !p.hidden); });
 document.addEventListener('click', e => { if (!$('guidePop').hidden && !e.target.closest('.guide-wrap')){ $('guidePop').hidden = true; $('guideBtn').setAttribute('aria-expanded', 'false'); } });

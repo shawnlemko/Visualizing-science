@@ -76,6 +76,7 @@ button:focus-visible, input:focus-visible{outline:2.5px solid var(--pt); outline
 /* Controls */
 .controls{display:flex; flex-wrap:wrap; gap:8px 22px; padding:8px 14px; align-items:end}
 .ctl{display:flex; flex-direction:column; gap:3px}
+.controls:not(.more-open) .more-ctl{display:none !important}
 .ctl-top{display:flex; align-items:center; justify-content:space-between; gap:8px; min-height:24px}
 .lab{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.07em; font-weight:700}
 .ctl output, .big-out{font-family:var(--font-num); font-variant-numeric:tabular-nums; font-weight:700; font-size:15px}
@@ -190,12 +191,12 @@ button:focus-visible, input:focus-visible{outline:2.5px solid var(--pt); outline
     </div>
     <div class="top-right">
       <div class="mode" role="radiogroup" aria-label="Grade">
-        <button type="button" data-grade="56" role="radio" aria-checked="true">Grade 5–6<small>Blocks</small></button>
-        <button type="button" data-grade="8" role="radio" aria-checked="false">Grade 8<small>Efficiency &amp; AI</small></button>
-        <button type="button" data-grade="9" role="radio" aria-checked="false">Grade 9<small>Python</small></button>
+        <button type="button" data-grade="56" role="radio" aria-checked="true">Grade 5–6</button>
+        <button type="button" data-grade="8" role="radio" aria-checked="false">Grade 8</button>
+        <button type="button" data-grade="9" role="radio" aria-checked="false">Grade 9</button>
       </div>
       <div class="guide-wrap">
-        <button type="button" id="guideBtn" class="btn-outline" aria-expanded="false" aria-controls="guidePop">How to use</button>
+        <button type="button" id="guideBtn" class="btn-outline" aria-expanded="false" aria-controls="guidePop">Guide</button>
         <div id="guidePop" class="pop" hidden>
           <h2>How to use this</h2>
           <ol id="guideList"></ol>
@@ -219,7 +220,7 @@ button:focus-visible, input:focus-visible{outline:2.5px solid var(--pt); outline
         <button type="button" role="radio" data-view="ai" aria-checked="false">AI training bias</button>
       </div>
     </div>
-    <div class="ctl" data-show="8s">
+    <div class="ctl more-ctl" data-show="8s">
       <div class="ctl-top"><span class="lab" id="nLab">Samples</span></div>
       <div class="seg" role="radiogroup" aria-labelledby="nLab" id="nSeg">
         <button type="button" role="radio" data-n="16" aria-checked="false">16</button>
@@ -250,7 +251,7 @@ button:focus-visible, input:focus-visible{outline:2.5px solid var(--pt); outline
     </div>
     <span class="spacer"></span>
     <!-- Shared run controls -->
-    <div class="ctl" data-show="56 8s 9">
+    <div class="ctl more-ctl" data-show="56 8s 9">
       <div class="ctl-top"><label class="lab" for="speed">Speed</label></div>
       <input type="range" id="speed" min="1" max="5" step="1" value="3">
     </div>
@@ -259,6 +260,7 @@ button:focus-visible, input:focus-visible{outline:2.5px solid var(--pt); outline
         <button type="button" class="btn-primary" id="runBtn">▶ Run</button>
         <button type="button" class="btn-plain" id="stepBtn">Step</button>
         <button type="button" class="btn-plain" id="resetBtn">Reset</button>
+        <button type="button" class="btn-plain" id="moreBtn" aria-expanded="false">More ▾</button>
       </div>
     </div>
   </section>
@@ -275,7 +277,6 @@ button:focus-visible, input:focus-visible{outline:2.5px solid var(--pt); outline
       <div class="lane-head"><h2 class="lane-title">Linear search</h2><span class="chip">Check every sample in order</span></div>
       <div class="stats">
         <div class="stat"><span class="lab">CPU steps</span><span class="num" data-k="steps">0</span><small data-k="most"></small></div>
-        <div class="stat"><span class="lab">Energy used</span><div class="bat-row"><div class="bat"><i data-k="bat"></i></div><b data-k="J">0 J</b></div><small>2 J per check</small></div>
       </div>
       <div class="cv-wrap cv-shelf"><canvas aria-label="Linear search shelf"></canvas></div>
       <p class="result" data-k="res" aria-live="polite"></p>
@@ -284,7 +285,6 @@ button:focus-visible, input:focus-visible{outline:2.5px solid var(--pt); outline
       <div class="lane-head"><h2 class="lane-title">Binary search</h2><span class="req" id="req"></span></div>
       <div class="stats">
         <div class="stat"><span class="lab">CPU steps</span><span class="num" data-k="steps">0</span><small data-k="most"></small></div>
-        <div class="stat"><span class="lab">Energy used</span><div class="bat-row"><div class="bat"><i data-k="bat"></i></div><b data-k="J">0 J</b></div><small>2 J per check</small></div>
         <div class="stat sortcost" id="sortCost"><span class="lab">Sorting first</span><b data-k="sort"></b><small>steps, paid once</small></div>
       </div>
       <div class="cv-wrap cv-shelf"><canvas aria-label="Binary search shelf"></canvas></div>
@@ -726,9 +726,10 @@ function drawShelf(cv, arr, fr, mode){
    ========================================================= */
 function lane56HTML(li){
   const kind = S.lanes[li];
-  const segs = Object.keys(PROG_NAME).map(k => `<button type="button" role="radio" data-prog="${k}" aria-checked="${k === kind}">${PROG_NAME[k]}</button>`).join('');
+  // Left rover always runs the Sequence; only the right rover picks a program.
+  const segs = ['loop', 'ifelse'].map(k => `<button type="button" role="radio" data-prog="${k}" aria-checked="${k === kind}">${PROG_NAME[k]}</button>`).join('');
   return `<div class="lane-head">
-      <div class="seg" role="radiogroup" aria-label="${li ? 'Right' : 'Left'} rover program">${segs}</div>
+      ${li ? `<div class="seg" role="radiogroup" aria-label="Right rover program">${segs}</div>` : `<h2 class="lane-title">${PROG_NAME.seq}</h2>`}
       <span class="chip">Blocks <b data-k="count"></b></span>
     </div>
     <div class="cv-wrap cv-field"><canvas aria-label="Field and rover"></canvas></div>
@@ -784,8 +785,6 @@ function render8s(){
     const fr = frameOf(p), q = k => el.querySelector(`[data-k="${k}"]`);
     q('steps').textContent = fr.steps;
     q('most').textContent = `Most possible: ${most[p.key]}`;
-    q('bat').style.width = (100 * fr.steps / n) + '%';
-    q('J').textContent = `${fr.steps * J_PER_CHECK} J`;
     drawShelf(el.querySelector('canvas'), p.arr, fr, p.key);
     const res = q('res');
     if (fr.result === 'found'){ res.textContent = `✓ Found ${S.target} in ${fr.steps} steps`; res.className = 'result ok'; }
@@ -897,9 +896,9 @@ function render9(){
    MODE SWITCHING, GUIDE
    ========================================================= */
 const GUIDE = {
-  '56':{steps:['Each rover gets a program. Pick one with the buttons above it.', 'Press Run. Watch the glowing block. Count the blocks.', 'Press New field. Which program still works?'],
+  '56':{steps:['The left rover runs a Sequence. Pick a loop program for the right rover.', 'Press Run. Watch the glowing block. Count the blocks.', 'Press New field. Which program still works?'],
         outcome:'Alberta Science 5: translate algorithms into code. Science 6: coding structures (sequence, loops, decisions).'},
-  '8s':{steps:['Both rovers look for the same sample.', 'Press Run and compare CPU steps and energy.', 'Try 128 samples, then try Shuffled.'],
+  '8s':{steps:['Both rovers look for the same sample.', 'Press Run and compare CPU steps.', 'Press More to try 128 samples, then try Shuffled.'],
         outcome:'Alberta Science 8 (2026 draft): investigate efficiency in programming and artificial intelligence.'},
   '8a':{steps:['Pick which quartz photos the AI trains on.', 'Read what the AI learned.', 'Check the test. Which crystals does it get wrong, and why?'],
         outcome:'Alberta Science 8 (2026 draft): artificial intelligence, including bias.'},
@@ -953,6 +952,7 @@ $('newField').addEventListener('click', () => {
 });
 $('runBtn').addEventListener('click', run);
 $('stepBtn').addEventListener('click', () => { stop(); if (allDone()) S.players.forEach(p => p.idx = -1); tick(); });
+$('moreBtn').addEventListener('click', () => { const c = document.querySelector('.controls'), open = c.classList.toggle('more-open'); $('moreBtn').setAttribute('aria-expanded', open); $('moreBtn').textContent = open ? 'Less ▴' : 'More ▾'; });
 $('resetBtn').addEventListener('click', () => {
   const key = modeKey();
   if (key === '8s') newShelf();

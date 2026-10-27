@@ -253,7 +253,6 @@ header .seg-btns button { font-size: 1.15rem; min-height: 48px; padding: 6px 18p
         <div class="seg-btns lv" role="group" aria-label="Level" id="llv">
           <button type="button" data-lv="1" class="on">Level 1</button><button type="button" data-lv="2">Level 2</button><button type="button" data-lv="3">Level 3</button>
         </div>
-        <p class="lvnote" id="llvnote"></p>
       </section>
       <section class="card">
         <p class="rule">Multiply by fractions that equal 1. A unit on the top and the bottom cancels.</p>
@@ -265,7 +264,6 @@ header .seg-btns button { font-size: 1.15rem; min-height: 48px; padding: 6px 18p
       <div class="btns">
         <button type="button" class="go" id="next">Next step</button>
         <button type="button" id="back">Back</button>
-        <button type="button" id="again">Start over</button>
         <button type="button" id="rand">New example</button>
       </div>
     </div>
@@ -275,7 +273,6 @@ header .seg-btns button { font-size: 1.15rem; min-height: 48px; padding: 6px 18p
         <div class="seg-btns lv" role="group" aria-label="Level" id="plv">
           <button type="button" data-lv="1" class="on">Level 1</button><button type="button" data-lv="2">Level 2</button><button type="button" data-lv="3">Level 3</button>
         </div>
-        <p class="lvnote" id="plvnote"></p>
         <p class="score">Correct: <b id="right">0</b> of <b id="total">0</b></p>
       </section>
       <section class="card">
@@ -591,7 +588,6 @@ header .seg-btns button { font-size: 1.15rem; min-height: 48px; padding: 6px 18p
     if (st.k === "mult") return ["Multiply the top numbers and the bottom numbers.", st.last ? `The answer is ${b(ansText(p), "g")}.` : null];
     return [`Divide: ${b(fmt(p.topProd))} divided by ${b(fmt(p.botProd))} is ${b(fmt(p.ans))}.`, `The answer is ${b(ansText(p), "g")}.`];
   }
-  const NOTES = { 1: "Level 1: one conversion fraction", 2: "Level 2: two conversion fractions", 3: "Level 3: three conversion fractions" };
 
   // ---------- Learn ----------
   let mode = "learn", llv = 1, lq = build(...EXAMPLES[1]), step = 0;
@@ -629,13 +625,11 @@ header .seg-btns button { font-size: 1.15rem; min-height: 48px; padding: 6px 18p
   function setLearnLevel(lv, fresh) {
     llv = lv;
     document.querySelectorAll("#llv [data-lv]").forEach(x => x.classList.toggle("on", +x.dataset.lv === lv));
-    $("#llvnote").textContent = NOTES[lv];
     lq = fresh ? gen(lv, lq) : build(...EXAMPLES[lv]); step = 0; showLearn(false);
   }
   $("#llv").addEventListener("click", e => { const x = e.target.closest("button"); if (x) setLearnLevel(+x.dataset.lv); });
   $("#next").onclick = () => { if (step < learnSteps(lq).length - 1) { step++; showLearn(true); } };
   $("#back").onclick = () => { if (step > 0) { step--; showLearn(false); } };
-  $("#again").onclick = () => { step = 0; showLearn(false); };
   $("#rand").onclick = () => setLearnLevel(llv, true);
   document.addEventListener("keydown", e => {
     if (mode !== "learn" || e.target.closest("input")) return;
@@ -843,7 +837,6 @@ header .seg-btns button { font-size: 1.15rem; min-height: 48px; padding: 6px 18p
   function setPracticeLevel(lv) {
     plv = lv;
     document.querySelectorAll("#plv [data-lv]").forEach(x => x.classList.toggle("on", +x.dataset.lv === lv));
-    $("#plvnote").textContent = NOTES[lv];
     newQuestion();
   }
   $("#plv").addEventListener("click", e => { const x = e.target.closest("button"); if (x) setPracticeLevel(+x.dataset.lv); });
@@ -892,7 +885,6 @@ header .seg-btns button { font-size: 1.15rem; min-height: 48px; padding: 6px 18p
     if (m === "learn") showLearn(false); else setPracticeLevel(plv);
   }
   document.querySelectorAll("[data-mode]").forEach(x => x.onclick = () => setMode(x.dataset.mode));
-  $("#llvnote").textContent = NOTES[1];
   showLearn(false);
 })();
 </script>

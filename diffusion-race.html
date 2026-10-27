@@ -107,7 +107,7 @@ button:focus-visible, input:focus-visible{outline:2.5px solid var(--pt); outline
 .s-canvas canvas{position:absolute; inset:0; width:100%; height:100%; display:block}
 
 /* Bars */
-.bars{padding:8px 12px 10px; display:grid; grid-template-columns:auto 1fr 1fr; gap:6px 14px; align-items:center}
+.bars{padding:8px 12px 10px; display:grid; grid-template-columns:auto 1fr; gap:6px 14px; align-items:center}
 .bars .ptitle{align-self:end}
 .flag{grid-column:1 / -1; display:flex; align-items:center; gap:8px; font-weight:700; font-size:14px; color:var(--mag); background:var(--mag-soft); border-radius:8px; padding:5px 10px}
 .rowlab{font-family:var(--font-display); font-weight:800; font-size:17px; width:22px; text-align:center}
@@ -128,6 +128,9 @@ button:focus-visible, input:focus-visible{outline:2.5px solid var(--pt); outline
 .lcard{border:1px solid var(--line); border-left:5px solid var(--mag); border-radius:10px; padding:7px 12px 7px; background:var(--surface)}
 .lcard.plain{border-left-color:var(--pt)}
 .lcard.done{box-shadow:0 0 0 2px var(--fed)}
+.lcard.mini{display:block; width:100%; text-align:left; font:inherit; color:inherit; cursor:pointer}
+.lcard.mini .lc-head{margin-bottom:0}
+.lcard.mini:hover{border-color:var(--line-strong)}
 .lc-head{display:flex; align-items:center; gap:8px; margin-bottom:3px}
 .badge{min-width:22px; height:22px; border-radius:11px; padding:0 6px; display:grid; place-items:center; font-weight:700; font-size:12px; color:#fff; background:var(--mag); flex:none}
 .plain .badge{background:var(--pt)}
@@ -157,11 +160,11 @@ button:focus-visible, input:focus-visible{outline:2.5px solid var(--pt); outline
     <div class="top-right">
       <div class="mode" role="radiogroup" aria-label="Mode">
         <span class="mode-label">Mode</span>
-        <button type="button" id="modeSci" role="radio" aria-checked="true">Science 10<small>Agar cubes</small></button>
-        <button type="button" id="modeBio" role="radio" aria-checked="false">Biology 20<small>Alveoli and microvilli</small></button>
+        <button type="button" id="modeSci" role="radio" aria-checked="true">Science 10</button>
+        <button type="button" id="modeBio" role="radio" aria-checked="false">Biology 20</button>
       </div>
       <div class="guide-wrap">
-        <button type="button" id="guideBtn" class="btn-outline" aria-expanded="false" aria-controls="guidePop">Step-by-Step Guide</button>
+        <button type="button" id="guideBtn" class="btn-outline" aria-expanded="false" aria-controls="guidePop">Guide</button>
         <div id="guidePop" class="pop" hidden>
           <h2>How to use this</h2>
           <ol id="guideSci">
@@ -169,13 +172,14 @@ button:focus-visible, input:focus-visible{outline:2.5px solid var(--pt); outline
             <li><span class="n">2</span><span>It stops when cell <b>A</b> is full. Read the bars: B and C are not full yet.</span></li>
             <li><span class="n">3</span><span>Press <b>Start</b> again. Watch which nucleus turns <b class="c-starve">red</b> (starving) and which turns <b class="c-fed">green</b> (fed).</span></li>
             <li><span class="n">4</span><span>Drag the <b>Cell C size</b> slider and race again.</span></li>
-            <li><span class="n">5</span><span>Press <b>Lock V at 64 cm³</b>. Change C's shape. Same volume, more surface area, fed sooner.</span></li>
+            <li><span class="n">5</span><span>Press <b>More</b>, then <b>Lock V at 64 cm³</b>. Change C's shape. Same volume, more surface area, fed sooner.</span></li>
           </ol>
           <ol id="guideBio" hidden>
             <li><span class="n">1</span><span>Drag <b>Membrane folding</b>. The surface area grows, the volume stays the same.</span></li>
             <li><span class="n">2</span><span>Drag <b>ΔC</b>. A bigger difference in O₂ moves more O₂ across.</span></li>
             <li><span class="n">3</span><span>Drag <b>Membrane thickness</b>. A thicker membrane slows diffusion.</span></li>
             <li><span class="n">4</span><span>Try <b>Pulmonary edema</b> and <b>Emphysema</b>. Compare the rate with healthy.</span></li>
+            <li><span class="n">5</span><span>In the math, <b>T</b> is membrane thickness and SA<sub>flat</sub> is a flat 1 cm² patch of membrane.</span></li>
           </ol>
         </div>
       </div>
@@ -187,7 +191,7 @@ button:focus-visible, input:focus-visible{outline:2.5px solid var(--pt); outline
     <div class="ctl">
       <span class="lab">Race</span>
       <div class="btnrow">
-        <button type="button" id="play" class="btn-primary">▶ Start Nutrient Diffusion</button>
+        <button type="button" id="play" class="btn-primary">▶ Start</button>
         <button type="button" id="reset" class="btn-ghost">Reset</button>
       </div>
     </div>
@@ -196,7 +200,7 @@ button:focus-visible, input:focus-visible{outline:2.5px solid var(--pt); outline
       <input type="range" id="tSlider" min="0" max="20" step="0.1" value="0">
     </div>
     <div class="ctl">
-      <span class="lab">Diffusion rate (all cells)</span>
+      <span class="lab">Rate</span>
       <span class="rate" id="rateOut"></span>
     </div>
     <div class="ctl grow">
@@ -204,6 +208,10 @@ button:focus-visible, input:focus-visible{outline:2.5px solid var(--pt); outline
       <input type="range" id="cSlider" min="0.5" max="6" step="0.5" value="4">
     </div>
     <div class="ctl">
+      <span class="lab">&nbsp;</span>
+      <button type="button" class="btn-ghost more-btn" aria-expanded="false" data-more="moreSci">More ▾</button>
+    </div>
+    <div class="ctl" id="moreSci" hidden>
       <span class="lab">Cell C shape</span>
       <div class="btnrow">
         <button type="button" id="lockBtn" class="btn-ghost" aria-pressed="false">Lock V at 64 cm³</button>
@@ -228,11 +236,11 @@ button:focus-visible, input:focus-visible{outline:2.5px solid var(--pt); outline
       </div>
     </div>
     <div class="ctl grow">
-      <div class="ctl-top"><label for="fSlider">Membrane folding (microvilli, alveolar sacs)</label><output id="fOut" for="fSlider">× 20</output></div>
+      <div class="ctl-top"><label for="fSlider">Membrane folding</label><output id="fOut" for="fSlider">× 20</output></div>
       <input type="range" id="fSlider" min="1" max="20" step="1" value="20">
     </div>
     <div class="ctl grow">
-      <div class="ctl-top"><label for="cgSlider"><span class="sym">ΔC</span> (O₂ difference)</label><output id="cgOut" for="cgSlider">8 kPa</output></div>
+      <div class="ctl-top"><label for="cgSlider"><span class="sym">ΔC</span> of O₂</label><output id="cgOut" for="cgSlider">8 kPa</output></div>
       <input type="range" id="cgSlider" min="1" max="12" step="1" value="8">
     </div>
     <div class="ctl grow">
@@ -260,12 +268,12 @@ button:focus-visible, input:focus-visible{outline:2.5px solid var(--pt); outline
         <div class="s-canvas"><canvas id="cv" role="img" aria-label="Cross-sections of the cells"></canvas></div>
       </section>
       <section class="panel bars" id="barsSci" aria-label="Bars">
-        <span></span><span class="ptitle">% of cell volume fed</span><span class="ptitle h2">Distance left to the core</span>
+        <span></span><span class="ptitle">% of cell volume fed</span>
         <div class="flag" id="flag" hidden>Cell A is 100% fed. Compare B and C.</div>
         <div id="barRows" style="display:contents"></div>
       </section>
       <section class="panel bars bio" id="barsBio" aria-label="Diffusion rate" hidden>
-        <span></span><span class="ptitle">Rate of O₂ diffusion, compared with a healthy lung</span>
+        <span></span><span class="ptitle">O₂ rate vs healthy</span>
         <span class="rowlab">O₂</span>
         <div class="track fedT" id="bioTrack"><div class="fill" id="bioFill"></div><div class="mark" id="bioMark"><span>healthy</span></div><span class="val" id="bioVal">100%</span></div>
       </section>
@@ -294,7 +302,7 @@ const SHAPES = {
 const PRESETS = { healthy:{F:20, dC:8, T:0.5}, edema:{F:20, dC:8, T:2.5}, emph:{F:5, dC:8, T:0.5} };
 const HEALTHY = PRESETS.healthy.F * PRESETS.healthy.dC / PRESETS.healthy.T;
 
-const S = { bio:false, t:0, playing:false, cSize:4, lock:false, shape:'cube', stopA:true, F:20, dC:8, T:0.5 };
+const S = { focus:'A', bio:false, t:0, playing:false, cSize:4, lock:false, shape:'cube', stopA:true, F:20, dC:8, T:0.5 };
 const $ = id => document.getElementById(id);
 const fr = (top, bot) => `<span class="fr"><span>${top}</span><span>${bot}</span></span>`;
 const n2 = x => String(Number(x.toFixed(2)));
@@ -481,10 +489,10 @@ function drawBio(now){
 function renderSciBars(){
   const cs = cells(), d = RATE * S.t, big = Math.max(...cs.map(half));
   $('barRows').innerHTML = cs.map(c => {
-    const f = fed(c, d), l = left(c, d);
+    const f = fed(c, d);
     return `<span class="rowlab">${c.id}</span>
       <div class="track fedT${f >= 1 - 1e-9 ? ' full' : ''}"><div class="fill" style="width:${f*100}%"></div><span class="val">${pct(f)}</span></div>
-      <div class="track coreT${l <= 1e-9 ? ' zero' : ''}"><div class="fill" style="width:${l / big * 100}%"></div><span class="val">${l <= 1e-9 ? 'reached at ' + n1(half(c) / RATE) + ' min' : n1(l*10) + ' mm'}</span></div>`;
+`;
   }).join('');
   $('flag').hidden = !(Math.abs(S.t - T_A) < 0.05);
 }
@@ -507,8 +515,10 @@ function cellCard(c, d){
     vc = `<span class="f">V<sub>core</sub> = (s − 2d)³</span><span class="num">= ${sub(l)}³</span>`;
   }
   const done = f >= 1 - 1e-9;
+  const head = `<div class="lc-head"><span class="badge">${c.id}</span><span class="lc-title">Cell ${c.id}<small>${caption(c)}</small></span><span class="lc-q ${done ? 'c-fed' : ''}">${pct(f)} fed</span></div>`;
+  if (c.id !== S.focus) return `<button type="button" class="lcard mini${done ? ' done' : ''}" data-cell="${c.id}" aria-label="Show the math for cell ${c.id}">${head}</button>`;
   return `<article class="lcard${done ? ' done' : ''}">
-    <div class="lc-head"><span class="badge">${c.id}</span><span class="lc-title">Cell ${c.id}<small>${caption(c)}</small></span><span class="lc-q ${done ? 'c-fed' : ''}">${pct(f)} fed</span></div>
+    ${head}
     <div class="ln">${sa}<span class="num">= <b>${n2(A)} cm²</b></span></div>
     <div class="ln">${v}<span class="num">= <b>${n2(V)} cm³</b></span></div>
     <div class="ln"><span class="f">SA : V =</span><span class="num">${fr(n2(A), n2(V))} = <b>${n2(A / V)} : 1</b></span></div>
@@ -545,7 +555,7 @@ function renderBio(){
       <div class="ln"><span class="f">Rate<sub>healthy</sub></span><span class="num">= ${fr(PRESETS.healthy.F + ' × ' + PRESETS.healthy.dC, PRESETS.healthy.T)} = <b>${HEALTHY}</b></span></div>
       <div class="ln"><span class="f">${fr('Rate', 'Rate<sub>healthy</sub>')} × 100%</span><span class="num">= ${fr(n2(flux), HEALTHY)} × 100% = <b>${Math.round(r*100)}%</b></span></div>
     </article>
-    <p class="foot">T = membrane thickness. SA<sub>flat</sub> = a flat 1 cm² patch of membrane.</p>`;
+`;
 }
 
 /* =========================================================
@@ -556,7 +566,7 @@ function syncSci(){
   sl.max = m; if (S.t > m) S.t = m; sl.value = S.t;
   $('tOut').textContent = n1(S.t) + ' min';
   $('clock').textContent = 't = ' + n1(S.t) + ' min';
-  $('play').textContent = S.playing ? '❚❚ Pause' : (S.t >= m ? '↺ Race Again' : S.t > 0 ? '▶ Continue' : '▶ Start Nutrient Diffusion');
+  $('play').textContent = S.playing ? '❚❚ Pause' : (S.t >= m ? '↺ Race Again' : S.t > 0 ? '▶ Continue' : '▶ Start');
   $('cOut').textContent = S.lock ? '64 cm³' : n2(S.cSize) + ' cm';
   $('cSlider').disabled = S.lock;
   renderSciBars(); renderSciLedger();
@@ -589,6 +599,8 @@ $('play').addEventListener('click', () => {
   syncSci();
 });
 $('reset').addEventListener('click', restart);
+document.querySelectorAll('.more-btn').forEach(b => b.addEventListener('click', () => { const t = $(b.dataset.more), open = t.hidden; t.hidden = !open; b.setAttribute('aria-expanded', open); b.textContent = open ? 'Less ▴' : 'More ▾'; }));
+$('ledger').addEventListener('click', e => { const b = e.target.closest('[data-cell]'); if (b){ S.focus = b.dataset.cell; renderSciLedger(); } });
 $('tSlider').addEventListener('input', e => { S.t = +e.target.value; S.playing = false; S.stopA = S.t < T_A; syncSci(); });
 $('cSlider').addEventListener('input', e => { S.cSize = +e.target.value; restart(); });
 $('lockBtn').addEventListener('click', () => {

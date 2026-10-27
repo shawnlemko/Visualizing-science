@@ -72,6 +72,8 @@ a.main-btn:focus-visible{outline:3px solid var(--pt); outline-offset:3px}
 .pop ol{display:flex; flex-direction:column; gap:10px}
 .pop li{display:grid; grid-template-columns:24px 1fr; gap:8px; line-height:1.4}
 .pop .num{width:22px; height:22px; border-radius:50%; background:var(--btn); color:var(--btn-ink); font-weight:700; font-size:12px; display:grid; place-items:center}
+.pop .tip{font-size:13px; color:var(--muted); line-height:1.45; margin:10px 0 0}
+.en-calc{font-family:var(--font-num); font-size:15px}
 
 /* Main split */
 .layout{display:grid; grid-template-columns:1fr; gap:12px; flex:1; min-height:0}
@@ -225,11 +227,11 @@ a.main-btn:focus-visible{outline:3px solid var(--pt); outline-offset:3px}
     <div class="tools">
       <div class="mode" role="radiogroup" aria-label="Mode">
         <span class="mode-label">Mode</span>
-        <button type="button" id="modeSci" role="radio" aria-checked="true">Science 10<small>Charges &amp; Brackets</small></button>
-        <button type="button" id="modeChem" role="radio" aria-checked="false">Chemistry 20<small>Electron Transfer &amp; ΔEN</small></button>
+        <button type="button" id="modeSci" role="radio" aria-checked="true">Science 10</button>
+        <button type="button" id="modeChem" role="radio" aria-checked="false">Chemistry 20</button>
       </div>
       <div class="guide-wrap">
-        <button type="button" id="guideBtn" class="btn-outline" aria-expanded="false" aria-controls="guidePop">Step-by-Step Guide</button>
+        <button type="button" id="guideBtn" class="btn-outline" aria-expanded="false" aria-controls="guidePop">Guide</button>
         <div id="guidePop" class="pop" hidden></div>
       </div>
     </div>
@@ -246,11 +248,7 @@ a.main-btn:focus-visible{outline:3px solid var(--pt); outline-offset:3px}
 
       <div class="panel bench">
         <div class="bench-head">
-          <span class="kicker">Workbench: add ions until every + tab fits a − notch</span>
-          <div class="meter" aria-live="polite">
-            <svg id="meterSvg" viewBox="0 0 150 26" aria-hidden="true"></svg>
-            <output id="meterOut"></output>
-          </div>
+          <span class="kicker">Workbench</span>
         </div>
         <div class="bench-body">
           <div class="steppers">
@@ -503,6 +501,7 @@ function renderBench(){
 }
 
 function renderMeter(){
+  if (!$('meterSvg')) return;
   const net = charge(), L = 6, x = v => 10 + (Math.max(-L, Math.min(L, v)) + L)/(2*L)*130;
   let s = `<line x1="10" y1="13" x2="140" y2="13" style="stroke:var(--line-strong);stroke-width:4;stroke-linecap:round"/>`;
   s += `<line x1="10" y1="13" x2="75" y2="13" style="stroke:var(--ani);stroke-width:4;stroke-linecap:round;opacity:.35"/><line x1="75" y1="13" x2="140" y2="13" style="stroke:var(--cat);stroke-width:4;stroke-linecap:round;opacity:.35"/>`;
@@ -563,7 +562,7 @@ function textW(txt, px){ measureCtx.font = `700 ${px}px ${getComputedStyle(docum
 // Criss-cross: each ion's charge number drops diagonally to become the other ion's subscript.
 function crossCard(){
   const {cat:c, an:a} = state, C = ION[c], A = ION[a];
-  if (charge() !== 0) return `<div class="card"><h3>Cross the charges down</h3><p class="muted">First balance the workbench until the net charge is 0. Then the charges cross down here to show where the subscripts come from.</p></div>`;
+  if (charge() !== 0) return '';
   const qc = absQ(c), qa = absQ(a), g = gcd(qc, qa), [nc, na] = crossCounts(c, a);
   const F = 34;
   const cs = coreU(c), as = coreU(a);
@@ -674,18 +673,15 @@ function bohrCard(){
   if (n){ const x = xs[m ? 1 : 0]; s += bohrAtom(x, 105, n, 0, absQ(a), after);
     lbl += `<text x="${x}" y="205" text-anchor="middle" style="fill:var(--ani);font:700 13px var(--font-ui)">${after ? n + chargeU(A.q) + ' ion' : n + ' atom'}  (${cfg(n, 0, absQ(a))})</text>`; }
   if (m && n) s += `<path d="M195 105 H262 M254 98 L263 105 L254 112" style="fill:none;stroke:var(--cat);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round"/><text x="230" y="94" text-anchor="middle" style="fill:var(--cat);font:700 11px var(--font-ui)">${after ? 'moved' : 'will move'}</text>`;
-  const notes = [];
-  if (C.poly || A.poly) notes.push(`${C.poly ? coreH(c) : coreH(a)} is a group of atoms held together by covalent bonds, so it has no single ring diagram.`);
-  if (m && !C.ve) notes.push(`For ${m}, the ${C.q} electron${C.q > 1 ? 's' : ''} it loses come from its outer shells, and the ion that is left does not have 8 in its outer shell.`);
-  return `<div class="card" id="bohrBox"><h3>Bohr model (atom with rings)</h3>
+  return `<div class="card" id="bohrBox"><h3>Bohr model</h3>
     <div class="row-btns"><button type="button" class="btn-ghost" id="bohrTgl">${after ? '◀ Show atoms (before)' : 'Show ions (after) ▶'}</button><span class="legend"><span><i style="background:var(--cat)"></i>electrons that transfer</span></span></div>
     <svg viewBox="0 0 460 215" style="width:100%;height:auto;max-height:220px;display:block" role="img" aria-label="Bohr diagrams">${s}${lbl}</svg>
-    ${notes.map(t => `<p class="muted">${t}</p>`).join('')}</div>`;
+</div>`;
 }
 
 function lewisCard(){
   const {cat:c, an:a, nc, na} = state;
-  if (charge() !== 0) return `<div class="card"><h3>Electron transfer</h3><p class="muted">Balance the workbench first (net charge 0). Then you can watch the electrons move.</p></div>`;
+  if (charge() !== 0) return '';
   const C = ION[c], A = ION[a], step = C.poly || A.poly ? 134 : 122;
   const wide = Math.max(nc, na)*step;
   const VW = Math.max(360, wide + 40), yC = 52, yA = 176;
@@ -791,16 +787,15 @@ function enCard(){
     s += `<path d="M${x - 6},${ly + 4} L${x + 6},${ly + 4} L${x},${ly + 12} Z" style="fill:var(--ink)"/><line x1="${x}" y1="${ly + 12}" x2="${x}" y2="44" style="stroke:var(--ink);stroke-width:1.5"/>`;
     s += `<text x="${x + (anchor === 'start' ? -6 : anchor === 'end' ? 6 : 0)}" y="${ly}" text-anchor="${anchor}" style="fill:var(--ink);font:700 12px var(--font-ui)">${m.lbl} ${m.v.toFixed(1)}</text>`;
   });
-  const els = [...new Set([...C.parts, ...A.parts].map(p => p[0]))];
-  const src = `<p class="src">Electronegativities from the Alberta Data Booklet periodic table: ${els.map(e => `${e} ${EN[e].toFixed(1)}`).join(' · ')}</p>`;
+  const src = '';
   let body;
   if (marks[0] && marks[0].main){
     const m = C.parts[0][0], n = A.parts[0][0], v = marks[0].v;
-    body = `<p>ΔEN = ${EN[n].toFixed(1)} − ${EN[m].toFixed(1)} = <b>${v.toFixed(1)}</b>. ${v >= IONIC_CUTOFF ? `That is ≥ 1.7, so the ${m}–${n} bond is <b>ionic</b>: ${m} gives electrons to ${n}.` : `That is below 1.7, so the ΔEN rule puts ${m}–${n} in the <b>polar covalent</b> range.`}</p>`;
-    if (v < IONIC_CUTOFF) body += `<p class="flag">A metal with a non-metal is still named and written as an ionic compound. A small ΔEN means the real bond has some covalent character (it shares electrons a little). ΔEN is a guide, not a hard line.</p>`;
+    body = `<p class="en-calc">ΔEN = ${EN[n].toFixed(1)} − ${EN[m].toFixed(1)} = <b>${v.toFixed(1)}</b></p>`;
+    if (v < IONIC_CUTOFF) body += `<p class="flag">Metal + non-metal: still written as ionic.</p>`;
   } else {
-    body = `<div class="zone"><span class="tag cov">Inside the capsule</span><span><b>Covalent.</b> ${inner}. These atoms share electrons, which is why the subscripts inside the ion are locked.</span>
-      <span class="tag ionic">Between the ions</span><span><b>Ionic.</b> ${ionH(c)} and ${ionH(a)} attract as whole charged particles. ΔEN compares two atoms, so there is no single ΔEN for this bond.</span></div>`;
+    body = `<div class="zone"><span class="tag cov">Covalent inside</span><span>${inner}</span>
+      <span class="tag ionic">Ionic between</span><span>${ionH(c)} and ${ionH(a)}</span></div>`;
   }
   return `<div class="card en"><h3>Electronegativity difference (ΔEN)</h3><svg viewBox="0 0 460 104" role="img" aria-label="Bonding continuum">${s}</svg>${body}${src}</div>`;
 }
@@ -916,12 +911,13 @@ function renderGuide(){
   const sci = state.mode === 'sci';
   $('guidePop').innerHTML = sci ? `<h2>Writing an ionic formula in 3 steps</h2><ol>
     <li><span class="num">1</span><span><b>Pick the ions.</b> Dashed buttons are polyatomic ions: locked groups you never change inside.</span></li>
-    <li><span class="num">2</span><span><b>Balance the charge.</b> Add cations and anions until every + tab sits in a − notch and the meter reads 0.</span></li>
-    <li><span class="num">3</span><span><b>Write it simply.</b> Use brackets when you need more than one polyatomic ion, The workbench stops at the lowest whole-number ratio.</span></li></ol>`
+    <li><span class="num">2</span><span><b>Balance the charge.</b> Add cations and anions until every + tab sits in a − notch.</span></li>
+    <li><span class="num">3</span><span><b>Write it simply.</b> Use brackets when you need more than one polyatomic ion. The workbench stops at the lowest whole-number ratio.</span></li></ol>`
   : `<h2>Explaining the bond in 3 steps</h2><ol>
-    <li><span class="num">1</span><span><b>Build a neutral compound</b> on the workbench (meter at 0).</span></li>
+    <li><span class="num">1</span><span><b>Build a neutral compound</b> on the workbench (every + tab in a − notch).</span></li>
     <li><span class="num">2</span><span><b>Watch the transfer.</b> Each metal atom gives its electrons to the non-metal until the non-metal has a full octet.</span></li>
-    <li><span class="num">3</span><span><b>Check ΔEN.</b> 1.7 or more is ionic. Inside a polyatomic ion the bonds are covalent; between the ions the bond is ionic.</span></li></ol>`;
+    <li><span class="num">3</span><span><b>Check ΔEN.</b> 1.7 or more is ionic. Inside a polyatomic ion the bonds are covalent; between the ions the bond is ionic.</span></li></ol>
+    <p class="tip">A metal with a non-metal is still written as ionic even when ΔEN is below 1.7; the bond just has some covalent character. Polyatomic ions have no single ring diagram, and transition-metal ions do not end with 8 outer electrons. Electronegativities come from the Alberta Data Booklet periodic table.</p>`;
 }
 
 function renderAll(){ renderPicker(); renderBench(); renderMeter(); renderFormula(); renderSide(); renderGuide(); }

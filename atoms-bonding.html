@@ -69,6 +69,8 @@ a.main-btn:focus-visible{outline:3px solid var(--pt); outline-offset:3px}
 .subbar{display:flex; align-items:center; gap:4px; border-bottom:1px solid var(--line)}
 .subbar button{padding:7px 14px; font-weight:700; font-size:15px; color:var(--muted); border-bottom:3px solid transparent; margin-bottom:-1px}
 .subbar button[aria-selected="true"]{color:var(--ink); border-bottom-color:var(--pt)}
+.subbar .sub-link{padding:7px 4px; font-weight:700; font-size:14px; color:var(--pt); text-decoration:none}
+.subbar .sub-link:hover{text-decoration:underline}
 
 /* Main split */
 .layout{display:grid; grid-template-columns:1fr; gap:12px; flex:1; min-height:0}
@@ -252,9 +254,9 @@ dialog::backdrop{background:rgba(15,22,29,.45)}
       <h1>Atoms and Bonding</h1>
     </div>
     <div class="mode" role="radiogroup" aria-label="Grade">
-      <button type="button" role="radio" data-act="mode" data-v="g8">Grade 8<small>Bohr atoms</small></button>
-      <button type="button" role="radio" data-act="mode" data-v="g9">Grade 9<small>Ions and compounds</small></button>
-      <button type="button" role="radio" data-act="mode" data-v="s10">Science 10<small>Lewis dots and brackets</small></button>
+      <button type="button" role="radio" data-act="mode" data-v="g8">Grade 8</button>
+      <button type="button" role="radio" data-act="mode" data-v="g9">Grade 9</button>
+      <button type="button" role="radio" data-act="mode" data-v="s10">Science 10</button>
     </div>
   </header>
   <nav class="subbar" id="subbar" role="tablist"></nav>
@@ -468,7 +470,7 @@ function viewG8Explore(){
   $('left').innerHTML = ptableH(E.s, 3, 'g8el') + `<div class="panel stage"><div class="stage-head"><span class="kicker">Bohr model</span></div><div class="canvas">${bohrG8(E.Z, E.A - E.Z, E.Z, {stagger:S.g8.fresh})}</div></div>`;
   S.g8.fresh = false;
   $('right').innerHTML = `<div class="card"><div class="title-row">${nucH(E.A, E.Z, E.s)}<span class="nm">${cap1(E.name)}</span></div>${ledgerH(E.Z, E.A - E.Z, E.Z)}</div>`
-    + octetH(E.Z) + qcBtn();
+    + octetH(E.Z);
 }
 function viewG8Build(){
   const Tg = EL[S.g8.target], b = S.g8.b, built = BY_Z[b.p];
@@ -659,7 +661,7 @@ function viewG9Elements(){
       <div class="facts"><span>Particle</span><span class="v">${kindTxt}</span><span>Atoms per particle</span><span class="v">${per}</span><span>Types of atoms</span><span class="v">1</span></div>
       <div class="callout">${E.kind === 'mono' ? 'Full outer shell: stays a single atom.' : 'Still an ELEMENT: only 1 type of atom. Not a compound!'}</div></div>`
     + (E.kind === 'di' ? `<div class="card"><h3>HOFBrINCl: the 7 diatomic elements</h3><div class="chain">${['H','O','F','Br','I','N','Cl'].map(s => `<span class="${s === E.el ? 'c-val' : ''}">${s}${subU(2)}</span>`).join('')}</div></div>` : '')
-    + `<div class="card"><h3>A sample of ${el.name}</h3>${sampleBox(key)}</div>` + qcBtn();
+    + `<div class="card"><h3>A sample of ${el.name}</h3>${sampleBox(key)}</div>`;
   if (E.kind === 'di') playCovalent(covalentScene(diMol(E.el, E.k)), $('elSvg'));
 }
 
@@ -1011,13 +1013,16 @@ function qcRender(){
 /* =========================================================
    RENDER + EVENTS
    ========================================================= */
-const SUBS = {g8:[['explore','Explore'],['build','Build and Test']], g9:[['elements','Pure elements'],['compounds','Compounds']], s10:[['lewis','Bohr to Lewis'],['build','Formula builder']]};
-const VIEWS = {'g8:explore':viewG8Explore, 'g8:build':viewG8Build, 'g9:elements':viewG9Elements, 'g9:compounds':viewG9Compounds, 's10:lewis':viewS10Lewis, 's10:build':viewS10Build};
+const SUBS = {g8:[['explore','Explore'],['build','Build and Test']], g9:[['elements','Pure elements'],['compounds','Compounds']], s10:[['lewis','Bohr to Lewis']]};
+const VIEWS = {'g8:explore':viewG8Explore, 'g8:build':viewG8Build, 'g9:elements':viewG9Elements, 'g9:compounds':viewG9Compounds, 's10:lewis':viewS10Lewis};
 function render(){
   stopAnim();
   const focusAct = document.activeElement && document.activeElement.dataset ? [document.activeElement.dataset.act, document.activeElement.dataset.v] : null;
   document.querySelectorAll('[data-act="mode"]').forEach(b => b.setAttribute('aria-checked', b.dataset.v === S.mode));
-  $('subbar').innerHTML = SUBS[S.mode].map(([k, l]) => `<button type="button" role="tab" data-act="sub" data-v="${k}" aria-selected="${S.sub[S.mode] === k}">${l}</button>`).join('');
+  if (!VIEWS[`${S.mode}:${S.sub[S.mode]}`]) S.sub[S.mode] = SUBS[S.mode][0][0];
+  $('subbar').innerHTML = SUBS[S.mode].length > 1
+    ? SUBS[S.mode].map(([k, l]) => `<button type="button" role="tab" data-act="sub" data-v="${k}" aria-selected="${S.sub[S.mode] === k}">${l}</button>`).join('')
+    : `<a class="sub-link" href="ionic-builder.html">Formulas: open the Ionic Formula Builder →</a>`;
   VIEWS[`${S.mode}:${S.sub[S.mode]}`]();
   if (focusAct && focusAct[0]){ const b = document.querySelector(`[data-act="${focusAct[0]}"][data-v="${focusAct[1]}"]`); if (b && !b.disabled) b.focus({preventScroll:true}); }
   try { localStorage.setItem('atoms-bonding', JSON.stringify({mode:S.mode, sub:S.sub})); } catch(e){}
