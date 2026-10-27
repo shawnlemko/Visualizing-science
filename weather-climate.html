@@ -1,0 +1,920 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<script data-goatcounter="https://shawnlemko.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
+</head>
+<body>
+<title>Weather and Climate</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Atkinson+Hyperlegible:wght@400;700&family=Spline+Sans+Mono:wght@500;700&display=swap">
+<style>
+/* MathBoard look (shared with the math visuals site).
+   One colour per idea, used in every scene and in the practice pictures:
+   blue = cold air, red-orange = warm air, yellow = sunlight, red = heat leaving the ground, light blue = water and vapour.
+   Layout: one screen. Top = scene tabs. Then one row of controls. Then the picture. */
+:root{
+  --bg:#f5f8fb; --surface:#ffffff; --surface-2:#eaf0f6; --ink:#1b2733; --muted:#5b6b7a; --line:#dbe5ee; --line-strong:#b9c9d8; --pt:#2f5fd0;
+  --cold:#2563d6; --warm:#d9542b; --sun:#e9a800; --ir:#d1293f; --good:#13874b; --bad:#d1293f;
+  --sky1:#b9dcf7; --sky2:#eef7fe; --space:#1b2a44; --ground:#86b25c; --soil:#9a7651; --rock:#8d8a83; --sea:#3b8fd4;
+  --cloud:#ffffff; --cloud-dk:#8995a3; --rain:#1f63d0; --vap:#5aa9e6; --snow:#ffffff; --ghg:#2b9a8f; --house:#c9a36b;
+  --btn:#2f5fd0; --btn-ink:#ffffff;
+  --font-ui:'Atkinson Hyperlegible', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-display:'Bricolage Grotesque', 'Segoe UI', system-ui, sans-serif;
+  --font-num:'Spline Sans Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0f161d; --surface:#151f29; --surface-2:#1d2935; --ink:#e6edf3; --muted:#9aabbb; --line:#1f2c38; --line-strong:#2e3f50; --pt:#7aa2ff;
+  --cold:#6ea4ff; --warm:#ff8a5c; --sun:#ffc933; --ir:#ff6b7d; --good:#45c985; --bad:#ff6b7d;
+  --sky1:#1c3550; --sky2:#2a4763; --space:#070d18; --ground:#4f7a3a; --soil:#5e4630; --rock:#5c5a55; --sea:#245f99;
+  --cloud:#d5dde5; --cloud-dk:#6c7987; --rain:#8ab8ff; --vap:#7cc0f2; --snow:#eef4fa; --ghg:#4cc4b6; --house:#b48a52;
+  --btn:#7aa2ff; --btn-ink:#0f161d; color-scheme:dark; } }
+:root[data-theme="dark"]{
+  --bg:#0f161d; --surface:#151f29; --surface-2:#1d2935; --ink:#e6edf3; --muted:#9aabbb; --line:#1f2c38; --line-strong:#2e3f50; --pt:#7aa2ff;
+  --cold:#6ea4ff; --warm:#ff8a5c; --sun:#ffc933; --ir:#ff6b7d; --good:#45c985; --bad:#ff6b7d;
+  --sky1:#1c3550; --sky2:#2a4763; --space:#070d18; --ground:#4f7a3a; --soil:#5e4630; --rock:#5c5a55; --sea:#245f99;
+  --cloud:#d5dde5; --cloud-dk:#6c7987; --rain:#8ab8ff; --vap:#7cc0f2; --snow:#eef4fa; --ghg:#4cc4b6; --house:#b48a52;
+  --btn:#7aa2ff; --btn-ink:#0f161d; color-scheme:dark; }
+
+*,*::before,*::after{box-sizing:border-box}
+h1,h2,p,ol{margin:0} ol{padding:0; list-style:none}
+button,select,input{font:inherit; color:inherit}
+button{border:0; background:none; cursor:pointer}
+html,body{height:100%}
+body{background:var(--bg); color:var(--ink); font-family:var(--font-ui); font-size:14px;
+  padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); padding-block:0}
+#app{display:flex; flex-direction:column; gap:8px; min-height:100%; padding-block:8px}
+@media (min-width:1024px){ #app{height:100%} }
+
+/* Header */
+.topbar{display:flex; flex-wrap:wrap; align-items:center; gap:10px 20px; justify-content:space-between}
+.brand{display:flex; flex-wrap:wrap; align-items:center; gap:8px 20px}
+.brand h1{font-family:var(--font-display); font-weight:800; font-size:clamp(20px, 2vw, 26px); line-height:1.1; letter-spacing:-.01em; text-wrap:balance}
+a.main-btn{display:inline-flex; align-items:center; gap:8px; padding:8px 16px; min-height:42px; background:var(--pt); color:#fff; font-family:var(--font-display); font-weight:800; font-size:16px; text-decoration:none; border-radius:10px; border:2px solid var(--pt); flex:none}
+a.main-btn span{font-size:19px; line-height:1}
+a.main-btn:hover{background:var(--surface); color:var(--pt)}
+a.main-btn:focus-visible{outline:3px solid var(--pt); outline-offset:3px}
+.top-right{display:flex; flex-wrap:wrap; align-items:center; gap:10px}
+.mode{display:flex; flex-wrap:wrap; align-items:center; gap:4px; background:var(--surface); border:1px solid var(--line); border-radius:999px; padding:4px}
+.mode button{border-radius:999px; padding:6px 16px; font-weight:700; font-size:15px; color:var(--muted); line-height:1.1}
+.mode button[aria-checked="true"]{background:var(--btn); color:var(--btn-ink)}
+.guide-wrap{position:relative}
+.btn-outline{border:1.5px solid var(--ink); border-radius:8px; padding:7px 12px; font-weight:700; font-size:14px; background:var(--surface)}
+.pop{position:absolute; right:0; top:calc(100% + 8px); width:min(340px, calc(100vw - 32px)); z-index:20; background:var(--surface);
+  border:1px solid var(--line); border-radius:10px; box-shadow:0 12px 32px rgba(10,20,30,.18); padding:14px 16px}
+.pop h2{font-weight:700; font-size:15px; margin-bottom:8px}
+.pop ol{display:flex; flex-direction:column; gap:10px}
+.pop li{display:grid; grid-template-columns:24px 1fr; gap:8px; line-height:1.4}
+.pop .n{width:22px; height:22px; border-radius:50%; background:var(--btn); color:var(--btn-ink); font-weight:700; font-size:12px; display:grid; place-items:center}
+.pop .tip{margin-top:10px; padding-top:10px; border-top:1px solid var(--line); line-height:1.45; color:var(--muted)}
+
+.panel{background:var(--surface); border:1px solid var(--line-strong); border-radius:10px; min-width:0}
+button:focus-visible, input:focus-visible{outline:2.5px solid var(--pt); outline-offset:2px}
+
+/* Controls */
+.controls{display:flex; flex-wrap:wrap; gap:8px 22px; padding:8px 14px; align-items:end}
+.ctl{display:flex; flex-direction:column; gap:3px; min-width:200px; flex:1 1 200px}
+.ctl.seg-ctl{flex:0 1 auto; min-width:0}
+.ctl-top{display:flex; align-items:center; justify-content:space-between; gap:8px; min-height:30px}
+.ctl label, .ctl .lab{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.07em; font-weight:700}
+.ctl output{font-family:var(--font-num); font-variant-numeric:tabular-nums; font-weight:700; font-size:15px}
+.ctl input[type=range]{width:100%; accent-color:var(--pt); margin:2px 0}
+.seg{display:flex; gap:3px; background:var(--surface-2); border-radius:9px; padding:3px}
+.seg button{padding:6px 14px; border-radius:7px; font-weight:700; font-size:15px; color:var(--muted); white-space:nowrap; display:inline-flex; align-items:center; gap:6px}
+.seg button[aria-checked="true"]{background:var(--surface); color:var(--ink); box-shadow:0 0 0 1.5px var(--ink)}
+.seg button svg{flex:none}
+.btn-primary{background:var(--btn); color:var(--btn-ink); border-radius:8px; padding:9px 18px; font-weight:700; font-size:15px; white-space:nowrap; min-width:120px}
+.ctl.go{flex:0 0 auto; min-width:0}
+.ends{display:flex; justify-content:space-between; font-size:13px; font-weight:700; color:var(--muted)}
+
+/* Main split */
+.layout{display:grid; grid-template-columns:1fr; gap:10px; flex:1; min-height:0}
+@media (min-width:1024px){ .layout.side{grid-template-columns:1fr 300px; grid-template-rows:minmax(0,1fr)} }
+.stage{position:relative; min-height:420px; overflow:hidden}
+@media (min-width:1024px){ .stage{min-height:0} }
+@media (max-width:1023px){ .stage{min-height:0; aspect-ratio:1000 / 640} }
+.stage canvas{position:absolute; inset:0; width:100%; height:100%; display:block}
+.badge{position:absolute; left:12px; top:10px; z-index:2; display:flex; flex-direction:column; gap:3px; padding:6px 14px 8px; border-radius:10px;
+  border:2.5px solid var(--ink); background:var(--surface); max-width:calc(100% - 24px)}
+.badge .b-main{font-family:var(--font-display); font-weight:800; font-size:clamp(16px, 1.6vw, 21px); line-height:1.15; display:flex; align-items:center; gap:10px}
+.badge .b-sub{font-size:15px; display:flex; flex-wrap:wrap; align-items:center; gap:4px 8px}
+.badge.cold{border-color:var(--cold)} .badge.cold .b-main{color:var(--cold)}
+.badge.warm{border-color:var(--warm)} .badge.warm .b-main{color:var(--warm)}
+.badge.heat{border-color:var(--ir)} .badge.heat .b-main{color:var(--ir)}
+.chip{white-space:nowrap; display:inline-flex; align-items:center; padding:2px 9px; border-radius:999px; font-weight:700; font-size:13.5px; background:var(--surface-2)}
+.chip.now{background:var(--vap); color:#06233d}
+.arr{color:var(--muted); font-weight:700}
+
+/* Climate effect cards */
+.effects{display:flex; flex-direction:column; gap:10px; padding:10px 12px; overflow:auto; min-height:0}
+@media (max-width:1023px){ .effects{flex-direction:row; flex-wrap:wrap} .effects .ecard{flex:1 1 180px} }
+.ecard{border:1px solid var(--line); border-radius:10px; padding:8px 12px; display:flex; align-items:center; gap:12px}
+.ecard svg{width:120px; height:84px; flex:none}
+.ecard .e-txt{display:flex; flex-direction:column; gap:6px}
+.ecard .e-name{font-weight:700; font-size:15px}
+.ecard .chip.up{background:var(--ir); color:#fff}
+.ecard .chip.down{background:var(--cold); color:#fff}
+
+/* Practice */
+.practice{flex:1; display:flex; flex-direction:column; align-items:center; gap:14px; padding:16px; overflow:auto}
+.pdots{display:flex; gap:8px}
+.pdots span{width:14px; height:14px; border-radius:50%; background:var(--surface-2); border:2px solid var(--line-strong)}
+.pdots span.ok{background:var(--good); border-color:var(--good)}
+.pdots span.no{background:var(--bad); border-color:var(--bad)}
+.pdots span.cur{border-color:var(--ink)}
+.qpic{width:min(100%, 560px); aspect-ratio:400 / 210; border-radius:10px; border:1px solid var(--line); overflow:hidden; flex:none}
+.qpic svg{width:100%; height:100%; display:block}
+.qprompt{font-family:var(--font-display); font-weight:800; font-size:clamp(20px, 2.2vw, 26px); text-align:center}
+.answers{display:flex; flex-wrap:wrap; justify-content:center; gap:10px; width:min(100%, 640px)}
+.answers button{flex:1 1 140px; min-height:54px; border-radius:10px; border:2px solid var(--line-strong); background:var(--surface); font-weight:700; font-size:18px; padding:8px 14px}
+.answers button:hover:not(:disabled){border-color:var(--pt)}
+.answers button.right{background:var(--good); border-color:var(--good); color:#fff}
+.answers button.wrong{background:var(--bad); border-color:var(--bad); color:#fff}
+.answers button:disabled{cursor:default}
+.why{min-height:1.5em; font-size:17px; font-weight:700; text-align:center}
+.why.ok{color:var(--good)} .why.no{color:var(--bad)}
+.score{font-family:var(--font-display); font-weight:800; font-size:clamp(34px, 5vw, 56px)}
+.stars{font-size:40px; letter-spacing:6px; color:var(--sun)}
+@media (prefers-reduced-motion: reduce){ *{transition:none !important} }
+</style>
+
+<div id="app">
+  <header class="topbar">
+    <div class="brand">
+      <a class="main-btn" href="index.html"><span aria-hidden="true">←</span> Return to Main Page</a>
+      <h1>Weather and Climate</h1>
+    </div>
+    <div class="top-right">
+      <div class="mode" role="radiogroup" aria-label="Scene">
+        <button type="button" data-scene="fronts" role="radio" aria-checked="true">Fronts</button>
+        <button type="button" data-scene="water" role="radio" aria-checked="false">Water Cycle</button>
+        <button type="button" data-scene="climate" role="radio" aria-checked="false">Climate</button>
+        <button type="button" data-scene="practice" role="radio" aria-checked="false">Practice</button>
+      </div>
+      <div class="guide-wrap">
+        <button type="button" id="guideBtn" class="btn-outline" aria-expanded="false" aria-controls="guidePop">Guide</button>
+        <div id="guidePop" class="pop" hidden>
+          <h2>How to use this</h2>
+          <ol id="guideList"></ol>
+          <p class="tip" id="guideTip"></p>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <section class="panel controls" id="frontsCtl" aria-label="Front controls">
+    <div class="ctl seg-ctl">
+      <div class="ctl-top"><span class="lab" id="frontLab">Front</span></div>
+      <div class="seg" role="radiogroup" aria-labelledby="frontLab">
+        <button type="button" data-front="cold" role="radio" aria-checked="true">
+          <svg width="34" height="14" viewBox="0 0 34 14" aria-hidden="true"><path d="M1 12H33" style="stroke:var(--cold); stroke-width:2.5"/><path d="M4 12L9 3L14 12ZM19 12L24 3L29 12Z" style="fill:var(--cold)"/></svg>Cold front</button>
+        <button type="button" data-front="warm" role="radio" aria-checked="false">
+          <svg width="34" height="14" viewBox="0 0 34 14" aria-hidden="true"><path d="M1 12H33" style="stroke:var(--warm); stroke-width:2.5"/><path d="M4 12A5 5 0 0 1 14 12ZM19 12A5 5 0 0 1 29 12Z" style="fill:var(--warm)"/></svg>Warm front</button>
+      </div>
+    </div>
+    <div class="ctl seg-ctl">
+      <div class="ctl-top"><span class="lab" id="humidLab">Warm air</span></div>
+      <div class="seg" role="radiogroup" aria-labelledby="humidLab">
+        <button type="button" data-humid="1" role="radio" aria-checked="true">Humid</button>
+        <button type="button" data-humid="0" role="radio" aria-checked="false">Dry</button>
+      </div>
+    </div>
+    <div class="ctl go">
+      <button type="button" id="playBtn" class="btn-primary">Pause</button>
+    </div>
+  </section>
+
+  <section class="panel controls" id="waterCtl" aria-label="Water cycle controls" hidden>
+    <div class="ctl">
+      <div class="ctl-top"><label for="sun">Sun</label><output id="sunOut" for="sun"></output></div>
+      <input type="range" id="sun" min="0" max="1" step="0.01" value="0.6">
+      <div class="ends" aria-hidden="true"><span>Cold</span><span>Hot</span></div>
+    </div>
+    <div class="ctl go">
+      <button type="button" id="followBtn" class="btn-primary">Follow a drop</button>
+    </div>
+  </section>
+
+  <section class="panel controls" id="climateCtl" aria-label="Climate controls" hidden>
+    <div class="ctl">
+      <div class="ctl-top"><label for="ghg">Greenhouse gases</label><output id="ghgOut" for="ghg"></output></div>
+      <input type="range" id="ghg" min="280" max="1000" step="5" value="425">
+      <div class="ends" aria-hidden="true"><span>Less</span><span>More</span></div>
+    </div>
+    <div class="ctl seg-ctl">
+      <div class="ctl-top"><span class="lab" id="yearLab">Jump to</span></div>
+      <div class="seg" role="radiogroup" aria-labelledby="yearLab">
+        <button type="button" data-ppm="280" role="radio" aria-checked="false">1850</button>
+        <button type="button" data-ppm="425" role="radio" aria-checked="true">Today</button>
+        <button type="button" data-ppm="560" role="radio" aria-checked="false">Double</button>
+      </div>
+    </div>
+  </section>
+
+  <main class="layout" id="layout">
+    <section class="panel stage" id="stage">
+      <div class="badge" id="badge" aria-live="polite"><span class="b-main" id="bMain"></span><span class="b-sub" id="bSub"></span></div>
+      <canvas id="cv" aria-label="Weather picture"></canvas>
+    </section>
+    <section class="panel effects" id="effects" aria-label="What changes" hidden>
+      <div class="ecard">
+        <svg viewBox="0 0 120 84" aria-hidden="true">
+          <circle cx="60" cy="42" r="38" style="fill:var(--sea)"/>
+          <path id="iceShape" style="fill:var(--snow); stroke:var(--cloud-dk); stroke-width:1"/>
+        </svg>
+        <div class="e-txt"><span class="e-name">Arctic ice</span><span class="chip" id="iceChip"></span></div>
+      </div>
+      <div class="ecard">
+        <svg viewBox="0 0 120 84" aria-hidden="true">
+          <rect x="0" y="0" width="120" height="84" style="fill:var(--sky2)"/>
+          <rect id="seaRect" x="0" y="56" width="120" height="28" style="fill:var(--sea)"/>
+          <path d="M44 84L76 40H120V84Z" style="fill:var(--ground)"/>
+          <rect x="84" y="26" width="20" height="14" style="fill:var(--house)"/>
+          <path d="M81 27L94 16L107 27Z" style="fill:var(--warm)"/>
+          <path d="M2 56H40" style="stroke:var(--ink); stroke-width:1.5; stroke-dasharray:3 3"/>
+        </svg>
+        <div class="e-txt"><span class="e-name">Sea level</span><span class="chip" id="seaChip"></span></div>
+      </div>
+      <div class="ecard">
+        <svg viewBox="0 0 120 84" aria-hidden="true" id="hotSvg"></svg>
+        <div class="e-txt"><span class="e-name">Hot days</span><span class="chip" id="hotChip"></span></div>
+      </div>
+    </section>
+    <section class="panel practice" id="practice" aria-label="Practice" hidden></section>
+  </main>
+</div>
+
+<script>
+/* =========================================================
+   STATE AND HELPERS
+   ========================================================= */
+const S = {
+  scene:'fronts',
+  front:'cold', humid:true, playing:true, ft:0, townT:20,
+  sun:0.6,
+  ghg:425,
+};
+const $ = id => document.getElementById(id);
+const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+const lerp = (a, b, t) => a + (b - a) * t;
+const rand = (a, b) => a + Math.random() * (b - a);
+const RND = Array.from({length:240}, () => Math.random());
+let TT = 0;   // seconds since the page opened
+
+let C = {};
+function readColors(){
+  const cs = getComputedStyle(document.documentElement);
+  for (const k of ['ink','muted','surface','cold','warm','sun','ir','sky1','sky2','space','ground','soil','rock','sea','cloud','cloud-dk','rain','vap','snow','ghg','house'])
+    C[k] = cs.getPropertyValue('--' + k).trim();
+}
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', readColors);
+
+/* =========================================================
+   CANVAS: every scene is drawn in a 1000 × 560 picture, scaled to fit.
+   L, R, T, B are the picture's edges after padding, so skies and ground fill the whole panel.
+   ========================================================= */
+const VW = 1000, VH = 560;
+const cv = $('cv'), ctx = cv.getContext('2d');
+let DPR = 1, VS = 1, L = 0, R = VW, T = 0, B = VH;
+function resize(){
+  const r = $('stage').getBoundingClientRect();
+  if (!r.width || !r.height) return;
+  DPR = window.devicePixelRatio || 1;
+  cv.width = Math.round(r.width * DPR); cv.height = Math.round(r.height * DPR);
+  VS = Math.min(r.width / VW, r.height / VH);
+  const px = (r.width / VS - VW) / 2, py = (r.height / VS - VH) / 2;
+  L = -px; R = VW + px; T = -py; B = VH + py;
+}
+new ResizeObserver(resize).observe($('stage'));
+function setView(){ ctx.setTransform(DPR * VS, 0, 0, DPR * VS, DPR * VS * -L, DPR * VS * -T); }
+
+function skyFill(top, bottom, yTop = T, yBot = B){
+  const g = ctx.createLinearGradient(0, yTop, 0, yBot);
+  g.addColorStop(0, top); g.addColorStop(1, bottom);
+  ctx.fillStyle = g; ctx.fillRect(L, yTop, R - L, yBot - yTop);
+}
+// Text with a halo so it reads on any background.
+function label(text, x, y, {size = 24, color = C.ink, align = 'center', weight = 700, halo = C.surface} = {}){
+  ctx.font = `${weight} ${size}px 'Atkinson Hyperlegible', system-ui, sans-serif`;
+  ctx.textAlign = align; ctx.textBaseline = 'middle';
+  ctx.lineJoin = 'round'; ctx.lineWidth = size * 0.28; ctx.strokeStyle = halo; ctx.strokeText(text, x, y);
+  ctx.fillStyle = color; ctx.fillText(text, x, y);
+}
+// A chip label (filled rounded box), used for the water cycle steps.
+function chipLabel(text, x, y, on, color){
+  ctx.font = `700 21px 'Atkinson Hyperlegible', system-ui, sans-serif`;
+  const w = ctx.measureText(text).width + 22, h = 32;
+  ctx.beginPath(); ctx.roundRect(x - w / 2, y - h / 2, w, h, 16);
+  ctx.fillStyle = on ? color : C.surface; ctx.globalAlpha = on ? 1 : 0.88; ctx.fill(); ctx.globalAlpha = 1;
+  ctx.lineWidth = on ? 0 : 1.5; ctx.strokeStyle = color; if (!on) ctx.stroke();
+  ctx.fillStyle = on ? '#fff' : C.ink; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(text, x, y + 1);
+}
+// A cloud with a flat base: bottom row of puffs at y, a top row above.
+function puff(x, y, w, h, fill, alpha = 1){
+  const r1 = h * 0.4, r2 = h * 0.5, n = Math.max(2, Math.round(w / (h * 0.8)));
+  const x0 = x - w / 2 + r1, step = (w - 2 * r1) / (n - 1);
+  ctx.save(); ctx.globalAlpha = alpha; ctx.fillStyle = fill; ctx.beginPath();
+  for (let i = 0; i < n; i++){ const cx = x0 + i * step; ctx.moveTo(cx + r1, y); ctx.arc(cx, y, r1, 0, Math.PI * 2); }
+  for (let i = 0; i < n - 1; i++){ const cx = x0 + (i + 0.5) * step; ctx.moveTo(cx + r2, y - h * 0.25); ctx.arc(cx, y - h * 0.25, r2, 0, Math.PI * 2); }
+  ctx.rect(x0, y, w - 2 * r1, r1);
+  ctx.fill(); ctx.restore();
+}
+// Falling streaks (rain) between x0 and x1, from yTop to yBot.
+function streaks(x0, x1, yTop, yBot, n, speed, len, color, width){
+  const H = yBot - yTop; if (H <= 0 || x1 <= x0) return;
+  ctx.strokeStyle = color; ctx.lineWidth = width; ctx.lineCap = 'round'; ctx.beginPath();
+  for (let i = 0; i < n; i++){
+    const x = x0 + RND[i % 240] * (x1 - x0), y = yTop + ((TT * speed + RND[(i * 7 + 3) % 240] * H) % H);
+    ctx.moveTo(x, y); ctx.lineTo(x - len * 0.15, Math.min(yBot, y + len));
+  }
+  ctx.stroke();
+}
+// A fat arrow from (x1,y1) to (x2,y2), optionally curved through (cx,cy).
+function arrow(x1, y1, x2, y2, color, width = 10, cx = null, cy = null, alpha = 1){
+  ctx.save(); ctx.globalAlpha = alpha; ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = width; ctx.lineCap = 'round';
+  const hx = cx ?? x1, hy = cy ?? y1;
+  const ang = Math.atan2(y2 - hy, x2 - hx), head = width * 2.2;
+  const ex = x2 - Math.cos(ang) * head * 0.8, ey = y2 - Math.sin(ang) * head * 0.8;
+  ctx.beginPath(); ctx.moveTo(x1, y1);
+  if (cx !== null) ctx.quadraticCurveTo(cx, cy, ex, ey); else ctx.lineTo(ex, ey);
+  ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - Math.cos(ang - 0.5) * head, y2 - Math.sin(ang - 0.5) * head);
+  ctx.lineTo(x2 - Math.cos(ang + 0.5) * head, y2 - Math.sin(ang + 0.5) * head);
+  ctx.closePath(); ctx.fill(); ctx.restore();
+}
+function thermometer(x, yTop, yBot, frac, color, text){
+  ctx.fillStyle = C.surface; ctx.strokeStyle = C.ink; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.roundRect(x - 10, yTop, 20, yBot - yTop, 10); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.arc(x, yBot + 10, 18, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = color;
+  ctx.beginPath(); ctx.arc(x, yBot + 10, 13, 0, Math.PI * 2); ctx.fill();
+  const h = (yBot - yTop - 8) * clamp(frac, 0, 1);
+  ctx.fillRect(x - 5, yBot - h, 10, h + 6);
+  label(text, x, yTop - 22, {size:26, color});
+}
+function house(x, gy, s = 1){
+  ctx.fillStyle = C.house; ctx.fillRect(x - 26 * s, gy - 36 * s, 52 * s, 36 * s);
+  ctx.fillStyle = C.warm; ctx.beginPath(); ctx.moveTo(x - 34 * s, gy - 34 * s); ctx.lineTo(x, gy - 62 * s); ctx.lineTo(x + 34 * s, gy - 34 * s); ctx.fill();
+  ctx.fillStyle = C.ink; ctx.fillRect(x - 6 * s, gy - 20 * s, 12 * s, 20 * s);
+}
+
+/* =========================================================
+   SCENE 1: AIR MASSES AND FRONTS (side view)
+   Cold air is dense: its particles are drawn closer together and it slides under warm air.
+   A cold front has a steep nose (tall storm clouds, short heavy rain).
+   A warm front has a gentle slope (layered clouds, long light rain).
+   ========================================================= */
+const GROUND = 470, TOPC = 230, TOWN = 860, FRONT_T = 18;
+const TEMP_COLD = 8, TEMP_WARM = 21;
+// Height of the top of the cold air at x (GROUND + 1 where there is no cold air).
+function coldTop(x, fx, cold){
+  if (cold){ if (x > fx) return GROUND + 1; return GROUND - (GROUND - TOPC) * (1 - Math.exp(-(fx - x) / 70)); }
+  if (x < fx) return GROUND + 1; return Math.max(TOPC - 20, GROUND - (x - fx) * 0.4);
+}
+function drawFronts(dt){
+  if (S.playing) S.ft += dt;
+  const cold = S.front === 'cold', humid = S.humid;
+  const t = clamp((S.ft % FRONT_T) / (FRONT_T - 2), 0, 1);
+  const fx = cold ? lerp(40, 1000, t) : lerp(-120, 940, t);
+  const top = x => coldTop(x, fx, cold);
+
+  skyFill(C.sky1, C.sky2, T, GROUND);
+  // Warm air tint everywhere, then the cold air wedge.
+  ctx.fillStyle = C.warm; ctx.globalAlpha = 0.10; ctx.fillRect(L, T, R - L, GROUND - T); ctx.globalAlpha = 1;
+  ctx.beginPath(); ctx.moveTo(L, GROUND);
+  for (let x = L; x <= R; x += 6) ctx.lineTo(x, Math.min(GROUND, top(x)));
+  ctx.lineTo(fx, GROUND); ctx.lineTo(R, GROUND); ctx.closePath();
+  ctx.fillStyle = C.cold; ctx.globalAlpha = 0.22; ctx.fill(); ctx.globalAlpha = 1;
+  ctx.beginPath();
+  for (let x = L, first = true; x <= R; x += 4){ const y = top(x); if (y > GROUND) { first = true; continue; } if (first){ ctx.moveTo(x, y); first = false; } else ctx.lineTo(x, y); }
+  ctx.strokeStyle = C.cold; ctx.lineWidth = 3; ctx.stroke();
+
+  // Particles: warm spread out and jiggling fast, cold packed close and slow.
+  const drift = cold ? fx : 0;
+  ctx.fillStyle = C.warm;
+  for (let gx = L - 40; gx < R + 40; gx += 38) for (let gy = 40; gy < GROUND - 8; gy += 38){
+    const i = ((gx * 7 + gy * 13) | 0) & 239;
+    const x = gx + 9 * Math.sin(TT * 5 + i), y = gy + 9 * Math.cos(TT * 4.3 + i * 1.7);
+    if (y < top(x) - 4){ ctx.beginPath(); ctx.arc(x, y, 3.4, 0, 7); ctx.fill(); }
+  }
+  ctx.fillStyle = C.cold;
+  for (let gx = L - 40 + (drift % 20); gx < R + 40; gx += 20) for (let gy = TOPC - 30; gy < GROUND - 4; gy += 20){
+    const i = ((gx * 3 + gy * 11) | 0) & 239;
+    const x = gx + 3 * Math.sin(TT * 2 + i), y = gy + 3 * Math.cos(TT * 1.7 + i);
+    if (y > top(x) + 4 && y < GROUND - 3){ ctx.beginPath(); ctx.arc(x, y, 3.4, 0, 7); ctx.fill(); }
+  }
+
+  // Warm air pushed up along the front.
+  if (cold) arrow(fx + 110, GROUND - 25, fx + 30, 320, C.warm, 9, fx + 50, GROUND - 40, 0.85);
+  else arrow(fx - 70, GROUND - 20, fx + 230, GROUND - 230 * 0.4 - 50, C.warm, 9, fx + 60, GROUND - 40, 0.85);
+
+  // Clouds and rain.
+  if (cold){
+    if (humid){
+      streaks(fx - 30, fx + 110, 300, GROUND, 70, 520, 26, C.rain, 3);
+      puff(fx + 50, 112, 260, 34, C.cloud);                          // anvil top
+      puff(fx + 40, 180, 130, 80, C.cloud);
+      puff(fx + 40, 240, 170, 80, C.cloud);
+      puff(fx + 40, 290, 200, 70, C['cloud-dk']);
+      const ph = TT % 2.7;
+      if (ph < 0.14){
+        ctx.strokeStyle = C.sun; ctx.lineWidth = 5; ctx.beginPath();
+        ctx.moveTo(fx + 30, 310); ctx.lineTo(fx + 10, 360); ctx.lineTo(fx + 34, 370); ctx.lineTo(fx + 8, GROUND); ctx.stroke();
+      }
+    } else puff(fx + 50, 270, 110, 40, C.cloud);
+  } else {
+    const yAt = x => Math.min(330, top(x) - 60);
+    if (humid){
+      for (let x = fx + 40; x < fx + 330; x += 20){
+        const yb = yAt(x) + 22;
+        ctx.strokeStyle = C.rain; ctx.lineWidth = 2; ctx.beginPath();
+        for (let k = 0; k < 3; k++){
+          const i = ((x * 3 + k * 71) | 0) & 239, H = GROUND - yb;
+          const y = yb + ((TT * 260 + RND[i] * H) % H);
+          ctx.moveTo(x + RND[(i + 5) % 240] * 18, y); ctx.lineTo(x + RND[(i + 5) % 240] * 18 - 2, Math.min(GROUND, y + 14));
+        }
+        ctx.stroke();
+      }
+      for (let x = fx + 40; x < fx + 340; x += 50) puff(x + 25, yAt(x + 25), 90, 36, C['cloud-dk']);
+      for (let x = fx + 340; x < fx + 540; x += 60) puff(x + 30, yAt(x + 30) - 10, 100, 26, C.cloud, 0.95);
+    } else {
+      for (let x = fx + 300; x < fx + 500; x += 70) puff(x + 30, yAt(x + 30) - 20, 90, 18, C.cloud, 0.8);
+    }
+    ctx.strokeStyle = C.cloud; ctx.lineWidth = 3; ctx.lineCap = 'round';
+    for (let k = 0; k < 4; k++){ const x = fx + 560 + k * 45; ctx.beginPath(); ctx.moveTo(x, 120 + k * 6); ctx.quadraticCurveTo(x + 20, 112 + k * 6, x + 40, 104 + k * 6); ctx.stroke(); }
+  }
+
+  // Ground, town and its thermometer.
+  ctx.fillStyle = C.ground; ctx.fillRect(L, GROUND, R - L, 12);
+  ctx.fillStyle = C.soil; ctx.fillRect(L, GROUND + 12, R - L, B - GROUND - 12);
+  house(TOWN, GROUND);
+  const inCold = top(TOWN) < GROUND - 2;
+  S.townT += ((inCold ? TEMP_COLD : TEMP_WARM) - S.townT) * Math.min(1, dt * 1.2);
+  thermometer(TOWN + 70, 360, 444, S.townT / 30, inCold ? C.cold : C.warm, `${Math.round(S.townT)} °C`);
+
+  // Air mass names, kept clear of the town.
+  if (cold){
+    if (fx - L > 200) label('Cold air', clamp(fx - 190, L + 80, 720), GROUND - 50, {color:C.cold, size:28});
+    if (fx - L > 260) arrow(clamp(fx - 280, L + 20, 700), GROUND - 95, clamp(fx - 120, L + 160, 840), GROUND - 95, C.cold, 9);
+    label('Warm air', clamp(fx + 280, 160, 700), 150, {color:C.warm, size:28});
+  } else {
+    if (R - fx > 300) label('Cold air', clamp(fx + 220, 160, 720), GROUND - 40, {color:C.cold, size:28});
+    label('Warm air', clamp(fx - 160, 130, 760), fx < 300 ? 160 : GROUND - 70, {color:C.warm, size:28});
+    if (fx - L > 220) arrow(clamp(fx - 250, L + 20, 700), GROUND - 120, clamp(fx - 100, L + 160, 840), GROUND - 120, C.warm, 9);
+  }
+  return {inCold};
+}
+const FRONT_SYM = {
+  cold:`<svg width="52" height="18" viewBox="0 0 52 18" aria-hidden="true"><path d="M1 16H51" style="stroke:var(--cold); stroke-width:3"/><path d="M4 16L11 4L18 16ZM20 16L27 4L34 16ZM36 16L43 4L50 16Z" style="fill:var(--cold)"/></svg>`,
+  warm:`<svg width="52" height="18" viewBox="0 0 52 18" aria-hidden="true"><path d="M1 16H51" style="stroke:var(--warm); stroke-width:3"/><path d="M4 16A7 7 0 0 1 18 16ZM20 16A7 7 0 0 1 34 16ZM36 16A7 7 0 0 1 50 16Z" style="fill:var(--warm)"/></svg>`,
+};
+function frontsBadge(){
+  const cold = S.front === 'cold';
+  const rain = !S.humid ? (cold ? 'Few clouds' : 'Thin clouds') : (cold ? 'Storms, short heavy rain' : 'Long, light rain');
+  const after = cold ? '<span class="chip" style="color:var(--cold)">Cooler after ↓</span>' : '<span class="chip" style="color:var(--warm)">Warmer after ↑</span>';
+  return {cls:cold ? 'cold' : 'warm', main:`${cold ? 'Cold front' : 'Warm front'} ${FRONT_SYM[S.front]}`, sub:`<span class="chip">${rain}</span>${after}`};
+}
+
+/* =========================================================
+   SCENE 2: WATER CYCLE
+   Each dot is a bit of water. The Sun slider sets how fast the sea evaporates and how warm it is:
+   cold = snow on the mountain, hot = the snow melts into the river.
+   ========================================================= */
+const SEA_Y = 400;
+const LAND = [[-600, 520], [300, 520], [345, 404], [430, 392], [640, 372], [800, 150], [930, 340], [1600, 360]];
+const RIVER = [[792, 190], [745, 280], [690, 345], [600, 368], [480, 384], [400, 396], [330, 404]];
+const TREES = [470, 520, 570, 618];
+const STEP_COL = {Evaporation:'#c2571a', Transpiration:'#1f7a5a', Condensation:'#6b7785', Precipitation:'#2563d6', Runoff:'#0f6fa8', Groundwater:'#7a3fb8', Snow:'#4a5868', Ocean:'#0f6fa8'};
+function landY(x){
+  for (let i = 1; i < LAND.length; i++) if (x <= LAND[i][0]){ const [x0, y0] = LAND[i - 1], [x1, y1] = LAND[i]; return y0 + (y1 - y0) * (x - x0) / (x1 - x0); }
+  return LAND[LAND.length - 1][1];
+}
+const W = {P:[], clouds:[], snow:0, evapAcc:0, trAcc:0, meltAcc:0, pulse:{}, follow:null, path:[], snowHi:false};
+function pulse(step, p){ W.pulse[step] = 1; if (p && p.hi) addPath(step); }
+function addPath(step){ if (W.path[W.path.length - 1] !== step) W.path.push(step); }
+function spawnVapour(x, y, from){ const p = {x, y, st:'vap', vx:0, vy:-(34 + 30 * S.sun), ph:rand(0, 6), hi:false}; W.P.push(p); pulse(from, p); return p; }
+function nearestCloud(x){
+  let best = null, bd = 1e9;
+  for (const c of W.clouds) if (!c.dying){ const d = Math.abs(c.x - x); if (d < bd){ bd = d; best = c; } }
+  if (!best || bd > 230){ if (W.clouds.length >= 5) return best; best = {x:clamp(x, 140, 640), y:rand(120, 150), w:0, rainAcc:0, hi:false, dying:false, a:1}; W.clouds.push(best); }
+  return best;
+}
+function startRun(x, y, p){ p.st = 'run'; p.x = x; p.y = y; p.seg = -1; pulse('Runoff', p); }
+function stepWater(dt){
+  const sun = S.sun, snowing = sun < 0.35;
+  if (W.P.length < 360){
+    W.evapAcc += dt * (1.5 + 14 * sun);
+    while (W.evapAcc >= 1){ W.evapAcc--; spawnVapour(rand(10, 330), SEA_Y, 'Evaporation'); }
+    W.trAcc += dt * (0.3 + 2.5 * sun);
+    while (W.trAcc >= 1){ W.trAcc--; const tx = TREES[(Math.random() * TREES.length) | 0]; spawnVapour(tx + rand(-14, 14), landY(tx) - 56, 'Transpiration'); }
+  }
+  if (W.snow > 0 && sun > 0.45){
+    W.meltAcc += dt * (sun - 0.45) * 9;
+    while (W.meltAcc >= 1 && W.snow > 0){
+      W.meltAcc--; W.snow--;
+      const p = {hi:false}; if (W.snowHi){ p.hi = true; W.snowHi = false; W.follow = p; } W.P.push(p); startRun(rand(770, 815), rand(160, 200), p);
+    }
+  }
+  for (const c of W.clouds){
+    c.x += dt * (c.x > 690 ? 10 : 26);
+    if (c.x > 430 && c.w > 0){
+      c.rainAcc += dt * (1.5 + (c.x > 640 ? 5 : 0) + c.w * 0.12);
+      while (c.rainAcc >= 1 && c.w > 0){
+        c.rainAcc--; c.w--;
+        const rr = 30 + 7 * Math.sqrt(c.w + 1);
+        const x = c.x + rand(-rr, rr), snow = snowing && x > 560;
+        const p = {x, y:c.y + 14, st:snow ? 'snowfall' : 'rain', vy:snow ? 60 : 230, ph:rand(0, 6), hi:false};
+        if (c.hi){ p.hi = true; c.hi = false; W.follow = p; }
+        W.P.push(p); pulse('Precipitation', p);
+      }
+    }
+    if ((c.x > 430 && c.w === 0) || c.x > 960) c.dying = true;
+    if (c.dying) c.a -= dt * 0.8;
+  }
+  W.clouds = W.clouds.filter(c => c.a > 0);
+  for (const p of W.P){
+    if (p.st === 'vap'){
+      p.y += p.vy * dt; p.x += Math.sin(TT * 3 + p.ph) * 12 * dt;
+      if (p.y < 175){ p.st = 'join'; p.cloud = nearestCloud(p.x); if (!p.cloud) p.dead = true; }
+    } else if (p.st === 'join'){
+      const c = p.cloud, dx = c.x - p.x, dy = c.y - p.y, d = Math.hypot(dx, dy) || 1;
+      p.x += dx / d * 120 * dt; p.y += dy / d * 120 * dt;
+      if (d < 16 || c.dying){ p.dead = true; if (!c.dying){ c.w++; if (p.hi){ c.hi = true; addPath('Condensation'); } W.pulse.Condensation = 1; } else if (p.hi) W.follow = null; }
+    } else if (p.st === 'rain' || p.st === 'snowfall'){
+      p.y += p.vy * dt; if (p.st === 'snowfall') p.x += Math.sin(TT * 2 + p.ph) * 20 * dt;
+      const gy = p.x < 345 ? SEA_Y : landY(p.x);
+      if (p.y >= gy){
+        if (p.x < 345){ p.dead = true; if (p.hi) addPath('Ocean'); }
+        else if (p.st === 'snowfall'){ p.dead = true; W.snow++; if (p.hi){ W.snowHi = true; addPath('Snow'); } W.pulse.Snow = 1; }
+        else if (Math.random() < 0.55) startRun(p.x, gy, p);
+        else { p.st = 'soak'; pulse('Groundwater', p); }
+      }
+    } else if (p.st === 'run'){
+      if (p.seg < 0){
+        let bi = 0, bd = 1e9; RIVER.forEach(([x, y], i) => { const d = Math.hypot(x - p.x, y - p.y); if (d < bd){ bd = d; bi = i; } });
+        p.seg = bi;
+      }
+      const [tx, ty] = RIVER[p.seg], dx = tx - p.x, dy = ty - p.y, d = Math.hypot(dx, dy);
+      if (d < 6){ p.seg++; if (p.seg >= RIVER.length){ p.dead = true; pulse('Ocean', p); } }
+      else { p.x += dx / d * 110 * dt; p.y += dy / d * 110 * dt; }
+    } else if (p.st === 'soak'){
+      p.y += 40 * dt; if (p.y > 474){ p.y = 474; p.st = 'gw'; }
+    } else if (p.st === 'gw'){
+      p.x -= 45 * dt; p.y = 474 + Math.sin(p.x * 0.05) * 3;
+      if (p.x < 330){ p.dead = true; pulse('Ocean', p); }
+    }
+    if (p.dead && p.hi && W.follow === p && !W.snowHi && !W.clouds.some(c => c.hi)) W.follow = null;
+  }
+  W.P = W.P.filter(p => !p.dead);
+  for (const k in W.pulse) W.pulse[k] = Math.max(0, W.pulse[k] - dt * 1.6);
+}
+function drawWater(dt){
+  stepWater(dt);
+  const sun = S.sun;
+  skyFill(C.sky1, C.sky2, T, SEA_Y);
+  // Sun: bigger and brighter when hotter.
+  const sr = 30 + 22 * sun;
+  ctx.fillStyle = C.sun; ctx.globalAlpha = 0.25 + 0.3 * sun; ctx.beginPath(); ctx.arc(940, 70, sr * 1.6, 0, 7); ctx.fill();
+  ctx.globalAlpha = 1; ctx.beginPath(); ctx.arc(940, 70, sr, 0, 7); ctx.fill();
+  // Sea
+  ctx.fillStyle = C.sea; ctx.fillRect(L, SEA_Y, 400 - L, B - SEA_Y);
+  // Land, groundwater band, snow cap
+  ctx.beginPath(); ctx.moveTo(LAND[0][0], B);
+  for (const [x, y] of LAND) ctx.lineTo(x, y);
+  ctx.lineTo(R + 600, B); ctx.closePath();
+  ctx.save(); ctx.clip();
+  ctx.fillStyle = C.soil; ctx.fillRect(L, 0, R - L + 600, B);
+  ctx.fillStyle = C.rock; ctx.beginPath(); ctx.moveTo(640, 372); ctx.lineTo(800, 150); ctx.lineTo(930, 340); ctx.lineTo(880, 420); ctx.lineTo(700, 420); ctx.fill();
+  ctx.fillStyle = C.sea; ctx.globalAlpha = 0.45; ctx.fillRect(L, 456, R - L + 600, 36); ctx.globalAlpha = 1;
+  ctx.restore();
+  ctx.strokeStyle = C.ground; ctx.lineWidth = 10; ctx.lineCap = 'round'; ctx.beginPath();
+  ctx.moveTo(345, 404); ctx.lineTo(430, 392); ctx.lineTo(640, 372); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(930, 340); ctx.lineTo(R + 600, 360); ctx.stroke();
+  if (W.snow > 0){
+    const s = clamp(Math.sqrt(W.snow) * 9, 10, 95);
+    ctx.fillStyle = C.snow; ctx.strokeStyle = C['cloud-dk']; ctx.lineWidth = 1.5; ctx.beginPath();
+    ctx.moveTo(800, 150); ctx.lineTo(800 - s * 0.72, 150 + s); ctx.lineTo(800 - s * 0.3, 150 + s * 0.85); ctx.lineTo(800, 150 + s * 1.05); ctx.lineTo(800 + s * 0.4, 150 + s * 0.85); ctx.lineTo(800 + s * 0.68, 150 + s); ctx.closePath(); ctx.fill(); ctx.stroke();
+  }
+  // River
+  ctx.strokeStyle = C.sea; ctx.lineWidth = 7; ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.beginPath();
+  RIVER.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.stroke();
+  // Trees
+  for (const x of TREES){ const g = landY(x); ctx.fillStyle = C.soil; ctx.fillRect(x - 4, g - 26, 8, 26); ctx.fillStyle = '#2f7d3a'; ctx.beginPath(); ctx.arc(x, g - 40, 20, 0, 7); ctx.fill(); }
+  // Ground arrows: under-ground flow back to the sea
+  ctx.strokeStyle = C.ink; ctx.globalAlpha = 0.35; ctx.lineWidth = 2; ctx.setLineDash([8, 8]); ctx.lineDashOffset = TT * 20;
+  ctx.beginPath(); ctx.moveTo(900, 486); ctx.lineTo(350, 486); ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha = 1;
+  // Wind
+  arrow(440, 60, 580, 60, C.muted, 5, null, null, 0.5);
+  // Clouds: grey when full and ready to rain.
+  for (const c of W.clouds){
+    const r = 30 + 7 * Math.sqrt(c.w), full = clamp(c.w / 25, 0, 1);
+    puff(c.x, c.y, r * 2.4, r * 0.9, full > 0.5 ? C['cloud-dk'] : C.cloud, c.a * (0.55 + 0.45 * clamp(c.w / 6, 0, 1)));
+    if (c.hi){ ctx.strokeStyle = C.ink; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(c.x, c.y - 6, 14, 0, 7); ctx.stroke(); }
+  }
+  // Water dots
+  for (const p of W.P){
+    if (p.st === 'vap' || p.st === 'join'){ ctx.fillStyle = C.vap; ctx.globalAlpha = 0.55; ctx.beginPath(); ctx.arc(p.x, p.y, 3.5, 0, 7); ctx.fill(); ctx.globalAlpha = 1; }
+    else if (p.st === 'snowfall'){ ctx.fillStyle = C.snow; ctx.strokeStyle = C['cloud-dk']; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(p.x, p.y, 4.5, 0, 7); ctx.fill(); ctx.stroke(); }
+    else if (p.st === 'rain'){ ctx.strokeStyle = C.rain; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(p.x, p.y - 10); ctx.lineTo(p.x, p.y); ctx.stroke(); }
+    else { ctx.fillStyle = C.rain; ctx.beginPath(); ctx.arc(p.x, p.y, 3.5, 0, 7); ctx.fill(); }
+  }
+  // The followed drop: big, outlined, with a trail.
+  const f = W.follow;
+  if (f && !f.dead){
+    f.trail = f.trail || []; f.trail.push([f.x, f.y]); if (f.trail.length > 50) f.trail.shift();
+    ctx.strokeStyle = C.ink; ctx.globalAlpha = 0.5; ctx.lineWidth = 3; ctx.beginPath(); f.trail.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.stroke(); ctx.globalAlpha = 1;
+    ctx.fillStyle = C.vap; ctx.strokeStyle = C.ink; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(f.x, f.y, 9, 0, 7); ctx.fill(); ctx.stroke();
+  }
+  if (W.snowHi){ ctx.strokeStyle = C.ink; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(800, 185, 16, 0, 7); ctx.stroke(); }
+  // Step labels: light up when water moves through that step.
+  const cur = W.path[W.path.length - 1];
+  const steps = [['Evaporation', 190, 340], ['Transpiration', 545, 270], ['Condensation', 300, 205], ['Precipitation', 640, 225], ['Runoff', 520, 420], ['Groundwater', 640, 510]];
+  for (const [s, x, y] of steps) chipLabel(s, x, y, (W.pulse[s] || 0) > 0.5 || (W.follow && cur === s), STEP_COL[s]);
+  if (W.snow > 0) chipLabel('Snow', 895, 215, (W.pulse.Snow || 0) > 0.5 || (W.snowHi), STEP_COL.Snow);
+}
+function waterBadge(){
+  if (!W.path.length) return null;
+  const done = !W.follow && !W.snowHi && !W.clouds.some(c => c.hi);
+  const chips = W.path.map((s, i) => `<span class="chip${!done && i === W.path.length - 1 ? ' now' : ''}">${s}</span>`).join('<span class="arr" aria-hidden="true">→</span>');
+  return {cls:'', main:done ? 'Back in the ocean' : 'Follow the drop', sub:chips};
+}
+
+/* =========================================================
+   SCENE 3: CLIMATE ("what changes if")
+   Sunlight (yellow) passes through the air and warms the ground. The ground sends heat (red) back up.
+   Greenhouse gases send some heat back down, so heat stays longer near the ground.
+   Model: about 2 °C of warming per doubling of CO₂ (warming seen within decades), starting at 13.8 °C in 1850.
+   ========================================================= */
+const BASE_T = 13.8, PER_DOUBLE = 2.0, SURF = 470;
+const dT = () => PER_DOUBLE * Math.log2(S.ghg / 280);
+const bounceP = () => clamp(0.3 + 0.28 * Math.log2(S.ghg / 280), 0.2, 0.85);
+const MOL = Array.from({length:90}, (_, i) => [rand(20, 980), rand(150, 245), rand(0, 6)]);
+const K = {P:[], sunAcc:0};
+function stepClimate(dt){
+  K.sunAcc += dt * 7;
+  while (K.sunAcc >= 1){ K.sunAcc--; const tx = rand(140, 860); K.P.push({kind:'sun', x:rand(890, 950), y:rand(50, 100), tx, ty:SURF}); }
+  for (const p of K.P){
+    if (p.kind === 'sun'){
+      const dx = p.tx - p.x, dy = p.ty - p.y, d = Math.hypot(dx, dy);
+      if (d < 8){ p.dead = true; if (K.P.length < 420) K.P.push({kind:'ir', x:p.tx, y:SURF - 4, vx:rand(-25, 25), vy:-130, ly:rand(150, 245), ph:rand(0, 6), decided:false}); }
+      else { p.x += dx / d * 300 * dt; p.y += dy / d * 300 * dt; }
+    } else {
+      p.x += p.vx * dt; p.y += p.vy * dt;
+      if (p.vy < 0 && !p.decided && p.y < p.ly){ p.decided = true; if (Math.random() < bounceP()){ p.vy = 130; p.flash = 0.3; } }
+      if (p.vy > 0 && p.y > SURF - 4){ p.vy = -130; p.decided = false; p.ly = rand(150, 245); p.vx = rand(-25, 25); }
+      if (p.x < L - 20 || p.x > R + 20) p.vx = -p.vx;
+      if (p.y < T - 20) p.dead = true;
+      if (p.flash) p.flash = Math.max(0, p.flash - dt);
+    }
+  }
+  K.P = K.P.filter(p => !p.dead);
+}
+function drawClimate(dt){
+  stepClimate(dt);
+  const warm = dT();
+  skyFill(C.space, C.sky1, T, SURF);
+  // Greenhouse gas layer
+  ctx.fillStyle = C.ghg; ctx.globalAlpha = 0.08 + 0.12 * clamp((S.ghg - 280) / 720, 0, 1); ctx.fillRect(L, 140, R - L, 110); ctx.globalAlpha = 1;
+  const n = Math.round(S.ghg / 12);
+  ctx.fillStyle = C.ghg;
+  for (let i = 0; i < n && i < MOL.length; i++){ const [x, y, ph] = MOL[i]; ctx.beginPath(); ctx.arc(x + 4 * Math.sin(TT + ph), y + 3 * Math.cos(TT * 1.3 + ph), 4.5, 0, 7); ctx.fill(); }
+  label('Greenhouse gases', 480, 132, {color:C.ghg, size:24});
+  // Sun
+  ctx.fillStyle = C.sun; ctx.beginPath(); ctx.arc(930, 60, 42, 0, 7); ctx.fill();
+  // Ground: sea on the left, land on the right; glows warmer as the temperature rises.
+  ctx.fillStyle = C.sea; ctx.fillRect(L, SURF, 400 - L, B - SURF);
+  ctx.fillStyle = C.ground; ctx.fillRect(400, SURF, R - 400, B - SURF);
+  ctx.fillStyle = C.ir; ctx.globalAlpha = clamp(warm * 0.07, 0, 0.35); ctx.fillRect(L, SURF, R - L, B - SURF); ctx.globalAlpha = 1;
+  house(560, SURF, 0.9); house(650, SURF, 0.7);
+  // Packets
+  for (const p of K.P){
+    if (p.kind === 'sun'){
+      const dx = p.tx - p.x, dy = p.ty - p.y, d = Math.hypot(dx, dy) || 1;
+      ctx.strokeStyle = C.sun; ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(p.x - dx / d * 22, p.y - dy / d * 22); ctx.lineTo(p.x, p.y); ctx.stroke();
+    } else {
+      ctx.strokeStyle = C.ir; ctx.lineWidth = 3; ctx.beginPath();
+      const dir = Math.sign(p.vy);
+      for (let k = 0; k <= 8; k++){ const yy = p.y - dir * k * 3, xx = p.x + 4 * Math.sin(k * 1.2 + p.ph + TT * 10); k ? ctx.lineTo(xx, yy) : ctx.moveTo(xx, yy); }
+      ctx.stroke();
+      if (p.flash){ ctx.fillStyle = C.ir; ctx.globalAlpha = p.flash * 2; ctx.beginPath(); ctx.arc(p.x, p.y, 9, 0, 7); ctx.fill(); ctx.globalAlpha = 1; }
+    }
+  }
+  label('Sunlight', 800, 110, {color:C.sun, size:24});
+  label('Heat', 300, 330, {color:C.ir, size:24});
+  const temp = BASE_T + warm;
+  thermometer(70, 340, 440, (temp - 12) / 7, C.ir, `${temp.toFixed(1)} °C`);
+  return {warm, temp};
+}
+function climateBadge(){
+  const w = dT();
+  const main = w < 0.05 ? 'Like 1850' : `+${w.toFixed(1)} °C warmer`;
+  return {cls:w < 0.05 ? '' : 'heat', main, sub:`<span class="chip">than in 1850</span>`};
+}
+function syncEffects(){
+  const w = dT();
+  const f = clamp(1 - w / 3.8, 0.06, 1);
+  const pts = [];
+  for (let i = 0; i < 14; i++){ const a = i / 14 * Math.PI * 2, r = (0.85 + 0.15 * Math.sin(i * 2.7)) * 34 * f; pts.push(`${(60 + Math.cos(a) * r).toFixed(1)},${(42 + Math.sin(a) * r * 0.9).toFixed(1)}`); }
+  $('iceShape').setAttribute('d', 'M' + pts.join('L') + 'Z');
+  const sy = 56 - w * 7; $('seaRect').setAttribute('y', sy.toFixed(1)); $('seaRect').setAttribute('height', (84 - sy).toFixed(1));
+  const hot = clamp(Math.round(1 + 2 * w), 1, 10);
+  let h = '';
+  for (let i = 0; i < 10; i++){ const x = 6 + (i % 5) * 22, y = 10 + Math.floor(i / 5) * 36; h += `<rect x="${x}" y="${y}" width="18" height="28" rx="3" style="fill:${i < hot ? 'var(--ir)' : 'var(--surface-2)'}; stroke:var(--line-strong)"/>`; }
+  $('hotSvg').innerHTML = h;
+  const chip = (id, txt, cls) => { const e = $(id); e.textContent = txt; e.className = 'chip ' + cls; };
+  if (w < 0.1){ chip('iceChip', 'Same', ''); chip('seaChip', 'Same', ''); chip('hotChip', 'Same', ''); }
+  else {
+    const big = w > 1.6;
+    chip('iceChip', big ? 'Much less ↓' : 'Less ↓', 'down');
+    chip('seaChip', big ? 'Much higher ↑' : 'Higher ↑', 'up');
+    chip('hotChip', big ? 'Many more ↑' : 'More ↑', 'up');
+  }
+}
+
+/* =========================================================
+   SCENE 4: PRACTICE (six picture questions per round)
+   ========================================================= */
+const shuffle = a => { for (let i = a.length - 1; i > 0; i--){ const j = (Math.random() * (i + 1)) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const pick = a => a[(Math.random() * a.length) | 0];
+const svgWrap = body => `<svg viewBox="0 0 400 210" aria-hidden="true">${body}</svg>`;
+const SKY = `<rect width="400" height="210" style="fill:var(--sky2)"/>`;
+const GRD = `<rect y="180" width="400" height="30" style="fill:var(--ground)"/>`;
+function svgCloud(x, y, w, h, dark){ const f = dark ? 'var(--cloud-dk)' : 'var(--cloud)'; let s = ''; const n = Math.max(2, Math.round(w / h)); for (let i = 0; i < n; i++) s += `<circle cx="${x - w / 2 + h / 2 + i * (w - h) / Math.max(1, n - 1)}" cy="${y}" r="${h / 2}" style="fill:${f}"/>`; return s + `<rect x="${x - w / 2 + h / 2}" y="${y - h / 4}" width="${w - h}" height="${h * 0.75}" style="fill:${f}"/>`; }
+function svgFront(cold){
+  let s = SKY + `<rect width="400" height="180" style="fill:var(--warm); fill-opacity:.12"/>`;
+  if (cold){
+    s += `<path d="M0 180V80C110 80 170 90 200 180Z" style="fill:var(--cold); fill-opacity:.3; stroke:var(--cold); stroke-width:2.5"/>`;
+    s += svgCloud(225, 60, 70, 34, false) + svgCloud(228, 95, 80, 36, false) + svgCloud(230, 128, 90, 30, true);
+    s += `<g style="stroke:var(--rain); stroke-width:2.5">${[205, 218, 231, 244, 257].map(x => `<line x1="${x}" y1="150" x2="${x - 3}" y2="176"/>`).join('')}</g>`;
+    s += `<path d="M60 150H140" style="stroke:var(--cold); stroke-width:6"/><path d="M140 140L158 150L140 160Z" style="fill:var(--cold)"/>`;
+  } else {
+    s += `<path d="M120 180L400 70V180Z" style="fill:var(--cold); fill-opacity:.3; stroke:var(--cold); stroke-width:2.5"/>`;
+    s += svgCloud(200, 118, 90, 22, true) + svgCloud(275, 92, 100, 20, false) + svgCloud(350, 66, 80, 16, false);
+    s += `<g style="stroke:var(--rain); stroke-width:1.8">${[165, 180, 195, 210, 225, 240].map(x => `<line x1="${x}" y1="${136 + (x - 165) * 0.1}" x2="${x - 2}" y2="${150 + (x - 165) * 0.1}"/>`).join('')}</g>`;
+    s += `<path d="M30 150H100" style="stroke:var(--warm); stroke-width:6"/><path d="M100 140L118 150L100 160Z" style="fill:var(--warm)"/>`;
+  }
+  return svgWrap(s + GRD);
+}
+function svgSymbol(cold){
+  let s = `<rect width="400" height="210" style="fill:var(--surface-2)"/><path d="M40 105H360" style="stroke:${cold ? 'var(--cold)' : 'var(--warm)'}; stroke-width:6"/>`;
+  for (let x = 60; x < 350; x += 60) s += cold ? `<path d="M${x} 105L${x + 18} 70L${x + 36} 105Z" style="fill:var(--cold)"/>` : `<path d="M${x} 105A18 18 0 0 1 ${x + 36} 105Z" style="fill:var(--warm)"/>`;
+  return svgWrap(s);
+}
+function svgCycle(step){
+  let s = SKY + `<rect y="150" width="170" height="60" style="fill:var(--sea)"/><path d="M160 210V155L220 145L300 50L360 120L400 125V210Z" style="fill:var(--ground)"/><circle cx="40" cy="36" r="22" style="fill:var(--sun)"/>`;
+  s += svgCloud(140, 50, 90, 34, step === 'Precipitation');
+  s += `<path d="M300 58L270 110L230 140L170 152" style="fill:none; stroke:var(--sea); stroke-width:5"/>`;
+  const A = (d, head) => `<path d="${d}" style="fill:none; stroke:var(--warm); stroke-width:7; stroke-linecap:round"/><path d="${head}" style="fill:var(--warm)"/>`;
+  if (step === 'Evaporation') s += A('M70 145V100', 'M58 104L70 82L82 104Z') + A('M110 145V100', 'M98 104L110 82L122 104Z');
+  if (step === 'Condensation') s += `<circle cx="140" cy="48" r="52" style="fill:none; stroke:var(--warm); stroke-width:6; stroke-dasharray:10 7"/>` + [[95, 110], [110, 100], [178, 108], [190, 96]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="5" style="fill:var(--vap)"/>`).join('');
+  if (step === 'Precipitation') s += A('M120 80V130', 'M108 126L120 148L132 126Z') + A('M160 80V130', 'M148 126L160 148L172 126Z');
+  if (step === 'Runoff') s += A('M282 82L248 122L200 146', 'M206 136L182 150L208 158Z');
+  return svgWrap(s);
+}
+function svgBoxes(coldLeft){
+  const dots = (x0, sp, jig) => { let s = ''; for (let x = x0 + 14; x < x0 + 160; x += sp) for (let y = 34; y < 186; y += sp){ const j = ((x * 7 + y * 3) % 10) / 10 * jig; s += `<circle cx="${x + j}" cy="${y - j}" r="5" style="fill:var(--muted)"/>`; } return s; };
+  let s = `<rect width="400" height="210" style="fill:var(--surface)"/>`;
+  s += `<rect x="20" y="20" width="170" height="175" rx="8" style="fill:var(--surface-2); stroke:var(--ink); stroke-width:2"/><rect x="210" y="20" width="170" height="175" rx="8" style="fill:var(--surface-2); stroke:var(--ink); stroke-width:2"/>`;
+  s += dots(coldLeft ? 20 : 210, 20, 4) + dots(coldLeft ? 210 : 20, 40, 14);
+  return svgWrap(s);
+}
+function svgCard(text){
+  return svgWrap(`<rect width="400" height="210" style="fill:var(--surface-2)"/><rect x="24" y="40" width="352" height="130" rx="14" style="fill:var(--surface); stroke:var(--line-strong); stroke-width:2"/><text x="200" y="106" text-anchor="middle" dominant-baseline="middle" style="fill:var(--ink); font:700 23px var(--font-ui)">${text}</text>`);
+}
+function svgGreenhouse(){
+  let s = `<rect width="400" height="210" style="fill:var(--space)"/><rect y="50" width="400" height="60" style="fill:var(--ghg); fill-opacity:.25"/>`;
+  for (let i = 0; i < 40; i++) s += `<circle cx="${(i * 97) % 390 + 5}" cy="${55 + (i * 37) % 50}" r="4" style="fill:var(--ghg)"/>`;
+  s += `<path d="M330 104V60" style="stroke:var(--ghg); stroke-width:8"/><path d="M318 66L330 44L342 66Z" style="fill:var(--ghg)"/>`;
+  s += `<rect y="170" width="400" height="40" style="fill:var(--ground)"/><rect x="40" y="70" width="24" height="96" rx="12" style="fill:var(--surface); stroke:var(--ink); stroke-width:2.5"/><circle cx="52" cy="168" r="16" style="fill:var(--ir); stroke:var(--ink); stroke-width:2.5"/><text x="52" y="120" text-anchor="middle" style="fill:var(--ink); font:800 28px var(--font-display)">?</text>`;
+  return svgWrap(s);
+}
+function svgTown(cold){
+  return svgFront(cold).replace('</svg>', `<rect x="330" y="160" width="26" height="20" style="fill:var(--house)"/><path d="M326 161L343 146L360 161Z" style="fill:var(--warm)"/></svg>`);
+}
+function svgSun(hot){
+  let s = SKY + `<rect y="130" width="400" height="80" style="fill:var(--sea)"/><circle cx="200" cy="60" r="${hot ? 46 : 22}" style="fill:var(--sun)"/>`;
+  if (hot) s += `<circle cx="200" cy="60" r="66" style="fill:var(--sun); fill-opacity:.25"/>`;
+  return svgWrap(s);
+}
+const QTYPES = [
+  () => { const c = Math.random() < 0.5; return {svg:svgFront(c), prompt:'Which front is this?', answers:['Cold front', 'Warm front'], right:c ? 0 : 1, why:c ? 'Steep edge, tall storm clouds.' : 'Gentle slope, flat layers of cloud.'}; },
+  () => { const c = Math.random() < 0.5; return {svg:svgSymbol(c), prompt:'Which map symbol?', answers:['Cold front', 'Warm front'], right:c ? 0 : 1, why:c ? 'Blue triangles = cold front.' : 'Red half circles = warm front.'}; },
+  () => { const st = pick(['Evaporation', 'Condensation', 'Precipitation', 'Runoff']); const a = shuffle(['Evaporation', 'Condensation', 'Precipitation', 'Runoff']); return {svg:svgCycle(st), prompt:'Name this step.', answers:a, right:a.indexOf(st), why:{Evaporation:'Liquid water turns to vapour and rises.', Condensation:'Vapour cools into cloud droplets.', Precipitation:'Water falls from the cloud.', Runoff:'Water flows over land to the sea.'}[st]}; },
+  () => { const cl = Math.random() < 0.5, ask = pick(['Which air is cold?', 'Which air sinks?']); return {svg:svgBoxes(cl), prompt:ask, answers:['Left', 'Right'], right:cl ? 0 : 1, why:'Cold air particles are packed closer: denser.'}; },
+  () => { const w = Math.random() < 0.5; const t = w ? pick(['Snowing right now', 'Windy this afternoon', 'Storm tonight', '−25 °C this morning']) : pick(['Cold winters most years', 'Average July: 24 °C', 'Dry summers for 30 years', 'Usually 40 cm of snow']); return {svg:svgCard(t), prompt:'Weather or climate?', answers:['Weather', 'Climate'], right:w ? 0 : 1, why:w ? 'Weather = right now, today.' : 'Climate = the average over many years.'}; },
+  () => ({svg:svgGreenhouse(), prompt:'More greenhouse gases. Earth gets…', answers:['Warmer', 'Cooler', 'No change'], right:0, why:'More heat is sent back down.'}),
+  () => { const c = Math.random() < 0.5; return {svg:svgTown(c), prompt:'After it passes, the town is…', answers:['Warmer', 'Cooler'], right:c ? 1 : 0, why:c ? 'Cold air moves in behind a cold front.' : 'Warm air moves in behind a warm front.'}; },
+  () => { const h = Math.random() < 0.5; return {svg:svgSun(h), prompt:h ? 'Hotter Sun. Evaporation is…' : 'Weaker Sun. Evaporation is…', answers:['More', 'Less'], right:h ? 0 : 1, why:'Heat makes water evaporate faster.'}; },
+];
+const PQ = {qs:[], i:0, res:[], answered:false};
+function newRound(){ PQ.qs = shuffle(QTYPES.slice()).slice(0, 6).map(f => f()); PQ.i = 0; PQ.res = []; PQ.answered = false; renderPractice(); }
+function renderPractice(){
+  const box = $('practice');
+  const dots = `<div class="pdots" aria-label="Progress">${PQ.qs.map((_, i) => `<span class="${PQ.res[i] === true ? 'ok' : PQ.res[i] === false ? 'no' : i === PQ.i ? 'cur' : ''}"></span>`).join('')}</div>`;
+  if (PQ.i >= PQ.qs.length){
+    const n = PQ.res.filter(Boolean).length, stars = n === 6 ? 3 : n >= 4 ? 2 : n >= 2 ? 1 : 0;
+    box.innerHTML = `${dots}<div class="score">${n} of 6</div><div class="stars" aria-label="${stars} stars">${'★'.repeat(stars)}${'☆'.repeat(3 - stars)}</div><button type="button" class="btn-primary" id="againBtn">New round</button>`;
+    $('againBtn').onclick = newRound; $('againBtn').focus(); return;
+  }
+  const q = PQ.qs[PQ.i];
+  box.innerHTML = `${dots}<div class="qpic">${q.svg}</div><h2 class="qprompt">${q.prompt}</h2><div class="answers">${q.answers.map((a, i) => `<button type="button" data-a="${i}">${a}</button>`).join('')}</div><div class="why" id="why" aria-live="polite"></div><button type="button" class="btn-primary" id="nextBtn" hidden>Next</button>`;
+  box.querySelectorAll('[data-a]').forEach(b => b.onclick = () => answer(+b.dataset.a));
+  $('nextBtn').onclick = () => { PQ.i++; PQ.answered = false; renderPractice(); };
+}
+function answer(i){
+  if (PQ.answered) return; PQ.answered = true;
+  const q = PQ.qs[PQ.i], ok = i === q.right; PQ.res[PQ.i] = ok;
+  document.querySelectorAll('[data-a]').forEach(b => { b.disabled = true; const k = +b.dataset.a; if (k === q.right) b.classList.add('right'); else if (k === i) b.classList.add('wrong'); });
+  const why = $('why'); why.className = 'why ' + (ok ? 'ok' : 'no'); why.textContent = (ok ? '✓ ' : '✗ ') + q.why;
+  document.querySelectorAll('.pdots span')[PQ.i].className = ok ? 'ok' : 'no';
+  $('nextBtn').hidden = false; $('nextBtn').textContent = PQ.i === PQ.qs.length - 1 ? 'Finish' : 'Next'; $('nextBtn').focus();
+}
+
+/* =========================================================
+   UI
+   ========================================================= */
+const GUIDE = {
+  fronts:{steps:[
+    'Pick <b style="color:var(--cold)">Cold front</b> or <b style="color:var(--warm)">Warm front</b>.',
+    'Watch warm air rise over the cold air. Rising air cools and makes <b>clouds</b>.',
+    'Watch the town <b>thermometer</b> as the front passes.',
+  ], tip:'Cold air particles are packed close together, so cold air is denser and slides under warm air. Try <b>Dry</b> warm air: fewer clouds, no rain.'},
+  water:{steps:[
+    'Slide the <b>Sun</b> to heat the water.',
+    'Press <b>Follow a drop</b> to track one drop of water.',
+    'Slide to <b>Cold</b> to build snow on the mountain, then to <b>Hot</b> to melt it.',
+  ], tip:'Grey clouds are full and ready to rain. The wind blows clouds from the sea toward the mountain.'},
+  climate:{steps:[
+    'Slide <b>Greenhouse gases</b>, or tap a year.',
+    '<b style="color:var(--sun)">Sunlight</b> comes in. <b style="color:var(--ir)">Heat</b> goes back up. Greenhouse gases send some heat back down.',
+    'Watch the <b>thermometer</b> and the three cards.',
+  ], tip:'Weather is today. Climate is the average over about 30 years. Model: about 2 °C warmer each time CO₂ doubles, from 13.8 °C in 1850.'},
+  practice:{steps:[
+    'Look at the picture.',
+    'Tap an answer.',
+    'Six questions in each round.',
+  ], tip:''},
+};
+function setRadio(sel, attr, val){ document.querySelectorAll(sel).forEach(b => b.setAttribute('aria-checked', String(b.dataset[attr] === val))); }
+function syncUI(){
+  const sc = S.scene;
+  $('frontsCtl').hidden = sc !== 'fronts'; $('waterCtl').hidden = sc !== 'water'; $('climateCtl').hidden = sc !== 'climate';
+  $('stage').hidden = sc === 'practice'; $('effects').hidden = sc !== 'climate'; $('practice').hidden = sc !== 'practice';
+  $('layout').classList.toggle('side', sc === 'climate');
+  setRadio('[data-scene]', 'scene', sc); setRadio('[data-front]', 'front', S.front); setRadio('[data-humid]', 'humid', S.humid ? '1' : '0');
+  setRadio('[data-ppm]', 'ppm', String(S.ghg));
+  $('playBtn').textContent = S.playing ? 'Pause' : 'Play';
+  $('sunOut').textContent = S.sun < 0.35 ? 'Cold' : S.sun < 0.7 ? 'Warm' : 'Hot';
+  $('ghgOut').textContent = `${S.ghg} ppm`;
+  $('followBtn').textContent = W.follow || W.snowHi || W.clouds.some(c => c.hi) ? 'Follow a new drop' : 'Follow a drop';
+  const g = GUIDE[sc];
+  $('guideList').innerHTML = g.steps.map((t, i) => `<li><span class="n">${i + 1}</span><span>${t}</span></li>`).join('');
+  $('guideTip').innerHTML = g.tip; $('guideTip').hidden = !g.tip;
+  if (sc === 'climate') syncEffects();
+}
+document.querySelectorAll('[data-scene]').forEach(b => b.addEventListener('click', () => {
+  S.scene = b.dataset.scene; lastBadge = '';
+  if (S.scene === 'practice' && !PQ.qs.length) newRound();
+  syncUI(); requestAnimationFrame(resize);
+}));
+document.querySelectorAll('[data-front]').forEach(b => b.addEventListener('click', () => { S.front = b.dataset.front; S.ft = 0; S.townT = TEMP_WARM; S.playing = true; syncUI(); }));
+document.querySelectorAll('[data-humid]').forEach(b => b.addEventListener('click', () => { S.humid = b.dataset.humid === '1'; syncUI(); }));
+$('playBtn').addEventListener('click', () => { S.playing = !S.playing; syncUI(); });
+$('sun').addEventListener('input', e => { S.sun = +e.target.value; syncUI(); });
+$('followBtn').addEventListener('click', () => {
+  if (W.follow) W.follow.hi = false; W.clouds.forEach(c => c.hi = false); W.snowHi = false;
+  W.path = []; const p = spawnVapour(200, SEA_Y, 'Evaporation'); p.hi = true; W.follow = p; addPath('Evaporation'); syncUI();
+});
+$('ghg').addEventListener('input', e => { S.ghg = +e.target.value; syncUI(); });
+document.querySelectorAll('[data-ppm]').forEach(b => b.addEventListener('click', () => { S.ghg = +b.dataset.ppm; $('ghg').value = S.ghg; syncUI(); }));
+$('guideBtn').addEventListener('click', () => { const p = $('guidePop'); p.hidden = !p.hidden; $('guideBtn').setAttribute('aria-expanded', String(!p.hidden)); });
+document.addEventListener('click', e => { if (!e.target.closest('.guide-wrap')){ $('guidePop').hidden = true; $('guideBtn').setAttribute('aria-expanded', 'false'); } });
+
+let last = performance.now(), lastBadge = '', followWas = false;
+function frame(now){
+  const dt = Math.min(0.05, (now - last) / 1000); last = now; TT += dt;
+  if (S.scene !== 'practice'){
+    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, cv.width, cv.height); setView();
+    let b = null;
+    if (S.scene === 'fronts'){ drawFronts(dt); b = frontsBadge(); }
+    else if (S.scene === 'water'){ drawWater(dt); b = waterBadge(); }
+    else { drawClimate(dt); b = climateBadge(); }
+    const key = b ? b.cls + b.main + b.sub : '-';
+    if (key !== lastBadge){
+      lastBadge = key; $('badge').hidden = !b;
+      if (b){ $('badge').className = 'badge ' + b.cls; $('bMain').innerHTML = b.main; $('bSub').innerHTML = b.sub; }
+    }
+    const fNow = !!(W.follow || W.snowHi || W.clouds.some(c => c.hi));
+    if (fNow !== followWas){ followWas = fNow; syncUI(); }
+  }
+  requestAnimationFrame(frame);
+}
+
+readColors(); syncUI(); resize();
+requestAnimationFrame(frame);
+</script>

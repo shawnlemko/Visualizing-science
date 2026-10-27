@@ -30,3 +30,4 @@ It is set up the same way as the math site, [shawnlemko/mathvisuals](https://git
 | `energy-stores.html` | Energy Stores and Pathways | 7-9 and 10-12, Energy |
 | `seasons-moon.html` | Seasons, Moon Phases and Eclipses (tilted orbit, phases, eclipses, practice) | 7-9, Space |
 | `circuit-builder.html` | Series and Parallel Builder (drag-and-drop slots, 3D voltage elevation, Kirchhoff) | 7-9 and 10-12, Energy |
+| `weather-climate.html` | Weather and Climate (fronts, water cycle, greenhouse gases, practice) | 7-9, Earth Systems |
