@@ -1,0 +1,891 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<script data-goatcounter="https://shawnlemko.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
+</head>
+<body>
+<title>Forces in Water and Air</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Atkinson+Hyperlegible:wght@400;700&family=Spline+Sans+Mono:wght@500;700&display=swap">
+<style>
+/* MathBoard look (shared with the math visuals site), plus one force colour per force role.
+   The same arrow language is used in water and in air:
+   blue = the upward push of the fluid (buoyant force, lift), red = weight, orange = drag, green = thrust, grey = a surface pushing (floor, roof, holder).
+   Layout: one screen. Top = controls. Left = stage canvas with the force badge on it. Right = Grade 8 math (Grade 8 only). */
+:root{
+  --bg:#f5f8fb; --surface:#ffffff; --surface-2:#eaf0f6; --ink:#1b2733; --muted:#5b6b7a; --line:#dbe5ee; --line-strong:#b9c9d8; --pt:#2f5fd0;
+  --up:#2160e0; --wt:#d1293f; --drag:#d2620a; --thrust:#13874b; --push:#6b7785;
+  --fresh:rgba(64,156,214,.26); --salt:rgba(28,140,150,.30); --honey:rgba(226,160,30,.45);
+  --block:#c9a36b; --flow:#2f5fd0; --particle:#0f6fa8;
+  --btn:#2f5fd0; --btn-ink:#ffffff;
+  --font-ui:'Atkinson Hyperlegible', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-display:'Bricolage Grotesque', 'Segoe UI', system-ui, sans-serif;
+  --font-num:'Spline Sans Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0f161d; --surface:#151f29; --surface-2:#1d2935; --ink:#e6edf3; --muted:#9aabbb; --line:#1f2c38; --line-strong:#2e3f50; --pt:#7aa2ff;
+  --up:#6ea4ff; --wt:#ff6b7d; --drag:#ff9a45; --thrust:#45c985; --push:#9aa7b4;
+  --fresh:rgba(80,170,230,.24); --salt:rgba(40,180,190,.26); --honey:rgba(240,175,50,.38);
+  --block:#b48a52; --flow:#7aa2ff; --particle:#6cc4ff;
+  --btn:#7aa2ff; --btn-ink:#0f161d; color-scheme:dark; } }
+:root[data-theme="dark"]{
+  --bg:#0f161d; --surface:#151f29; --surface-2:#1d2935; --ink:#e6edf3; --muted:#9aabbb; --line:#1f2c38; --line-strong:#2e3f50; --pt:#7aa2ff;
+  --up:#6ea4ff; --wt:#ff6b7d; --drag:#ff9a45; --thrust:#45c985; --push:#9aa7b4;
+  --fresh:rgba(80,170,230,.24); --salt:rgba(40,180,190,.26); --honey:rgba(240,175,50,.38);
+  --block:#b48a52; --flow:#7aa2ff; --particle:#6cc4ff;
+  --btn:#7aa2ff; --btn-ink:#0f161d; color-scheme:dark; }
+
+*,*::before,*::after{box-sizing:border-box}
+h1,h2,p,ol{margin:0} ol{padding:0; list-style:none}
+button,select,input{font:inherit; color:inherit}
+button{border:0; background:none; cursor:pointer}
+html,body{height:100%}
+body{background:var(--bg); color:var(--ink); font-family:var(--font-ui); font-size:14px;
+  padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); padding-block:0}
+#app{display:flex; flex-direction:column; gap:8px; min-height:100%; padding-block:8px}
+@media (min-width:1024px){ #app{height:100%} }
+
+/* Header */
+.topbar{display:flex; flex-wrap:wrap; align-items:center; gap:10px 20px; justify-content:space-between}
+.brand{display:flex; flex-wrap:wrap; align-items:center; gap:8px 20px}
+.brand h1{font-family:var(--font-display); font-weight:800; font-size:clamp(20px, 2vw, 26px); line-height:1.1; letter-spacing:-.01em; text-wrap:balance}
+a.main-btn{display:inline-flex; align-items:center; gap:8px; padding:8px 16px; min-height:42px; background:var(--pt); color:#fff; font-family:var(--font-display); font-weight:800; font-size:16px; text-decoration:none; border-radius:10px; border:2px solid var(--pt); flex:none}
+a.main-btn span{font-size:19px; line-height:1}
+a.main-btn:hover{background:var(--surface); color:var(--pt)}
+a.main-btn:focus-visible{outline:3px solid var(--pt); outline-offset:3px}
+.top-right{display:flex; flex-wrap:wrap; align-items:center; gap:10px}
+.mode{display:flex; align-items:center; gap:4px; background:var(--surface); border:1px solid var(--line); border-radius:999px; padding:4px}
+.mode button{border-radius:999px; padding:6px 16px; font-weight:700; font-size:15px; color:var(--muted); line-height:1.1}
+.mode button small{font-weight:400; font-size:12px; margin-left:4px}
+.mode button[aria-checked="true"]{background:var(--btn); color:var(--btn-ink)}
+.guide-wrap{position:relative}
+.btn-outline{border:1.5px solid var(--ink); border-radius:8px; padding:7px 12px; font-weight:700; font-size:14px; background:var(--surface)}
+.pop{position:absolute; right:0; top:calc(100% + 8px); width:min(340px, calc(100vw - 32px)); z-index:20; background:var(--surface);
+  border:1px solid var(--line); border-radius:10px; box-shadow:0 12px 32px rgba(10,20,30,.18); padding:14px 16px}
+.pop h2{font-weight:700; font-size:15px; margin-bottom:8px}
+.pop ol{display:flex; flex-direction:column; gap:10px}
+.pop li{display:grid; grid-template-columns:24px 1fr; gap:8px; line-height:1.4}
+.pop .n{width:22px; height:22px; border-radius:50%; background:var(--btn); color:var(--btn-ink); font-weight:700; font-size:12px; display:grid; place-items:center}
+
+.panel{background:var(--surface); border:1px solid var(--line-strong); border-radius:10px; min-width:0}
+button:focus-visible, input:focus-visible{outline:2.5px solid var(--pt); outline-offset:2px}
+
+/* Controls */
+.controls{display:flex; flex-wrap:wrap; gap:8px 22px; padding:8px 14px; align-items:end}
+.ctl{display:flex; flex-direction:column; gap:3px; min-width:170px; flex:1 1 170px}
+.ctl.seg-ctl{flex:0 1 auto}
+.ctl-top{display:flex; align-items:center; justify-content:space-between; gap:8px; min-height:30px}
+.ctl label, .ctl .lab{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.07em; font-weight:700}
+.ctl output{font-family:var(--font-num); font-variant-numeric:tabular-nums; font-weight:700; font-size:15px; display:inline-flex; align-items:center; gap:4px}
+.ctl input[type=range]{width:100%; accent-color:var(--pt); margin:2px 0}
+.seg{display:flex; gap:3px; background:var(--surface-2); border-radius:9px; padding:3px}
+.seg button{padding:6px 12px; border-radius:7px; font-weight:700; font-size:14px; color:var(--muted); white-space:nowrap}
+.seg button[aria-checked="true"]{background:var(--surface); color:var(--ink); box-shadow:0 0 0 1.5px var(--ink)}
+.btn-primary{background:var(--btn); color:var(--btn-ink); border-radius:8px; padding:9px 18px; font-weight:700; font-size:15px; white-space:nowrap; min-width:120px}
+.ctl.go{flex:0 0 auto; min-width:0}
+
+/* Main split */
+.layout{display:grid; grid-template-columns:1fr; gap:10px; flex:1; min-height:0}
+.layout.g8{grid-template-columns:1fr}
+@media (min-width:1024px){ .layout.g8{grid-template-columns:1fr 330px; grid-template-rows:minmax(0,1fr)} }
+.stage{position:relative; min-height:440px; overflow:hidden}
+@media (min-width:1024px){ .stage{min-height:0} }
+.stage canvas{position:absolute; inset:0; width:100%; height:100%; display:block}
+.badge{position:absolute; left:12px; top:10px; z-index:2; display:flex; flex-direction:column; gap:1px; padding:6px 14px 7px; border-radius:10px;
+  border:2.5px solid var(--ink); background:var(--surface); max-width:calc(100% - 24px)}
+.badge .b-main{font-family:var(--font-display); font-weight:800; font-size:clamp(16px, 1.6vw, 20px); line-height:1.15}
+.badge .b-sub{font-size:14px; color:var(--muted)}
+.badge .b-sub b{color:var(--ink)}
+.badge.bal{border-color:var(--thrust)} .badge.bal .b-main{color:var(--thrust)}
+.badge.unbal{border-color:var(--wt)} .badge.unbal .b-main{color:var(--wt)}
+.badge.held .b-main{color:var(--ink)}
+@media (max-width:640px){ .slowmo{display:none} }
+.slowmo{position:absolute; right:12px; top:12px; z-index:2; font-size:11.5px; color:var(--muted); background:var(--surface); border:1px solid var(--line); border-radius:999px; padding:2px 10px}
+
+/* Grade 8 math */
+.ledger{display:flex; flex-direction:column; gap:10px; padding:10px 14px; overflow:auto; min-height:0}
+.ledger > *{flex-shrink:0}
+.ptitle{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.07em; font-weight:700}
+.lcard{border:1px solid var(--line); border-left:5px solid var(--up); border-radius:10px; padding:8px 12px; display:flex; flex-direction:column; gap:6px}
+.lcard.dens{border-left-color:var(--pt)}
+.lc-title{font-weight:700; font-size:14px}
+.ln{display:flex; flex-wrap:wrap; align-items:center; gap:2px 6px; font-size:15px; line-height:1.3; min-height:2.2em}
+.ln .num{font-family:var(--font-num); font-variant-numeric:tabular-nums; font-size:14px; white-space:nowrap}
+.ln .f{font-weight:700}
+.ln .tag{font-weight:700; min-width:4.6em}
+.up-t{color:var(--up)} .wt-t{color:var(--wt)} .dr-t{color:var(--drag)}
+.verdict{font-weight:700; font-size:15px; padding:4px 10px; border-radius:8px; background:var(--surface-2); align-self:flex-start}
+/* Stacked fraction: numerator over a division bar (no slashes anywhere) */
+.fr{display:inline-flex; flex-direction:column; align-items:center; vertical-align:middle; line-height:1.15; margin:0 2px}
+.fr > span{padding:0 2px}
+.fr > span:first-child{border-bottom:1.5px solid currentColor}
+.ctl output .fr{font-size:12px}
+.foot{font-size:12px; color:var(--muted); line-height:1.45}
+@media (prefers-reduced-motion: reduce){ *{transition:none !important} }
+</style>
+
+<div id="app">
+  <header class="topbar">
+    <div class="brand">
+      <a class="main-btn" href="index.html"><span aria-hidden="true">←</span> Return to Main Page</a>
+      <h1>Forces in Water and Air</h1>
+    </div>
+    <div class="top-right">
+      <div class="mode" role="radiogroup" aria-label="Place">
+        <button type="button" data-env="water" role="radio" aria-checked="true">Water</button>
+        <button type="button" data-env="air" role="radio" aria-checked="false">Air</button>
+      </div>
+      <div class="mode" role="radiogroup" aria-label="Grade">
+        <button type="button" data-grade="5" role="radio" aria-checked="true">Grade 5<small>Forces</small></button>
+        <button type="button" data-grade="8" role="radio" aria-checked="false">Grade 8<small>Pressure</small></button>
+      </div>
+      <div class="guide-wrap">
+        <button type="button" id="guideBtn" class="btn-outline" aria-expanded="false" aria-controls="guidePop">How to use</button>
+        <div id="guidePop" class="pop" hidden>
+          <h2>How to use this</h2>
+          <ol id="guideList"></ol>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <section class="panel controls" id="waterCtl" aria-label="Water tank controls">
+    <div class="ctl">
+      <div class="ctl-top"><label for="mass">Mass</label><output id="massOut" for="mass"></output></div>
+      <input type="range" id="mass" min="100" max="3000" step="10" value="1500">
+    </div>
+    <div class="ctl">
+      <div class="ctl-top"><label for="vol">Volume</label><output id="volOut" for="vol"></output></div>
+      <input type="range" id="vol" min="250" max="2000" step="50" value="1000">
+    </div>
+    <div class="ctl seg-ctl">
+      <div class="ctl-top"><span class="lab" id="fluidLab">Fluid</span></div>
+      <div class="seg" role="radiogroup" aria-labelledby="fluidLab">
+        <button type="button" data-fluid="fresh" role="radio" aria-checked="true">Fresh water</button>
+        <button type="button" data-fluid="salt" role="radio" aria-checked="false">Salt water</button>
+        <button type="button" data-fluid="honey" role="radio" aria-checked="false">Honey</button>
+      </div>
+    </div>
+    <div class="ctl go">
+      <button type="button" id="releaseBtn" class="btn-primary">Release</button>
+    </div>
+  </section>
+
+  <section class="panel controls" id="airCtl" aria-label="Wind tunnel controls" hidden>
+    <div class="ctl">
+      <div class="ctl-top"><label for="speed">Wind speed</label><output id="speedOut" for="speed"></output></div>
+      <input type="range" id="speed" min="0" max="25" step="0.5" value="13">
+    </div>
+    <div class="ctl seg-ctl">
+      <div class="ctl-top"><span class="lab" id="shapeLab">Wing shape</span></div>
+      <div class="seg" role="radiogroup" aria-labelledby="shapeLab">
+        <button type="button" data-shape="flat" role="radio" aria-checked="false">Flat plate</button>
+        <button type="button" data-shape="camber" role="radio" aria-checked="true">Curved wing</button>
+        <button type="button" data-shape="bluff" role="radio" aria-checked="false">Bluff body</button>
+      </div>
+    </div>
+    <div class="ctl">
+      <div class="ctl-top"><label for="aoa">Angle of attack</label><output id="aoaOut" for="aoa"></output></div>
+      <input type="range" id="aoa" min="-5" max="25" step="1" value="4">
+    </div>
+  </section>
+
+  <main class="layout" id="layout">
+    <section class="panel stage" id="stage">
+      <div class="badge held" id="badge" aria-live="polite"><span class="b-main" id="bMain"></span><span class="b-sub" id="bSub"></span></div>
+      <span class="slowmo">Slow motion</span>
+      <canvas id="cv" aria-label="Force arrows on the object"></canvas>
+    </section>
+    <section class="panel ledger" id="ledger" aria-label="Grade 8 math" hidden></section>
+  </main>
+</div>
+
+<script>
+/* =========================================================
+   CONSTANTS (SI units inside the physics; g and cm³ only on the sliders)
+   ========================================================= */
+const G = 9.8;                  // N per kg
+const SLOW = 0.3;               // the motion is played at 0.3 of real speed
+const FLUIDS = {
+  fresh: {name:'Fresh water', rho:1000, mu:0.001, col:'--fresh'},
+  salt:  {name:'Salt water',  rho:1030, mu:0.0011, col:'--salt'},
+  honey: {name:'Honey',       rho:1420, mu:10,    col:'--honey'},
+};
+// Tank: 30 cm wide, 40 cm tall, 20 cm front to back. Water starts 25 cm deep.
+const TANK = {w:0.30, h:0.40, d:0.20, h0:0.25};
+const TANK_A = TANK.w * TANK.d;
+// Model wing: 0.5 kg, wing area 0.060 m² (40 cm span, 15 cm chord). Sea-level air.
+const AIR = {rho:1.2, m:0.5, S:0.060, yMax:0.30};
+// Lift and drag coefficients: a straight lift line up to the stall angle, then lift falls and drag jumps.
+const WINGS = {
+  flat:   {a0:0,  slope:0.09, stall:10, stallNeg:-10, cd0:0.020},
+  camber: {a0:-5, slope:0.09, stall:12, stallNeg:-14, cd0:0.012},
+  bluff:  {cd:1.0},
+};
+
+const S = {
+  env:'water', grade:5,
+  w:{mass:1500, vol:1000, fluid:'fresh', released:false, yb:0, v:0},
+  a:{speed:13, shape:'camber', aoa:4, y:0, vy:0},
+};
+const $ = id => document.getElementById(id);
+const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+const fr = (n, d) => `<span class="fr"><span>${n}</span><span>${d}</span></span>`;
+const fmt = (x, d=1) => (Math.abs(x) < 0.5 * 10 ** -d ? 0 : x).toFixed(d);
+
+/* =========================================================
+   WATER PHYSICS
+   ========================================================= */
+const side = () => Math.cbrt(S.w.vol * 1e-6);              // cube edge in m
+const startYb = () => 0.12 - side() / 2;                  // held with its centre 12 cm above the tank floor
+
+// Water level and how deep the block sits, for a block whose bottom is at height yb.
+function levelAt(yb){
+  const s = side(), full = TANK.h0 + s ** 3 / TANK_A;
+  if (full >= yb + s) return {h:full, d:s};
+  let d = (TANK.h0 - yb) / (1 - s * s / TANK_A);
+  d = clamp(d, 0, s);
+  return {h:TANK.h0 + s * s * d / TANK_A, d};
+}
+
+function waterForces(){
+  const w = S.w, f = FLUIDS[w.fluid], s = side(), m = w.mass / 1000;
+  const {h, d} = levelAt(w.yb);
+  const Vsub = s * s * d, W = m * G, B = f.rho * G * Vsub;
+  const frac = d / s;
+  // Drag opposes motion: pressure drag (½ρC_dAv²) + viscous drag (3πμsv, large in honey) + a small wave damping.
+  const dragMag = frac * (0.5 * f.rho * 1.05 * s * s * w.v * w.v + 3 * Math.PI * f.mu * s * Math.abs(w.v)) + 1.5 * Math.abs(w.v);
+  const D = -Math.sign(w.v) * dragMag;
+  let N = 0, H = 0;
+  if (!w.released) H = W - B;                                  // the holder makes up the difference
+  else if (w.yb <= 1e-6 && B - W + D <= 0) N = W - B - D;      // the floor pushes up
+  return {h, d, s, Vsub, W, B, D, N, H, net:B - W + D + N + H, rho:f.rho};
+}
+
+function stepWater(dt){
+  const w = S.w;
+  if (!w.released) return;
+  const F = waterForces(), m = w.mass / 1000;
+  const mEff = m + 0.5 * F.rho * F.Vsub;                      // moving water along with the block (added mass)
+  const sub = 4, h = dt / sub;
+  for (let i = 0; i < sub; i++){
+    const f = waterForces();
+    w.v += (f.net / mEff) * h;
+    w.yb += w.v * h;
+    if (w.yb < 0){ w.yb = 0; if (w.v < 0) w.v = 0; }
+    const top = TANK.h - side();
+    if (w.yb > top){ w.yb = top; if (w.v > 0) w.v = 0; }
+  }
+}
+
+/* =========================================================
+   AIR PHYSICS
+   ========================================================= */
+const rad = d => d * Math.PI / 180;
+function coeffs(shape, a){
+  if (shape === 'bluff') return {CL:0, CD:WINGS.bluff.cd, stalled:false, att:0};
+  const k = WINGS[shape];
+  a = ((a + 180) % 360 + 360) % 360 - 180;
+  const att = k.slope * (a - k.a0);
+  if (a <= k.stall && a >= k.stallNeg){
+    return {CL:att, CD:k.cd0 + att * att / 12, stalled:false, att};
+  }
+  const edge = a > 0 ? k.stall : k.stallNeg;
+  const after = 0.62 * k.slope * (edge - k.a0);
+  const t = clamp((Math.abs(a) - Math.abs(edge)) / 30, 0, 1);
+  const CL = after * (1 - t) + 0.9 * Math.sin(2 * rad(a)) * t;
+  const CD = 0.12 + 1.1 * Math.sin(rad(a)) ** 2;
+  return {CL, CD, stalled:true, att};
+}
+
+function airForces(){
+  // Lift is straight up and drag straight downwind. (The small extra tilt while the wing is moving up or down is left out,
+  // so the lift arrow always shows what the speed, shape and angle give.)
+  const a = S.a, V = a.speed, W = AIR.m * G;
+  const c = coeffs(a.shape, a.aoa);
+  const q = 0.5 * AIR.rho * V * V * AIR.S;
+  const L = q * c.CL, D = q * c.CD;
+  const Lx = 0, Ly = L, Dx = D, Dy = 0;
+  const T = D;                                                        // thrust holds the wing's forward speed
+  let Fy = Ly - W, N = 0, contact = '';
+  if (Math.abs(Fy) < 0.04 * W) Fy = 0;                               // within 4 %: counted as balanced (level flight is findable with the sliders)
+  if (a.y <= -AIR.yMax + 1e-6 && Fy <= 0){ N = -Fy; contact = 'floor'; }
+  else if (a.y >= AIR.yMax - 1e-6 && Fy >= 0){ N = -Fy; contact = 'roof'; }
+  return {L, D, Lx, Ly, Dx, Dy, T, W, N, contact, net:Fy + N, lift:Ly, stalled:c.stalled, CL:c.CL, att:c.att, V};
+}
+
+function stepAir(dt){
+  const a = S.a, sub = 4, h = dt / sub;
+  for (let i = 0; i < sub; i++){
+    const f = airForces();
+    a.vy += (f.net / AIR.m) * h;
+    a.y += a.vy * h;
+    if (a.y < -AIR.yMax){ a.y = -AIR.yMax; if (a.vy < 0) a.vy = 0; }
+    if (a.y > AIR.yMax){ a.y = AIR.yMax; if (a.vy > 0) a.vy = 0; }
+  }
+}
+
+/* =========================================================
+   FLOW AROUND THE WING (potential flow, Joukowski map) for the streamlines.
+   The flow is computed with the air moving in +x; the drawing mirrors it so the wind blows right to left.
+   ========================================================= */
+const C = 0.25;
+const JK = {
+  flat:   {x0:0, y0:0},
+  camber: {x0:-0.10 * C, y0:0.10 * C},
+};
+for (const k in JK){
+  const j = JK[k];
+  j.a = Math.hypot(C - j.x0, j.y0); j.beta = Math.asin(j.y0 / j.a);
+  // Contour and chord, so the drawing coordinates have chord 1 and centre 0.
+  const pts = [];
+  for (let i = 0; i <= 160; i++){
+    const th = -j.beta + i / 160 * 2 * Math.PI;
+    const zx = j.x0 + j.a * Math.cos(th), zy = j.y0 + j.a * Math.sin(th);
+    const r2 = zx * zx + zy * zy;
+    pts.push([zx + C * C * zx / r2, zy - C * C * zy / r2]);
+  }
+  const xs = pts.map(p => p[0]); const xmin = Math.min(...xs), xmax = Math.max(...xs);
+  j.off = (xmin + xmax) / 2; j.sc = 1 / (xmax - xmin);
+  j.contour = pts.map(p => [(p[0] - j.off) * j.sc, p[1] * j.sc]);
+}
+const BLUFF_R = 0.22;
+
+function cdiv(a, b){ const d = b[0] * b[0] + b[1] * b[1]; return [(a[0] * b[0] + a[1] * b[1]) / d, (a[1] * b[0] - a[0] * b[1]) / d]; }
+function cmul(a, b){ return [a[0] * b[0] - a[1] * b[1], a[0] * b[1] + a[1] * b[0]]; }
+function csqrt(z){ const r = Math.hypot(z[0], z[1]); return [Math.sqrt((r + z[0]) / 2), (z[1] < 0 ? -1 : 1) * Math.sqrt(Math.max(0, (r - z[0]) / 2))]; }
+
+// Flow velocity (free stream speed 1) at a point in drawing coordinates. Returns null inside the body.
+function flowAt(x, y, shape, aDeg, gfac){
+  if (shape === 'bluff'){
+    const r2 = x * x + y * y;
+    if (r2 < BLUFF_R * BLUFF_R) return null;
+    const z2 = cmul([x, y], [x, y]);
+    const w = [1 - cdiv([BLUFF_R * BLUFF_R, 0], z2)[0], -cdiv([BLUFF_R * BLUFF_R, 0], z2)[1]];
+    let u = w[0], v = -w[1];
+    // Turbulent wake behind a bluff body: the air there is slowed down.
+    if (x > 0){ const band = BLUFF_R + 0.35 * x; if (Math.abs(y) < band){ const f = 0.35 + 0.65 * (Math.abs(y) / band) ** 2; u *= f; v *= f; } }
+    return [u, v];
+  }
+  const j = JK[shape], al = rad(aDeg), ca = Math.cos(al), sa = Math.sin(al);
+  const xb = x * ca - y * sa, yb = x * sa + y * ca;
+  const z = [xb / j.sc + j.off, yb / j.sc];
+  const disc = csqrt([z[0] * z[0] - z[1] * z[1] - 4 * C * C, 2 * z[0] * z[1]]);
+  const r1 = [(z[0] + disc[0]) / 2, (z[1] + disc[1]) / 2], r2 = [(z[0] - disc[0]) / 2, (z[1] - disc[1]) / 2];
+  const d1 = Math.hypot(r1[0] - j.x0, r1[1] - j.y0), d2 = Math.hypot(r2[0] - j.x0, r2[1] - j.y0);
+  const zeta = d1 >= d2 ? r1 : r2, dd = Math.max(d1, d2);
+  if (dd < j.a * 0.999) return null;
+  const zr = [zeta[0] - j.x0, zeta[1] - j.y0];
+  const gam = 4 * Math.PI * j.a * Math.sin(al + j.beta) * gfac;
+  let dW = [ca, -sa];
+  const t2 = cdiv(cmul([j.a * j.a * ca, j.a * j.a * sa], [1, 0]), cmul(zr, zr));
+  dW = [dW[0] - t2[0], dW[1] - t2[1]];
+  const t3 = cdiv([0, gam / (2 * Math.PI)], zr);
+  dW = [dW[0] + t3[0], dW[1] + t3[1]];
+  const dz = cdiv([C * C, 0], cmul(zeta, zeta));
+  const w = cdiv(dW, [1 - dz[0], -dz[1]]);
+  let u = w[0], v = -w[1];
+  const sp = Math.hypot(u, v); if (sp > 2.6){ u *= 2.6 / sp; v *= 2.6 / sp; }
+  return [u * ca + v * sa, -u * sa + v * ca];
+}
+
+let SL = {key:'', lines:[]};
+function buildStreamlines(shape, aDeg, gfac, X, Y, sp){
+  const key = [shape, aDeg, gfac.toFixed(2), X.toFixed(2), Y.toFixed(2), sp.toFixed(3)].join('|');
+  if (SL.key === key) return SL.lines;
+  const lines = [], hstep = 0.02;
+  for (let y0 = -Y; y0 <= Y + 1e-9; y0 += sp){
+    let x = -X, y = y0, t = 0;
+    const pts = [[x, y, 0]];
+    for (let i = 0; i < 900 && x < X; i++){
+      const v1 = flowAt(x, y, shape, aDeg, gfac); if (!v1) break;
+      const s1 = Math.hypot(v1[0], v1[1]) || 1e-6, dt1 = Math.min(hstep / s1, 0.5);
+      const v2 = flowAt(x + v1[0] * dt1 / 2, y + v1[1] * dt1 / 2, shape, aDeg, gfac); if (!v2) break;
+      x += v2[0] * dt1; y += v2[1] * dt1; t += dt1;
+      pts.push([x, y, t]);
+    }
+    lines.push(pts);
+  }
+  SL = {key, lines};
+  return lines;
+}
+
+/* =========================================================
+   DRAWING HELPERS
+   ========================================================= */
+const cv = $('cv'), ctx = cv.getContext('2d');
+let CW = 0, CH = 0, COL = {};
+function readColors(){
+  const cs = getComputedStyle(document.documentElement);
+  ['--ink','--muted','--surface','--surface-2','--line','--line-strong','--up','--wt','--drag','--thrust','--push','--fresh','--salt','--honey','--block','--flow','--particle','--pt']
+    .forEach(n => COL[n.slice(2)] = cs.getPropertyValue(n).trim());
+}
+function resize(){
+  const r = $('stage').getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+  CW = r.width; CH = r.height;
+  cv.width = Math.round(CW * dpr); cv.height = Math.round(CH * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+new ResizeObserver(resize).observe($('stage'));
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', readColors);
+
+// A force arrow: length and thickness grow with the force. Arrows longer than the cap get a break mark.
+function arrow(x, y, ux, uy, F, k, color, label, cap, minLab = 0){
+  const full = F * k, len = Math.min(full, cap);
+  if (len < 3){ if (label && minLab) tagAt(x + ux * minLab, y + uy * minLab, ux, uy, label, color); return; }
+  const th = clamp(3 + F * k * 0.035, 3, 11), hl = Math.max(12, th * 2.6), hw = Math.max(9, th * 2.2);
+  const ex = x + ux * len, ey = y + uy * len, bx = ex - ux * Math.min(hl, len), by = ey - uy * Math.min(hl, len);
+  const px = -uy, py = ux;
+  const shape = () => {
+    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(bx, by); ctx.lineWidth = th; ctx.lineCap = 'butt'; ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(ex, ey); ctx.lineTo(bx + px * hw, by + py * hw); ctx.lineTo(bx - px * hw, by - py * hw); ctx.closePath();
+  };
+  ctx.save();
+  ctx.strokeStyle = COL.surface; ctx.fillStyle = COL.surface; ctx.lineJoin = 'round';
+  ctx.lineWidth = th + 4; shape(); ctx.lineWidth = 4; ctx.stroke(); ctx.fill();
+  ctx.strokeStyle = color; ctx.fillStyle = color; shape(); ctx.fill();
+  if (full > cap){
+    const mx = x + ux * len * 0.5, my = y + uy * len * 0.5;
+    ctx.strokeStyle = COL.surface; ctx.lineWidth = 3;
+    for (const o of [-5, 5]){ ctx.beginPath(); ctx.moveTo(mx + ux * o + px * (th + 4), my + uy * o + py * (th + 4)); ctx.lineTo(mx + ux * o - px * (th + 4) + ux * 6, my + uy * o - py * (th + 4) + uy * 6); ctx.stroke(); }
+  }
+  ctx.restore();
+  const ld = Math.max(len + 12, minLab);
+  if (label && full > cap) tagAt(x + ux * len * 0.7 + px * -(th + 8), y + uy * len * 0.7 + py * -(th + 8), -px, -py, label, color);  // capped: name beside the arrow
+  else if (label) tagAt(x + ux * ld, y + uy * ld, ux, uy, label, color);
+}
+function tagAt(x, y, ux, uy, text, color){
+  ctx.save();
+  ctx.font = `700 15px ${getComputedStyle(document.body).fontFamily}`;
+  ctx.textAlign = Math.abs(ux) > 0.5 ? (ux > 0 ? 'left' : 'right') : 'center';
+  ctx.textBaseline = Math.abs(uy) > 0.5 ? (uy > 0 ? 'top' : 'bottom') : 'middle';
+  ctx.lineWidth = 4; ctx.strokeStyle = COL.surface; ctx.lineJoin = 'round';
+  ctx.strokeText(text, x, y); ctx.fillStyle = color; ctx.fillText(text, x, y);
+  ctx.restore();
+}
+// A vertical arrow beside the centre, with its name to one side (side = -1 left, 1 right) so it does not cover the main arrows.
+function sideArrow(x, y, uy, F, k, color, label, cap, side){
+  arrow(x, y, 0, uy, F, k, color, '', cap);
+  const len = Math.min(F * k, cap);
+  tagAt(x + side * 10, y + uy * Math.max(len * 0.6, 8), side, 0, label, color);
+}
+const nLab = (name, F) => S.grade === 8 ? `${name} ${fmt(F, 1)} N` : name;
+
+/* =========================================================
+   GRADE 8 PARTICLES: fluid particles striking the surfaces. More strikes per second = more pressure.
+   ========================================================= */
+let hits = [], ambient = [];
+function spawnHits(dt, faces){
+  for (const f of faces){
+    f.acc = (f.acc || 0) + f.rate * dt;
+    while (f.acc >= 1){
+      f.acc -= 1;
+      const p = f.pick();
+      hits.push({...p, t:0, key:f.key});
+    }
+  }
+}
+function drawHits(dt, toScreen){
+  const out = 26, T1 = 0.22, T2 = 0.5;
+  ctx.save();
+  hits = hits.filter(h => (h.t += dt) < T2);
+  for (const h of hits){
+    const s = toScreen(h);
+    let dist, a = 1;
+    if (h.t < T1) dist = out * (1 - h.t / T1); else { dist = out * (h.t - T1) / (T2 - T1); a = 1 - (h.t - T1) / (T2 - T1); }
+    ctx.globalAlpha = a;
+    ctx.fillStyle = COL.particle;
+    ctx.beginPath(); ctx.arc(s.x + s.nx * (dist + 4), s.y + s.ny * (dist + 4), 3.6, 0, 7); ctx.fill();
+    if (h.t >= T1 && h.t < T1 + 0.12){
+      ctx.strokeStyle = COL.particle; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(s.x, s.y, 4 + (h.t - T1) * 60, 0, 7); ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+
+/* =========================================================
+   WATER SCENE
+   ========================================================= */
+let waterGeo = null;
+function drawWater(dt){
+  const F = waterForces(), w = S.w, fl = FLUIDS[w.fluid];
+  const top = 78, bot = CH - 44;
+  let th = bot - top, tw = th * TANK.w / TANK.h;
+  if (tw > CW * 0.5){ tw = CW * 0.5; th = tw * TANK.h / TANK.w; }
+  const x0 = (CW - tw) / 2, k = th / TANK.h, yOf = h => bot - h * k;
+  waterGeo = {x0, tw, k, bot};
+
+  // Fluid
+  ctx.fillStyle = COL[fl.col.slice(2)];
+  ctx.fillRect(x0, yOf(F.h), tw, F.h * k);
+  ctx.strokeStyle = COL.particle; ctx.lineWidth = 1.5; ctx.globalAlpha = 0.6;
+  ctx.beginPath(); ctx.moveTo(x0, yOf(F.h)); ctx.lineTo(x0 + tw, yOf(F.h)); ctx.stroke(); ctx.globalAlpha = 1;
+
+  // Start level and displaced volume on the tank wall
+  const y0 = yOf(TANK.h0), y1 = yOf(F.h), dmL = (F.h - TANK.h0) * TANK_A * 1e6;
+  ctx.save();
+  ctx.setLineDash([5, 4]); ctx.strokeStyle = COL.muted; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(x0 + tw - 46, y0); ctx.lineTo(x0 + tw + 14, y0); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.strokeStyle = COL.ink; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(x0 + tw + 6, y1); ctx.lineTo(x0 + tw + 20, y1); ctx.stroke();
+  if (y0 - y1 > 2){
+    ctx.beginPath(); ctx.moveTo(x0 + tw + 14, y0); ctx.lineTo(x0 + tw + 14, y1); ctx.stroke();
+  }
+  ctx.font = `700 15px ${getComputedStyle(document.body).fontFamily}`;
+  ctx.fillStyle = COL.ink; ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
+  ctx.fillText(`+${Math.round(dmL)} mL`, x0 + tw + 26, (y0 + y1) / 2 - 2);
+  ctx.font = `400 12px ${getComputedStyle(document.body).fontFamily}`;
+  ctx.fillStyle = COL.muted;
+  ctx.fillText('water pushed aside', x0 + tw + 26, (y0 + y1) / 2 + 15);
+  ctx.restore();
+
+  // Grade 8: loose fluid particles
+  if (S.grade === 8){
+    if (ambient.length !== 70) ambient = Array.from({length:70}, () => ({u:Math.random(), v:Math.random(), a:Math.random() * 7}));
+    ctx.fillStyle = COL.particle; ctx.globalAlpha = 0.45;
+    for (const p of ambient){
+      p.a += (Math.random() - 0.5) * 1.2; p.u = (p.u + Math.cos(p.a) * 0.0015 + 1) % 1; p.v = clamp(p.v + Math.sin(p.a) * 0.0015, 0, 1);
+      const px = x0 + 4 + p.u * (tw - 8), py = yOf(F.h) + 4 + p.v * (F.h * k - 8);
+      ctx.beginPath(); ctx.arc(px, py, 2.2, 0, 7); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // Block
+  const sp = F.s * k, bx = x0 + tw / 2 - sp / 2, by = yOf(w.yb + F.s);
+  const cx = bx + sp / 2, cy = by + sp / 2;
+  if (!w.released){
+    ctx.fillStyle = COL.push;
+    ctx.fillRect(cx - 3, top - 70, 6, by - (top - 70));
+    ctx.fillRect(cx - 14, by - 6, 28, 6);
+  }
+  ctx.fillStyle = COL.block; ctx.strokeStyle = COL.ink; ctx.lineWidth = 2;
+  ctx.fillRect(bx, by, sp, sp); ctx.strokeRect(bx, by, sp, sp);
+
+  // Grade 8: strikes on the top and bottom faces, at a rate that grows with the pressure there
+  if (S.grade === 8){
+    const depthTop = Math.max(0, F.h - (w.yb + F.s)), depthBot = Math.max(0, F.h - w.yb);
+    const Ptop = F.rho * G * depthTop, Pbot = F.rho * G * depthBot;
+    const rate = P => (P > 0 ? 4 : 0) + P * 0.035;
+    const pick = (yy, ny) => () => ({x:bx + 6 + Math.random() * (sp - 12), y:yy, nx:0, ny});
+    spawnHits(dt, [
+      {key:'t', rate:depthTop > 0 ? rate(Ptop) : 0, pick:pick(by, -1), get acc(){return waterAcc.t}, set acc(v){waterAcc.t = v}},
+      {key:'b', rate:rate(Pbot), pick:pick(by + sp, 1), get acc(){return waterAcc.b}, set acc(v){waterAcc.b = v}},
+    ]);
+    ctx.save(); ctx.beginPath(); ctx.rect(x0, top, tw, bot - top); ctx.clip();
+    drawHits(dt, h => h);
+    ctx.restore();
+    // Pressure on each face, written next to it
+    ctx.save();
+    ctx.font = `700 13px ${getComputedStyle(document.body).fontFamily}`; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.lineWidth = 4; ctx.strokeStyle = COL.surface;
+    const lx = bx + sp + 8;
+    if (depthTop > 0){ ctx.strokeText(`P = ${Math.round(Ptop)} Pa`, lx, by + 9); ctx.fillStyle = COL.ink; ctx.fillText(`P = ${Math.round(Ptop)} Pa`, lx, by + 9); }
+    ctx.strokeText(`P = ${Math.round(Pbot)} Pa`, lx, by + sp - 9); ctx.fillStyle = COL.ink; ctx.fillText(`P = ${Math.round(Pbot)} Pa`, lx, by + sp - 9);
+    ctx.restore();
+  }
+
+  // Tank walls
+  ctx.strokeStyle = COL.ink; ctx.lineWidth = 3; ctx.lineJoin = 'round';
+  ctx.beginPath(); ctx.moveTo(x0, top); ctx.lineTo(x0, bot); ctx.lineTo(x0 + tw, bot); ctx.lineTo(x0 + tw, top); ctx.stroke();
+
+  // Force arrows from the centre of the block
+  const kF = (th * 0.40) / 30, cap = th * 0.44, capDown = Math.min(cap, CH - cy - 26);
+  arrow(cx, cy, 0, 1, F.W, kF, COL.wt, nLab('Weight', F.W), capDown);
+  arrow(cx, cy, 0, -1, F.B, kF, COL.up, nLab('Buoyant force', F.B), cap);
+  if (Math.abs(F.D) > 0.05) sideArrow(cx + 26, cy, -Math.sign(F.D), Math.abs(F.D), kF, COL.drag, nLab('Drag', Math.abs(F.D)), cap, 1);
+  if (F.N > 0.05) sideArrow(cx - 26, cy, -1, F.N, kF, COL.push, nLab('Floor push', F.N), cap, -1);
+  if (Math.abs(F.H) > 0.05) sideArrow(cx - 26, cy, F.H > 0 ? -1 : 1, Math.abs(F.H), kF, COL.push, nLab('Holder', Math.abs(F.H)), cap, -1);
+  ctx.fillStyle = COL.ink; ctx.beginPath(); ctx.arc(cx, cy, 4, 0, 7); ctx.fill();
+  return F;
+}
+const waterAcc = {t:0, b:0};
+
+function waterBadge(F){
+  const cmp = Math.abs(F.B - F.W) < 0.02 * F.W + 0.01 ? '=' : F.B > F.W ? '>' : '<';
+  const sub = `<b class="up-t">Buoyant force</b> ${cmp} <b class="wt-t">Weight</b>`;
+  if (!S.w.released) return {cls:'held', main:'Held still · press Release', sub};
+  const W = F.W, small = Math.abs(F.net) < 0.03 * W + 0.02, still = Math.abs(S.w.v) < 0.006;
+  if (F.N > 0.05 && still) return {cls:'bal', main:'Balanced forces · Resting on the bottom', sub};
+  if (small && still) return {cls:'bal', main:F.d < F.s - 1e-4 ? 'Balanced forces · Floating' : 'Balanced forces · Hovering', sub};
+  if (small) return {cls:'bal', main:`Balanced forces · Constant velocity ${S.w.v > 0 ? '↑' : '↓'}`, sub:`${sub} · <b class="dr-t">Drag</b> makes up the rest`};
+  return {cls:'unbal', main:`Unbalanced forces · Accelerating ${F.net > 0 ? '↑' : '↓'}`, sub};
+}
+
+/* =========================================================
+   AIR SCENE
+   ========================================================= */
+let eddies = [], flowPhase = 0;
+// How far the wing reaches above or below its centre, in chords, at this angle.
+function wingExtent(shape, aDeg){
+  if (shape === 'bluff') return BLUFF_R;
+  const al = rad(aDeg), pts = shape === 'flat' ? [[-0.5, 0.012], [0.5, 0.012], [-0.5, -0.012], [0.5, -0.012]] : JK.camber.contour;
+  let m = 0;
+  for (const [x, y] of pts) m = Math.max(m, Math.abs(-x * Math.sin(al) + y * Math.cos(al)));
+  return m;
+}
+function drawAir(dt){
+  const a = S.a, F = airForces();
+  const roof = 78, floor = CH - 12, mid = (roof + floor) / 2;
+  const cp = clamp(Math.min(CW * 0.32, (floor - roof) * 0.7), 110, 300);       // pixels per chord
+  // The wing can slide up until it touches the roof, or down until it touches the floor.
+  const margin = cp * wingExtent(a.shape, a.aoa) + 3;
+  const ky = ((floor - roof) / 2 - margin) / AIR.yMax;
+  const cx = CW / 2, cy = mid - a.y * ky;
+  const toS = (x, y) => [cx - x * cp, cy - y * cp];
+
+  // Tunnel walls
+  ctx.fillStyle = COL['surface-2'];
+  ctx.fillRect(0, roof - 10, CW, 10); ctx.fillRect(0, floor, CW, 12);
+  ctx.strokeStyle = COL.ink; ctx.lineWidth = 2.5;
+  ctx.beginPath(); ctx.moveTo(0, roof); ctx.lineTo(CW, roof); ctx.moveTo(0, floor); ctx.lineTo(CW, floor); ctx.stroke();
+
+  // Streamlines with moving dots. Dots move at the local air speed, so they spread out where the air is fast.
+  const c = coeffs(a.shape, a.aoa);
+  const gfac = a.shape === 'bluff' ? 0 : (c.stalled ? clamp(c.CL / Math.max(0.05, c.att), 0, 1) : 1);
+  const X = (CW / 2) / cp + 0.15, Y = (floor - roof) / cp, spacing = 34 / cp;
+  const lines = buildStreamlines(a.shape, a.aoa, Math.round(gfac * 20) / 20, X, Y, spacing);
+  flowPhase += dt * a.speed * 0.11;
+  const Tgap = 0.26, phase = flowPhase % Tgap;
+  ctx.save();
+  ctx.beginPath(); ctx.rect(0, roof, CW, floor - roof); ctx.clip();
+  ctx.strokeStyle = COL.flow; ctx.globalAlpha = 0.18; ctx.lineWidth = 1.2;
+  for (const L of lines){
+    ctx.beginPath();
+    L.forEach((p, i) => { const [sx, sy] = toS(p[0], p[1]); i ? ctx.lineTo(sx, sy) : ctx.moveTo(sx, sy); });
+    ctx.stroke();
+  }
+  if (a.speed > 0){
+    ctx.globalAlpha = 0.85; ctx.fillStyle = COL.flow;
+    for (const L of lines){
+      let i = 1;
+      for (let tt = phase; i < L.length; tt += Tgap){
+        while (i < L.length && L[i][2] < tt) i++;
+        if (i >= L.length) break;
+        const p0 = L[i - 1], p1 = L[i], f = (tt - p0[2]) / Math.max(1e-9, p1[2] - p0[2]);
+        const [sx, sy] = toS(p0[0] + (p1[0] - p0[0]) * f, p0[1] + (p1[1] - p0[1]) * f);
+        ctx.beginPath(); ctx.arc(sx, sy, 2.3, 0, 7); ctx.fill();
+      }
+    }
+  }
+  // Eddies behind a bluff body or a stalled wing
+  const al = rad(a.aoa);
+  const bodyToWorld = (x, y) => [x * Math.cos(al) + y * Math.sin(al), -x * Math.sin(al) + y * Math.cos(al)];
+  if (a.speed > 0 && (a.shape === 'bluff' || c.stalled) && Math.random() < dt * (2 + a.speed * 0.5)){
+    const src = a.shape === 'bluff' ? [0.05, (Math.random() < 0.5 ? 1 : -1) * BLUFF_R] : bodyToWorld(0.1, 0.08);
+    eddies.push({x:src[0], y:src[1], r:4, t:0, spin:Math.random() < 0.5 ? 1 : -1, ang:0});
+  }
+  ctx.strokeStyle = COL.muted; ctx.lineWidth = 1.8;
+  eddies = eddies.filter(e => (e.t += dt) < 1.6);
+  for (const e of eddies){
+    e.x += dt * a.speed * 0.045; e.r += dt * 9; e.ang += dt * 7 * e.spin; e.y += (Math.random() - 0.5) * 0.004;
+    const [sx, sy] = toS(e.x, e.y);
+    ctx.globalAlpha = 0.6 * (1 - e.t / 1.6);
+    ctx.beginPath(); ctx.arc(sx, sy, e.r, e.ang, e.ang + 4.4); ctx.stroke();
+  }
+  ctx.restore();
+
+  // The wing
+  ctx.save();
+  ctx.fillStyle = COL.ink; ctx.strokeStyle = COL.ink;
+  let surf;
+  if (a.shape === 'bluff'){
+    const [sx, sy] = toS(0, 0);
+    ctx.fillStyle = COL.block; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(sx, sy, BLUFF_R * cp, 0, 7); ctx.fill(); ctx.stroke();
+    surf = {
+      top: () => { const t = Math.PI * (0.15 + 0.7 * Math.random()); return {bx:BLUFF_R * Math.cos(t), by:BLUFF_R * Math.sin(t), nx:Math.cos(t), ny:Math.sin(t)}; },
+      bot: () => { const t = -Math.PI * (0.15 + 0.7 * Math.random()); return {bx:BLUFF_R * Math.cos(t), by:BLUFF_R * Math.sin(t), nx:Math.cos(t), ny:Math.sin(t)}; },
+    };
+  } else if (a.shape === 'flat'){
+    const [x1, y1] = toS(...bodyToWorld(-0.5, 0)), [x2, y2] = toS(...bodyToWorld(0.5, 0));
+    ctx.lineWidth = 6; ctx.lineCap = 'round'; ctx.strokeStyle = COL.block;
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+    ctx.lineWidth = 1.5; ctx.strokeStyle = COL.ink; ctx.stroke();
+    surf = {
+      top: () => ({bx:-0.45 + 0.9 * Math.random(), by:0.012, nx:0, ny:1}),
+      bot: () => ({bx:-0.45 + 0.9 * Math.random(), by:-0.012, nx:0, ny:-1}),
+    };
+  } else {
+    const ct = JK.camber.contour;
+    ctx.fillStyle = COL.block; ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ct.forEach((p, i) => { const [sx, sy] = toS(...bodyToWorld(p[0], p[1])); i ? ctx.lineTo(sx, sy) : ctx.moveTo(sx, sy); });
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+    const half = ct.length / 2 | 0;
+    const pickOn = (from, to, sgn) => () => {
+      const i = from + 6 + (Math.random() * (to - from - 12) | 0), p = ct[i], q = ct[i + 1];
+      const tx = q[0] - p[0], ty = q[1] - p[1], l = Math.hypot(tx, ty) || 1;
+      return {bx:p[0], by:p[1], nx:ty / l * sgn, ny:-tx / l * sgn};
+    };
+    surf = {top:pickOn(0, half, 1), bot:pickOn(half, ct.length - 1, 1)};
+  }
+  ctx.restore();
+
+  // Grade 8: air particles strike the top and bottom. Lower pressure on top = fewer strikes there.
+  if (S.grade === 8){
+    const dP = F.lift / AIR.S, g = clamp(dP / 150, -1, 1), base = 26;
+    const mk = (fn, key, rate) => ({key, rate, pick:() => {
+      const s = fn();
+      return {bx:s.bx, by:s.by, nx:s.nx, ny:s.ny};
+    }, get acc(){return airAcc[key]}, set acc(v){airAcc[key] = v}});
+    spawnHits(dt, [mk(surf.top, 't', base * clamp(1 - 0.6 * g, 0.15, 2)), mk(surf.bot, 'b', base * clamp(1 + 0.3 * g, 0.15, 2))]);
+    drawHits(dt, h => {
+      const [wx, wy] = bodyToWorld(h.bx, h.by), [nx, ny] = bodyToWorld(h.nx, h.ny);
+      const [sx, sy] = toS(wx, wy);
+      return {x:sx, y:sy, nx:-nx, ny:-ny};
+    });
+  }
+
+  // Stall tag
+  if (c.stalled && a.shape !== 'bluff'){
+    const [sx, sy] = toS(0.1, 0);
+    tagAt(sx, sy - cp * 0.42, 0, -1, 'Stall!', COL.wt);
+  }
+
+  // Force arrows from the centre of the wing. Lift up, weight down, drag downwind (left), thrust forward (right).
+  const [ox, oy] = toS(0, 0);
+  const kF = 46 / (AIR.m * G), cap = Math.min((floor - roof) * 0.42, 240);
+  const capH = Math.min(CW * 0.42, 260);
+  const Lm = Math.hypot(F.Lx, F.Ly), Dm = Math.hypot(F.Dx, F.Dy);
+  arrow(ox, oy, 0, 1, F.W, kF, COL.wt, nLab('Weight', F.W), cap);
+  if (Lm > 0.02) arrow(ox, oy, F.Lx / Lm * -1, -F.Ly / Lm, Lm, kF, COL.up, nLab('Lift', Lm), Math.min(cap, oy - 8));
+  if (Dm > 0.02) arrow(ox, oy, -F.Dx / Dm, -F.Dy / Dm, Dm, kF, COL.drag, nLab('Drag', Dm), capH, cp * 0.62);
+  if (F.T > 0.02) arrow(ox, oy, 1, 0, F.T, kF, COL.thrust, nLab('Thrust', F.T), capH, cp * 0.62);
+  if (Math.abs(F.N) > 0.02) sideArrow(ox + 30, oy, F.N > 0 ? -1 : 1, Math.abs(F.N), kF, COL.push, nLab(F.contact === 'floor' ? 'Floor push' : 'Roof push', Math.abs(F.N)), cap, 1);
+  ctx.fillStyle = COL.ink; ctx.beginPath(); ctx.arc(ox, oy, 4, 0, 7); ctx.fill();
+  return F;
+}
+const airAcc = {t:0, b:0};
+
+function airBadge(F){
+  const W = F.W, cmp = Math.abs(F.lift - W) < 0.04 * W ? '=' : F.lift > W ? '>' : '<';
+  const sub = `<b class="up-t">Lift</b> ${cmp} <b class="wt-t">Weight</b> · <b style="color:var(--thrust)">Thrust</b> = <b class="dr-t">Drag</b>`;
+  const small = Math.abs(F.net) < 0.04 * W, still = Math.abs(S.a.vy) < 0.02;
+  if (F.contact === 'floor') return {cls:'bal', main:'Balanced forces · Resting on the floor', sub};
+  if (F.contact === 'roof') return {cls:'bal', main:'Balanced forces · Pressed on the roof', sub};
+  if (small && still) return {cls:'bal', main:'Balanced forces · Level flight', sub};
+  if (small) return {cls:'bal', main:`Balanced forces · Constant velocity ${S.a.vy > 0 ? '↑' : '↓'}`, sub};
+  return {cls:'unbal', main:`Unbalanced forces · Accelerating ${F.net > 0 ? '↑' : '↓'}`, sub};
+}
+
+/* =========================================================
+   GRADE 8 LEDGER: formula line, then substituted values. Nothing else.
+   ========================================================= */
+function ledgerWater(F){
+  const w = S.w, fl = FLUIDS[w.fluid];
+  const rhoO = w.mass / w.vol, rhoF = fl.rho / 1000;
+  const cmp = Math.abs(rhoO - rhoF) < 0.005 ? '=' : rhoO > rhoF ? '>' : '<';
+  const word = cmp === '=' ? 'hovers' : cmp === '>' ? 'sinks' : 'floats';
+  const A = F.s * F.s;
+  const depthTop = Math.max(0, F.h - (w.yb + F.s)), depthBot = Math.max(0, F.h - w.yb);
+  const Pt = F.rho * G * depthTop, Pb = F.rho * G * depthBot, Ft = Pt * A, Fb = Pb * A;
+  const gcc = fr('g', 'cm³');
+  return `
+  <span class="ptitle">Grade 8 math</span>
+  <div class="lcard dens">
+    <span class="lc-title">Density</span>
+    <div class="ln"><span class="f">ρ = ${fr('m', 'V')}</span></div>
+    <div class="ln"><span class="num">ρ = ${fr(w.mass + ' g', w.vol + ' cm³')} = ${rhoO.toFixed(2)}</span>${gcc}</div>
+    <div class="ln"><span class="tag">${fl.name}</span><span class="num">${rhoF.toFixed(2)}</span>${gcc}</div>
+    <span class="verdict">${rhoO.toFixed(2)} ${cmp} ${rhoF.toFixed(2)} · ${word}</span>
+  </div>
+  <div class="lcard">
+    <span class="lc-title">Pressure on the faces</span>
+    <div class="ln"><span class="f">P = ${fr('F', 'A')}</span><span>so</span><span class="f">F = P × A</span></div>
+    <div class="ln"><span class="tag up-t">Bottom ↑</span><span class="num">${Math.round(Pb)} Pa × ${A.toFixed(4)} m² = ${Fb.toFixed(1)} N</span></div>
+    <div class="ln"><span class="tag wt-t">Top ↓</span><span class="num">${Math.round(Pt)} Pa × ${A.toFixed(4)} m² = ${Ft.toFixed(1)} N</span></div>
+    <div class="ln"><span class="tag up-t">Buoyant</span><span class="num">${Fb.toFixed(1)} N − ${Ft.toFixed(1)} N = ${(Fb - Ft).toFixed(1)} N</span></div>
+  </div>`;
+}
+function ledgerAir(F){
+  const dP = F.lift / AIR.S;
+  const ms = fr('m', 's');
+  return `
+  <span class="ptitle">Grade 8 math</span>
+  <div class="lcard">
+    <span class="lc-title">Pressure difference</span>
+    <div class="ln"><span class="f">P = ${fr('F', 'A')}</span></div>
+    <div class="ln"><span class="num">ΔP = ${fr(fmt(F.lift, 1) + ' N', AIR.S.toFixed(3) + ' m²')} = ${Math.round(dP)} Pa</span></div>
+    <span class="verdict">Bottom pushes ${Math.round(dP)} Pa harder</span>
+  </div>
+  <div class="lcard dens">
+    <span class="lc-title">Air speed</span>
+    <div class="ln"><span>Faster above · lower pressure above</span></div>
+    <div class="ln"><span>Air leaves the wing turned downward</span></div>
+  </div>
+  <p class="foot">Wind ${S.a.speed} ${ms} · wing area ${AIR.S.toFixed(3)} m²</p>`;
+}
+
+/* =========================================================
+   UI
+   ========================================================= */
+const GUIDE = {
+  water:[
+    'Set the <b>mass</b> and <b>volume</b> of the block.',
+    'Pick a <b>fluid</b>.',
+    'Press <b>Release</b>. Compare the <b style="color:var(--up)">blue</b> and <b style="color:var(--wt)">red</b> arrows.',
+  ],
+  air:[
+    'Set the <b>wind speed</b>.',
+    'Pick a <b>wing shape</b> and tilt it with the <b>angle of attack</b>.',
+    'Make <b style="color:var(--up)">Lift</b> equal <b style="color:var(--wt)">Weight</b> for level flight.',
+  ],
+};
+function setRadio(sel, attr, val){ document.querySelectorAll(sel).forEach(b => b.setAttribute('aria-checked', String(b.dataset[attr] === val))); }
+function syncUI(){
+  const w = S.w, a = S.a;
+  $('massOut').textContent = `${w.mass} g`;
+  $('volOut').textContent = `${w.vol} cm³`;
+  $('speedOut').innerHTML = `${a.speed.toFixed(1)} ${fr('m', 's')}`;
+  $('aoaOut').textContent = `${a.aoa}°`;
+  $('aoa').disabled = a.shape === 'bluff';
+  $('releaseBtn').textContent = w.released ? 'Reset' : 'Release';
+  $('waterCtl').hidden = S.env !== 'water'; $('airCtl').hidden = S.env !== 'air';
+  $('ledger').hidden = S.grade !== 8;
+  $('layout').classList.toggle('g8', S.grade === 8);
+  setRadio('[data-env]', 'env', S.env); setRadio('[data-grade]', 'grade', String(S.grade));
+  setRadio('[data-fluid]', 'fluid', w.fluid); setRadio('[data-shape]', 'shape', a.shape);
+  $('guideList').innerHTML = GUIDE[S.env].map((t, i) => `<li><span class="n">${i + 1}</span><span>${t}</span></li>`).join('');
+}
+function resetWater(){ S.w.released = false; S.w.v = 0; S.w.yb = startYb(); hits = []; }
+
+$('mass').addEventListener('input', e => { S.w.mass = +e.target.value; resetWater(); syncUI(); });
+$('vol').addEventListener('input', e => { S.w.vol = +e.target.value; resetWater(); syncUI(); });
+document.querySelectorAll('[data-fluid]').forEach(b => b.addEventListener('click', () => { S.w.fluid = b.dataset.fluid; resetWater(); syncUI(); }));
+$('releaseBtn').addEventListener('click', () => { if (S.w.released) resetWater(); else S.w.released = true; syncUI(); });
+$('speed').addEventListener('input', e => { S.a.speed = +e.target.value; syncUI(); });
+$('aoa').addEventListener('input', e => { S.a.aoa = +e.target.value; syncUI(); });
+document.querySelectorAll('[data-shape]').forEach(b => b.addEventListener('click', () => { S.a.shape = b.dataset.shape; eddies = []; hits = []; syncUI(); }));
+document.querySelectorAll('[data-env]').forEach(b => b.addEventListener('click', () => { S.env = b.dataset.env; hits = []; syncUI(); requestAnimationFrame(resize); }));
+document.querySelectorAll('[data-grade]').forEach(b => b.addEventListener('click', () => { S.grade = +b.dataset.grade; hits = []; syncUI(); requestAnimationFrame(resize); }));
+$('guideBtn').addEventListener('click', () => { const p = $('guidePop'); p.hidden = !p.hidden; $('guideBtn').setAttribute('aria-expanded', String(!p.hidden)); });
+document.addEventListener('click', e => { if (!e.target.closest('.guide-wrap')){ $('guidePop').hidden = true; $('guideBtn').setAttribute('aria-expanded', 'false'); } });
+
+let last = performance.now(), lastBadge = '', lastLedger = '', ledgerT = 0;
+function frame(now){
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  if (S.env === 'water') stepWater(dt * SLOW); else stepAir(dt * SLOW);
+  ctx.clearRect(0, 0, CW, CH);
+  const F = S.env === 'water' ? drawWater(dt) : drawAir(dt);
+  const b = S.env === 'water' ? waterBadge(F) : airBadge(F);
+  const key = b.cls + b.main + b.sub;
+  if (key !== lastBadge){ lastBadge = key; $('badge').className = 'badge ' + b.cls; $('bMain').textContent = b.main; $('bSub').innerHTML = b.sub; }
+  if (S.grade === 8 && (ledgerT += dt) > 0.12){
+    ledgerT = 0;
+    const html = S.env === 'water' ? ledgerWater(F) : ledgerAir(F);
+    if (html !== lastLedger){ lastLedger = html; $('ledger').innerHTML = html; }
+  }
+  requestAnimationFrame(frame);
+}
+
+readColors(); resetWater(); syncUI(); resize();
+requestAnimationFrame(frame);
+</script>
