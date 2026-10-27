@@ -1,0 +1,799 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<script data-goatcounter="https://shawnlemko.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
+</head>
+<body>
+<title>Seasons, Moon Phases and Eclipses</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Atkinson+Hyperlegible:wght@400;700&family=Spline+Sans+Mono:wght@500;700&display=swap">
+<style>
+/* MathBoard look (shared with the math visuals site).
+   Space scenes are always drawn on a dark sky so sunlight and shadow read clearly in both themes.
+   Colour roles: sun yellow, Earth blue, the Moon's Earth-facing half = teal ring (same teal in the "From Earth" view). */
+:root{
+  --bg:#f5f8fb; --surface:#ffffff; --surface-2:#eaf0f6; --ink:#1b2733; --muted:#5b6b7a; --line:#dbe5ee; --line-strong:#b9c9d8; --pt:#2f5fd0;
+  --btn:#2f5fd0; --btn-ink:#ffffff;
+  --sky:#0d1726; --sky-2:#16243a; --sun:#ffc23a; --earth:#3f86e0; --land:#4caf6a; --night:#0a1220; --moon:#dfe3ea;
+  --seen:#22c3b0; --sum:#e0702a; --win:#3d8be0; --spr:#3aa860; --fal:#c98a00; --ok:#1f9a55; --bad:#d23a3a;
+  --font-ui:'Atkinson Hyperlegible', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-display:'Bricolage Grotesque', 'Segoe UI', system-ui, sans-serif;
+  --font-num:'Spline Sans Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0f161d; --surface:#151f29; --surface-2:#1d2935; --ink:#e6edf3; --muted:#9aabbb; --line:#1f2c38; --line-strong:#2e3f50; --pt:#7aa2ff;
+  --btn:#7aa2ff; --btn-ink:#0f161d; --sky:#070d16; --sky-2:#0f1a2a;
+  --sum:#ff9a45; --win:#6ea4ff; --spr:#5cc979; --fal:#f3c04a; --ok:#4cc47e; --bad:#ff6b6b; color-scheme:dark; } }
+:root[data-theme="dark"]{
+  --bg:#0f161d; --surface:#151f29; --surface-2:#1d2935; --ink:#e6edf3; --muted:#9aabbb; --line:#1f2c38; --line-strong:#2e3f50; --pt:#7aa2ff;
+  --btn:#7aa2ff; --btn-ink:#0f161d; --sky:#070d16; --sky-2:#0f1a2a;
+  --sum:#ff9a45; --win:#6ea4ff; --spr:#5cc979; --fal:#f3c04a; --ok:#4cc47e; --bad:#ff6b6b; color-scheme:dark; }
+
+*,*::before,*::after{box-sizing:border-box}
+h1,h2,p,ol{margin:0} ol{padding:0; list-style:none}
+button,select,input{font:inherit; color:inherit}
+button{border:0; background:none; cursor:pointer}
+html,body{height:100%}
+body{background:var(--bg); color:var(--ink); font-family:var(--font-ui); font-size:14px;
+  padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); padding-block:0}
+#app{display:flex; flex-direction:column; gap:8px; min-height:100%; padding-block:8px}
+@media (min-width:1024px){ #app{height:100%} }
+.num{font-family:var(--font-num); font-variant-numeric:tabular-nums}
+
+/* Header */
+.topbar{display:flex; flex-wrap:wrap; align-items:center; gap:10px 20px; justify-content:space-between}
+.brand{display:flex; flex-wrap:wrap; align-items:center; gap:8px 20px}
+.brand h1{font-family:var(--font-display); font-weight:800; font-size:clamp(20px, 2vw, 26px); line-height:1.1; letter-spacing:-.01em; text-wrap:balance}
+a.main-btn{display:inline-flex; align-items:center; gap:8px; padding:8px 16px; min-height:42px; background:var(--pt); color:#fff; font-family:var(--font-display); font-weight:800; font-size:16px; text-decoration:none; border-radius:10px; border:2px solid var(--pt); flex:none}
+a.main-btn span{font-size:19px; line-height:1}
+a.main-btn:hover{background:var(--surface); color:var(--pt)}
+a.main-btn:focus-visible{outline:3px solid var(--pt); outline-offset:3px}
+.top-right{display:flex; flex-wrap:wrap; align-items:center; gap:10px}
+.mode{display:flex; flex-wrap:wrap; align-items:center; gap:4px; background:var(--surface); border:1px solid var(--line); border-radius:999px; padding:4px}
+.mode button{border-radius:999px; padding:7px 16px; font-weight:700; font-size:15px; color:var(--muted); line-height:1.1}
+.mode button[aria-checked="true"]{background:var(--btn); color:var(--btn-ink)}
+.guide-wrap{position:relative}
+.btn-outline{border:1.5px solid var(--ink); border-radius:8px; padding:7px 12px; font-weight:700; font-size:14px; background:var(--surface)}
+.pop{position:absolute; right:0; top:calc(100% + 8px); width:min(380px, calc(100vw - 32px)); z-index:20; background:var(--surface);
+  border:1px solid var(--line); border-radius:10px; box-shadow:0 12px 32px rgba(10,20,30,.18); padding:14px 16px}
+.pop h2{font-weight:700; font-size:15px; margin-bottom:8px}
+.pop ol{display:flex; flex-direction:column; gap:10px}
+.pop li{display:grid; grid-template-columns:24px 1fr; gap:8px; line-height:1.4}
+.pop .n{width:22px; height:22px; border-radius:50%; background:var(--btn); color:var(--btn-ink); font-weight:700; font-size:12px; display:grid; place-items:center}
+.pop .tip{margin-top:10px; padding-top:10px; border-top:1px solid var(--line); line-height:1.4; color:var(--muted)}
+.pop .tip + .tip{border-top:0; margin-top:4px; padding-top:0}
+
+.panel{background:var(--surface); border:1px solid var(--line-strong); border-radius:10px; min-width:0}
+button:focus-visible, input:focus-visible{outline:2.5px solid var(--pt); outline-offset:2px}
+
+/* Controls */
+.controls{display:flex; flex-wrap:wrap; gap:8px 22px; padding:8px 14px; align-items:center; min-height:58px}
+.controls > div{display:flex; flex-wrap:wrap; gap:8px 22px; align-items:center; flex:1 1 auto}
+.ctl{display:flex; flex-direction:column; gap:3px; min-width:0}
+.lab{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.07em; font-weight:700}
+.seg{display:flex; flex-wrap:wrap; gap:4px}
+.seg button{border:1.5px solid var(--line-strong); border-radius:8px; padding:6px 12px; font-weight:700; font-size:14px; background:var(--surface); color:var(--ink); white-space:nowrap}
+.seg button[aria-checked="true"]{background:var(--ink); color:var(--surface); border-color:var(--ink)}
+.time{flex:1 1 360px; display:flex; align-items:center; gap:10px}
+.time .track{flex:1; min-width:140px; display:flex; flex-direction:column}
+.time input{width:100%; accent-color:var(--pt); margin:0}
+@media (max-width:560px){ .ticks span:nth-child(even){display:none} }
+.ticks{display:flex; justify-content:space-between; font-size:11px; color:var(--muted); font-family:var(--font-num); padding:0 2px}
+.big-out{font-family:var(--font-num); font-weight:700; font-size:18px; white-space:nowrap; min-width:6ch; text-align:right}
+.btn-primary{background:var(--btn); color:var(--btn-ink); border-radius:8px; padding:8px 14px; font-weight:700; font-size:15px; white-space:nowrap; min-width:92px}
+.btn-ghost{border:1px solid var(--line-strong); border-radius:8px; padding:6px 10px; font-size:13px; background:var(--surface-2); white-space:nowrap}
+
+/* Main split */
+.layout{display:grid; grid-template-columns:1fr; gap:10px; flex:1; min-height:0}
+@media (min-width:1024px){ .layout{grid-template-columns:62fr 38fr; grid-template-rows:minmax(0,1fr)} }
+.stage{position:relative; min-height:440px; padding:0; overflow:hidden; background:var(--sky); border-color:var(--sky-2)}
+@media (min-width:1024px){ .stage{min-height:0} }
+.stage canvas{position:absolute; inset:0; width:100%; height:100%; display:block; touch-action:none}
+.side{display:flex; flex-direction:column; gap:8px; padding:10px 12px; overflow:auto; min-height:0}
+.side > *{flex-shrink:0}
+.card{border:1px solid var(--line); border-radius:10px; padding:8px 10px; background:var(--surface); display:flex; flex-direction:column; gap:6px}
+.ptitle{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.07em; font-weight:700}
+.cv-box{position:relative; width:100%; border-radius:8px; overflow:hidden; background:var(--sky)}
+.cv-box canvas{position:absolute; inset:0; width:100%; height:100%; display:block}
+.grow{flex:1 1 auto; min-height:160px}
+.grow .cv-box{flex:1; min-height:150px}
+.row2{display:grid; grid-template-columns:1fr 1fr; gap:8px}
+.big{font-family:var(--font-display); font-weight:800; font-size:24px; line-height:1.1}
+.badges{display:grid; grid-template-columns:1fr 1fr; gap:8px}
+.badge{border-radius:10px; padding:6px 10px; color:#fff; display:flex; flex-direction:column; gap:1px; background:var(--muted)}
+.badge small{font-size:11px; text-transform:uppercase; letter-spacing:.07em; font-weight:700; opacity:.9}
+.badge b{font-family:var(--font-display); font-weight:800; font-size:20px; line-height:1.1}
+.s-sum{background:var(--sum)} .s-win{background:var(--win)} .s-spr{background:var(--spr)} .s-fal{background:var(--fal)} .s-none{background:var(--muted)}
+.daybar{position:relative; height:26px; border-radius:6px; background:var(--night); overflow:hidden}
+.daybar i{position:absolute; top:0; bottom:0; background:var(--sun); left:50%; transform:translateX(-50%)}
+.daybar em{position:absolute; top:-2px; bottom:-2px; left:50%; width:2px; background:var(--surface); opacity:.6}
+.dayends{display:flex; justify-content:space-between; font-size:11px; color:var(--muted); font-family:var(--font-num)}
+.strip{display:grid; grid-template-columns:repeat(8, 1fr); gap:4px}
+.strip button{border:1.5px solid var(--line); border-radius:8px; padding:3px; background:var(--sky); aspect-ratio:1}
+.strip button[aria-pressed="true"]{border-color:var(--seen); box-shadow:0 0 0 2px var(--seen)}
+.strip canvas{width:100%; height:100%; display:block}
+.ecl-badge{border-radius:10px; padding:8px 12px; font-family:var(--font-display); font-weight:800; font-size:22px; color:#fff; background:var(--muted); text-align:center}
+.ecl-badge.solar{background:#c25a00} .ecl-badge.lunar{background:#a2342a}
+
+/* Practice */
+.dots{display:flex; gap:6px; align-items:center}
+.dots i{width:16px; height:16px; border-radius:50%; border:2px solid var(--line-strong)}
+.dots i.ok{background:var(--ok); border-color:var(--ok)} .dots i.bad{background:var(--bad); border-color:var(--bad)} .dots i.now{border-color:var(--pt); box-shadow:0 0 0 2px var(--pt)}
+.q{font-family:var(--font-display); font-weight:800; font-size:24px; line-height:1.15}
+.choices{display:grid; grid-template-columns:1fr 1fr; gap:8px}
+.choice{border:2px solid var(--line-strong); border-radius:10px; padding:12px 10px; font-weight:700; font-size:17px; background:var(--surface); display:flex; align-items:center; justify-content:center; gap:8px; min-height:56px}
+.choice:hover{border-color:var(--pt)}
+.choice.pic{padding:6px; background:var(--sky); min-height:0}
+.choice.pic canvas{width:84px; height:84px; display:block}
+.choice.ok{border-color:var(--ok); box-shadow:0 0 0 2px var(--ok) inset}
+.choice.bad{border-color:var(--bad); box-shadow:0 0 0 2px var(--bad) inset; opacity:.75}
+.choice[disabled]{cursor:default}
+.fb{font-size:18px; font-weight:700; min-height:24px}
+.fb.ok{color:var(--ok)} .fb.bad{color:var(--bad)}
+.score{font-family:var(--font-display); font-weight:800; font-size:44px; text-align:center}
+@media (prefers-reduced-motion: reduce){ *{transition:none !important} }
+</style>
+
+<div id="app">
+  <header class="topbar">
+    <div class="brand">
+      <a class="main-btn" href="index.html"><span aria-hidden="true">←</span> Return to Main Page</a>
+      <h1>Seasons, Moon Phases and Eclipses</h1>
+    </div>
+    <div class="top-right">
+      <div class="mode" role="radiogroup" aria-label="View" id="viewSeg">
+        <button type="button" role="radio" data-view="seasons" aria-checked="true">Seasons</button>
+        <button type="button" role="radio" data-view="moon" aria-checked="false">Moon</button>
+        <button type="button" role="radio" data-view="eclipse" aria-checked="false">Eclipses</button>
+        <button type="button" role="radio" data-view="practice" aria-checked="false">Practice</button>
+      </div>
+      <div class="guide-wrap">
+        <button type="button" id="guideBtn" class="btn-outline" aria-expanded="false" aria-controls="guidePop">Guide</button>
+        <div id="guidePop" class="pop" hidden></div>
+      </div>
+    </div>
+  </header>
+
+  <section class="panel controls" aria-label="Controls">
+    <div data-for="seasons">
+      <div class="time">
+        <button type="button" class="btn-primary play">▶ Play</button>
+        <div class="track">
+          <input type="range" id="dayIn" min="0" max="364" step="1" value="171" aria-label="Date">
+          <div class="ticks"><span>Jan</span><span>Mar</span><span>May</span><span>Jul</span><span>Sep</span><span>Nov</span><span>Dec</span></div>
+        </div>
+        <output class="big-out" id="dayOut"></output>
+      </div>
+      <div class="ctl">
+        <span class="lab" id="tiltLab">Tilt</span>
+        <div class="seg" role="radiogroup" aria-labelledby="tiltLab" id="tiltSeg">
+          <button type="button" role="radio" data-v="1" aria-checked="true">23.5°</button>
+          <button type="button" role="radio" data-v="0" aria-checked="false">0°</button>
+        </div>
+      </div>
+    </div>
+    <div data-for="moon" hidden>
+      <div class="time">
+        <button type="button" class="btn-primary play">▶ Play</button>
+        <div class="track">
+          <input type="range" id="ageIn" min="0" max="295" step="1" value="37" aria-label="Day of the Moon's cycle">
+          <div class="ticks"><span>0</span><span>7</span><span>15</span><span>22</span><span>29.5</span></div>
+        </div>
+        <output class="big-out" id="ageOut"></output>
+      </div>
+    </div>
+    <div data-for="eclipse" hidden>
+      <div class="ctl">
+        <span class="lab" id="eTypeLab">Moon</span>
+        <div class="seg" role="radiogroup" aria-labelledby="eTypeLab" id="eTypeSeg">
+          <button type="button" role="radio" data-v="new" aria-checked="true">New Moon</button>
+          <button type="button" role="radio" data-v="full" aria-checked="false">Full Moon</button>
+        </div>
+      </div>
+      <div class="time">
+        <button type="button" class="btn-primary play">▶ Play</button>
+        <div class="track">
+          <input type="range" id="monIn" min="0" max="1199" step="1" value="150" aria-label="Month">
+          <div class="ticks"><span>Jan</span><span>Mar</span><span>May</span><span>Jul</span><span>Sep</span><span>Nov</span><span>Dec</span></div>
+        </div>
+        <output class="big-out" id="monOut"></output>
+      </div>
+      <div class="ctl">
+        <span class="lab" id="eTiltLab">Moon tilt</span>
+        <div class="seg" role="radiogroup" aria-labelledby="eTiltLab" id="eTiltSeg">
+          <button type="button" role="radio" data-v="1" aria-checked="true">5°</button>
+          <button type="button" role="radio" data-v="0" aria-checked="false">0°</button>
+        </div>
+      </div>
+    </div>
+    <div data-for="practice" hidden>
+      <div class="dots" id="dots" aria-label="Score"></div>
+      <button type="button" class="btn-ghost" id="restartBtn">↺ New round</button>
+    </div>
+  </section>
+
+  <main class="layout">
+    <section class="panel stage" aria-label="Space view">
+      <canvas id="cv"></canvas>
+    </section>
+
+    <section class="panel side" aria-label="Readouts">
+      <!-- Seasons -->
+      <div class="card grow" data-for="seasons">
+        <span class="ptitle">Side view</span>
+        <div class="cv-box"><canvas id="cvSide"></canvas></div>
+      </div>
+      <div class="row2" data-for="seasons">
+        <div class="card">
+          <span class="ptitle">Noon Sun · Edmonton</span>
+          <div class="cv-box" style="height:96px"><canvas id="cvNoon"></canvas></div>
+        </div>
+        <div class="card">
+          <span class="ptitle">Daylight · Edmonton</span>
+          <span class="big num" id="hoursOut"></span>
+          <div class="daybar" aria-hidden="true"><i id="dayFill"></i><em></em></div>
+          <div class="dayends"><span>0 h</span><span>12 h</span><span>24 h</span></div>
+        </div>
+      </div>
+      <div class="badges" data-for="seasons">
+        <div class="badge" id="bNorth"><small>Canada</small><b></b></div>
+        <div class="badge" id="bSouth"><small>Australia</small><b></b></div>
+      </div>
+
+      <!-- Moon -->
+      <div class="card grow" data-for="moon" hidden>
+        <span class="ptitle">From Earth</span>
+        <div class="cv-box"><canvas id="cvView"></canvas></div>
+        <span class="big" id="phaseOut"></span>
+      </div>
+      <div class="card" data-for="moon" hidden>
+        <span class="ptitle">Phases</span>
+        <div class="strip" id="strip"></div>
+      </div>
+
+      <!-- Eclipses -->
+      <div class="card grow" data-for="eclipse" hidden>
+        <span class="ptitle">From Earth</span>
+        <div class="cv-box"><canvas id="cvEcl"></canvas></div>
+      </div>
+      <div class="ecl-badge" id="eclOut" data-for="eclipse" hidden></div>
+
+      <!-- Practice -->
+      <div class="card grow" data-for="practice" hidden id="pCard">
+        <span class="q" id="pQ"></span>
+        <div class="cv-box" id="pPicBox" style="height:150px" hidden><canvas id="cvP"></canvas></div>
+        <div class="choices" id="pChoices"></div>
+        <span class="fb" id="pFb"></span>
+        <button type="button" class="btn-primary" id="pNext" hidden>Next ▶</button>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const TAU = Math.PI * 2, R2D = 180 / Math.PI, D2R = Math.PI / 180;
+const LAT = 53.5;            // Edmonton
+const TILT = 23.5;           // Earth's axial tilt, degrees
+const SOLSTICE = 171;        // day index of June 21 (Jan 1 = 0)
+const MOON_DAYS = 29.5;
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const MLEN = [31,28,31,30,31,30,31,31,30,31,30,31];
+const PHASES = ['New Moon','Waxing Crescent','First Quarter','Waxing Gibbous','Full Moon','Waning Gibbous','Third Quarter','Waning Crescent'];
+
+const S = { view:'seasons', day:171, tilt:true, age:3.7, eType:'new', month:1.5, eTilt:true, playing:false, drag:null };
+
+/* ---------- helpers ---------- */
+let C = {};
+const readColors = () => { const cs = getComputedStyle(document.documentElement); C = {};
+  ['sky','sky-2','sun','earth','land','night','moon','seen','ink','muted','surface','ok','bad'].forEach(k => C[k] = cs.getPropertyValue('--' + k).trim()); };
+function fit(cv){
+  const r = cv.getBoundingClientRect(), d = devicePixelRatio || 1;
+  const w = Math.max(1, Math.round(r.width * d)), h = Math.max(1, Math.round(r.height * d));
+  if (cv.width !== w || cv.height !== h){ cv.width = w; cv.height = h; }
+  const ctx = cv.getContext('2d'); ctx.setTransform(d, 0, 0, d, 0, 0);
+  return { ctx, W:r.width, H:r.height };
+}
+const dateOf = day => { let m = 0, d = day; while (d >= MLEN[m]){ d -= MLEN[m]; m++; } return MONTHS[m] + ' ' + (d + 1); };
+const circle = (ctx, x, y, r) => { ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); };
+const label = (ctx, txt, x, y, size, color, align='center', weight=700) => {
+  ctx.font = `${weight} ${size}px 'Atkinson Hyperlegible', system-ui, sans-serif`; ctx.fillStyle = color; ctx.textAlign = align; ctx.textBaseline = 'middle'; ctx.fillText(txt, x, y); };
+
+// A fixed field of faint stars (same every frame)
+const STARS = Array.from({length:140}, (_, i) => { const s = Math.sin(i * 127.1) * 43758.5; const f = s - Math.floor(s); const s2 = Math.sin(i * 311.7) * 24634.6; const g = s2 - Math.floor(s2);
+  return [f, g, 0.4 + ((i * 7) % 5) * 0.22, 0.25 + ((i * 13) % 7) * 0.08]; });
+function sky(ctx, W, H, stars=true){
+  ctx.fillStyle = C.sky; ctx.fillRect(0, 0, W, H);
+  if (!stars) return;
+  STARS.forEach(([x, y, r, a]) => { ctx.globalAlpha = a; ctx.fillStyle = '#fff'; circle(ctx, x * W, y * H, r); ctx.fill(); });
+  ctx.globalAlpha = 1;
+}
+function sunBall(ctx, x, y, r){
+  const g = ctx.createRadialGradient(x, y, r * 0.6, x, y, r * 2.2);
+  g.addColorStop(0, 'rgba(255,200,70,.55)'); g.addColorStop(1, 'rgba(255,200,70,0)');
+  ctx.fillStyle = g; circle(ctx, x, y, r * 2.2); ctx.fill();
+  ctx.fillStyle = C.sun; circle(ctx, x, y, r); ctx.fill();
+}
+function arrowHead(ctx, x, y, ang, s, color){
+  ctx.fillStyle = color; ctx.beginPath();
+  ctx.moveTo(x + Math.cos(ang) * s, y + Math.sin(ang) * s);
+  ctx.lineTo(x + Math.cos(ang + 2.5) * s, y + Math.sin(ang + 2.5) * s);
+  ctx.lineTo(x + Math.cos(ang - 2.5) * s, y + Math.sin(ang - 2.5) * s); ctx.closePath(); ctx.fill();
+}
+
+/* ---------- Earth and Sun numbers ---------- */
+const declination = (day, tiltOn) => tiltOn ? Math.asin(Math.sin(TILT * D2R) * Math.cos(TAU * (day - SOLSTICE) / 365)) * R2D : 0;
+const noonAlt = dec => 90 - Math.abs(LAT - dec);
+const dayHours = dec => { const x = -Math.tan(LAT * D2R) * Math.tan(dec * D2R); return x <= -1 ? 24 : x >= 1 ? 0 : 2 * Math.acos(x) * R2D / 15; };
+function seasonNorth(day){ if (day >= 78 && day < 171) return 'spr'; if (day >= 171 && day < 264) return 'sum'; if (day >= 264 && day < 354) return 'fal'; return 'win'; }
+const OPP = { spr:'fal', sum:'win', fal:'spr', win:'sum' };
+const SNAME = { spr:'Spring', sum:'Summer', fal:'Fall', win:'Winter', none:'No seasons' };
+
+/* ---------- SEASONS: orbit seen from slightly above ---------- */
+function orbitGeom(W, H){
+  const rx = Math.min(W * 0.41, H * 1.1), ry = Math.min(rx * 0.42, H * 0.33);
+  return { cx:W / 2, cy:H * 0.52, rx, ry, rs:Math.max(16, rx * 0.12), re:Math.max(12, rx * 0.085) };
+}
+const orbitAngle = day => Math.PI - TAU * (day - SOLSTICE) / 365;   // June = left, Sept = front, Dec = right, March = back
+function orbitPos(g, day){ const a = orbitAngle(day); return { a, x:g.cx + g.rx * Math.cos(a), y:g.cy + g.ry * Math.sin(a), s:1 + 0.16 * Math.sin(a) }; }
+
+function earthTop(ctx, x, y, r, sx, sy, tiltOn, alpha=1, showN=true){
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = C.earth; circle(ctx, x, y, r); ctx.fill();
+  const th = Math.atan2(sy - y, sx - x);
+  ctx.fillStyle = 'rgba(4,8,20,.72)'; ctx.beginPath(); ctx.arc(x, y, r, th + Math.PI / 2, th + 3 * Math.PI / 2); ctx.closePath(); ctx.fill();
+  const e = (tiltOn ? TILT : 0) * D2R, ax = Math.sin(e), ay = -Math.cos(e);
+  ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.lineWidth = 1.2;
+  ctx.beginPath(); ctx.moveTo(x - Math.cos(e) * r, y - Math.sin(e) * r); ctx.lineTo(x + Math.cos(e) * r, y + Math.sin(e) * r); ctx.stroke();
+  ctx.strokeStyle = '#fff'; ctx.lineWidth = 2.5;
+  ctx.beginPath(); ctx.moveTo(x - ax * r * 1.6, y - ay * r * 1.6); ctx.lineTo(x + ax * r * 1.6, y + ay * r * 1.6); ctx.stroke();
+  if (showN){ ctx.fillStyle = '#ff5d5d'; circle(ctx, x + ax * r * 1.6, y + ay * r * 1.6, 3.5); ctx.fill();
+    label(ctx, 'N', x + ax * r * 2.05, y + ay * r * 2.05, 12, '#fff'); }
+  ctx.globalAlpha = 1;
+}
+
+function drawSeasons(ctx, W, H, o){
+  sky(ctx, W, H);
+  const g = orbitGeom(W, H);
+  ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.lineWidth = 1.5; ctx.setLineDash([5, 6]);
+  ctx.beginPath(); ctx.ellipse(g.cx, g.cy, g.rx, g.ry, 0, 0, TAU); ctx.stroke(); ctx.setLineDash([]);
+  // direction of travel (counterclockwise seen from above the North Pole)
+  [Math.PI * 0.75, Math.PI * 1.75].forEach(a => { const x = g.cx + g.rx * Math.cos(a), y = g.cy + g.ry * Math.sin(a);
+    arrowHead(ctx, x, y, Math.atan2(-g.ry * Math.cos(a), g.rx * Math.sin(a)), 7, 'rgba(255,255,255,.6)'); });
+  if (o.labels){
+    [[78,'Mar'],[171,'Jun'],[264,'Sep'],[354,'Dec']].forEach(([d, t]) => { const a = orbitAngle(d);
+      label(ctx, t, g.cx + (g.rx + g.re * 1.3 + 26) * Math.cos(a), g.cy + (g.ry + g.re * 1.3 + 16) * Math.sin(a), 14, 'rgba(255,255,255,.75)'); });
+  }
+  const p = orbitPos(g, o.day);
+  const ghosts = o.ghosts ? [78, 171, 264, 354].map(d => orbitPos(g, d)) : [];
+  const back = ghosts.filter(q => Math.sin(q.a) < 0), front = ghosts.filter(q => Math.sin(q.a) >= 0);
+  back.forEach(q => earthTop(ctx, q.x, q.y, g.re * q.s, g.cx, g.cy, o.tilt, 0.28, false));
+  if (Math.sin(p.a) < 0) earthTop(ctx, p.x, p.y, g.re * p.s, g.cx, g.cy, o.tilt);
+  sunBall(ctx, g.cx, g.cy, g.rs);
+  if (o.labels) label(ctx, 'Sun', g.cx, g.cy, 13, '#5a3a00');
+  front.forEach(q => earthTop(ctx, q.x, q.y, g.re * q.s, g.cx, g.cy, o.tilt, 0.28, false));
+  if (Math.sin(p.a) >= 0) earthTop(ctx, p.x, p.y, g.re * p.s, g.cx, g.cy, o.tilt);
+  return { g, p };
+}
+
+/* Side view of Earth, with sunlight coming from the side the Sun is on in the orbit view.
+   3D: x = away from the Sun, y = up, z = toward the viewer. The axis keeps its direction in space. */
+function drawSide(ctx, W, H, day, tiltOn){
+  sky(ctx, W, H, false);
+  const sunRight = Math.cos(orbitAngle(day)) < 0;      // Earth on the left half of the orbit, so the Sun is to its right
+  const sx = sunRight ? -1 : 1;
+  const R = Math.min(W * 0.30, H * 0.36), X0 = W / 2 + sx * W * 0.08, Y0 = H / 2;
+  const e = (tiltOn ? TILT : 0) * D2R, psi = TAU * (day - SOLSTICE) / 365;
+  const A = [-Math.sin(e) * Math.cos(psi), Math.cos(e), Math.sin(e) * Math.sin(psi)];
+  // sunlight
+  const sunX = sunRight ? W + R * 0.2 : -R * 0.2;
+  sunBall(ctx, sunX, Y0, R * 0.55);
+  ctx.strokeStyle = 'rgba(255,205,80,.55)'; ctx.lineWidth = 1.5;
+  for (let k = -3; k <= 3; k++){ const y = Y0 + k * R * 0.3, lim = Math.sqrt(Math.max(0, R * R - (k * R * 0.3) ** 2));
+    const x0 = sunRight ? W - R * 0.4 : R * 0.4, x1 = X0 - sx * (lim + 6);
+    ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x1, y); ctx.stroke(); arrowHead(ctx, x1, y, sunRight ? Math.PI : 0, 6, 'rgba(255,205,80,.8)'); }
+  // globe: lit half faces the Sun
+  ctx.fillStyle = '#16345e'; circle(ctx, X0, Y0, R); ctx.fill();
+  ctx.fillStyle = C.earth; ctx.beginPath(); ctx.arc(X0, Y0, R, sunRight ? -Math.PI / 2 : Math.PI / 2, sunRight ? Math.PI / 2 : 3 * Math.PI / 2); ctx.closePath(); ctx.fill();
+  const cb = Math.cos(0.3), sb = Math.sin(0.3);          // camera looks from a little above
+  const P = (x, y, z=0) => [X0 + sx * x, Y0 - (y * cb - z * sb)];
+  // two unit vectors perpendicular to the axis
+  let u = [A[1], -A[0], 0]; const ul = Math.hypot(u[0], u[1]); u = [u[0] / ul, u[1] / ul, 0];
+  const v = [A[1] * u[2] - A[2] * u[1], A[2] * u[0] - A[0] * u[2], A[0] * u[1] - A[1] * u[0]];
+  const ring = (phi, color, width, litColor) => {
+    const c = Math.sin(phi * D2R), rr = Math.cos(phi * D2R), N = 120; let prev = null;
+    for (let i = 0; i <= N; i++){ const s = i / N * TAU;
+      const q = [0, 1, 2].map(j => R * (A[j] * c + rr * (u[j] * Math.cos(s) + v[j] * Math.sin(s))));
+      if (prev){ const front = (q[1] + prev[1]) * sb + (q[2] + prev[2]) * cb >= 0, lit = (q[0] + prev[0]) < 0;
+        ctx.strokeStyle = litColor ? (lit ? litColor : color) : color; ctx.globalAlpha = front ? 1 : 0.28; ctx.lineWidth = front ? width : width * 0.7;
+        const a = P(prev[0], prev[1], prev[2]), b = P(q[0], q[1], q[2]); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); }
+      prev = q; }
+    ctx.globalAlpha = 1;
+  };
+  ring(0, 'rgba(255,255,255,.45)', 1.2);
+  ring(LAT, '#5b6f8c', 4, C.sun);                      // Edmonton's latitude: yellow part is in daylight
+  // axis and poles
+  const n = P(A[0] * R * 1.3, A[1] * R * 1.3, A[2] * R * 1.3), s = P(-A[0] * R * 1.3, -A[1] * R * 1.3, -A[2] * R * 1.3);
+  ctx.strokeStyle = '#fff'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(s[0], s[1]); ctx.lineTo(n[0], n[1]); ctx.stroke();
+  ctx.fillStyle = '#ff5d5d'; circle(ctx, n[0], n[1], 4); ctx.fill();
+  label(ctx, 'N', n[0], n[1] - 13, 13, '#fff'); label(ctx, 'S', s[0], s[1] + 13, 13, '#fff');
+  // Edmonton at noon (the point of its latitude line that faces the Sun)
+  let best = null; const c = Math.sin(LAT * D2R), rr = Math.cos(LAT * D2R);
+  for (let i = 0; i < 180; i++){ const t = i / 180 * TAU; const q = [0, 1, 2].map(j => R * (A[j] * c + rr * (u[j] * Math.cos(t) + v[j] * Math.sin(t)))); if (!best || q[0] < best[0]) best = q; }
+  const ed = P(best[0], best[1], best[2]);
+  ctx.fillStyle = '#ff5d5d'; ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; circle(ctx, ed[0], ed[1], 5); ctx.fill(); ctx.stroke();
+}
+
+/* Noon sunlight in Edmonton: the same beam of light lands on a small, bright patch (high Sun) or a wide, dim patch (low Sun). */
+function drawNoon(ctx, W, H, alt){
+  sky(ctx, W, H, false);
+  const gy = H - 16, a = alt * D2R, bw = 20, cx = W * 0.64;
+  ctx.fillStyle = '#5a4a32'; ctx.fillRect(0, gy, W, H - gy);
+  const len = bw / Math.sin(a), L = Math.max(W, H) * 1.5, dx = -Math.cos(a) * L, dy = -Math.sin(a) * L;
+  const x0 = cx - len / 2, x1 = cx + len / 2;
+  ctx.fillStyle = 'rgba(255,205,80,.35)'; ctx.beginPath();
+  ctx.moveTo(x0, gy); ctx.lineTo(x1, gy); ctx.lineTo(x1 + dx, gy + dy); ctx.lineTo(x0 + dx, gy + dy); ctx.closePath(); ctx.fill();
+  // the lit patch: brighter when the same light lands on a smaller area
+  ctx.fillStyle = C.sun; ctx.globalAlpha = 0.3 + 0.7 * Math.sin(a); ctx.fillRect(x0, gy, len, 5); ctx.globalAlpha = 1;
+  ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(x0, gy, 24, Math.PI, Math.PI + a); ctx.stroke();
+  label(ctx, Math.round(alt) + '°', x0 - 30, gy - 12 - 12 * Math.sin(a), 16, '#fff', 'right');
+}
+
+/* ---------- MOON: seen from above the North Pole, sunlight from the right ---------- */
+const moonAngle = age => age / MOON_DAYS * TAU;
+const phaseIndex = a => Math.round(((a % TAU) + TAU) % TAU / (TAU / 8)) % 8;
+
+// Moon as seen from Earth (Northern Hemisphere): a = 0 new, PI/2 first quarter, PI full
+function phaseDisc(ctx, x, y, r, a, ringColor){
+  a = ((a % TAU) + TAU) % TAU;
+  ctx.fillStyle = '#2b3442'; circle(ctx, x, y, r); ctx.fill();
+  const c = Math.cos(a), waxing = a < Math.PI, N = 60;
+  ctx.fillStyle = C.moon; ctx.beginPath();
+  for (let i = 0; i <= N; i++){ const yy = -r + 2 * r * i / N, lim = Math.sqrt(Math.max(0, r * r - yy * yy)); ctx.lineTo(x + (waxing ? lim : -lim * c), y + yy); }
+  for (let i = N; i >= 0; i--){ const yy = -r + 2 * r * i / N, lim = Math.sqrt(Math.max(0, r * r - yy * yy)); ctx.lineTo(x + (waxing ? lim * c : -lim), y + yy); }
+  ctx.closePath(); ctx.fill();
+  if (ringColor){ ctx.strokeStyle = ringColor; ctx.lineWidth = Math.max(2, r * 0.07); circle(ctx, x, y, r + ctx.lineWidth / 2 + 1); ctx.stroke(); }
+}
+
+function moonGeom(W, H){ const Ro = Math.min(W * 0.34, H * 0.38); return { cx:W * 0.44, cy:H * 0.5, Ro, re:Math.max(14, Ro * 0.17), rm:Math.max(8, Ro * 0.085) }; }
+function topBody(ctx, x, y, r, base){ // a body lit from the right
+  ctx.fillStyle = '#26303d'; circle(ctx, x, y, r); ctx.fill();
+  ctx.fillStyle = base; ctx.beginPath(); ctx.arc(x, y, r, -Math.PI / 2, Math.PI / 2); ctx.closePath(); ctx.fill();
+}
+function drawMoonTop(ctx, W, H, o){
+  sky(ctx, W, H);
+  const g = moonGeom(W, H);
+  // sunlight from the right
+  sunBall(ctx, W + g.Ro * 0.15, g.cy, g.Ro * 0.32);
+  ctx.strokeStyle = 'rgba(255,205,80,.16)'; ctx.lineWidth = 1.5;
+  for (let k = -4; k <= 4; k++){ const y = g.cy + k * H * 0.11; if (y < 8 || y > H - 8) continue;
+    ctx.beginPath(); ctx.moveTo(W - g.Ro * 0.45, y); ctx.lineTo(W * 0.04, y); ctx.stroke(); arrowHead(ctx, W * 0.04, y, Math.PI, 6, 'rgba(255,205,80,.5)'); }
+  ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.setLineDash([5, 6]); circle(ctx, g.cx, g.cy, g.Ro); ctx.stroke(); ctx.setLineDash([]);
+  [0.6, 3.75].forEach(a => arrowHead(ctx, g.cx + g.Ro * Math.cos(a), g.cy - g.Ro * Math.sin(a), -a - Math.PI / 2, 7, 'rgba(255,255,255,.6)'));
+  // Earth, with a little observer facing the Moon
+  topBody(ctx, g.cx, g.cy, g.re, C.earth);
+  // the 8 phase spots
+  const spots = [];
+  for (let k = 0; k < 8; k++){ const a = k * TAU / 8, x = g.cx + g.Ro * Math.cos(a), y = g.cy - g.Ro * Math.sin(a); spots.push({x, y, k});
+    if (o.ghosts){ ctx.globalAlpha = o.ghostAlpha ?? 0.35; topBody(ctx, x, y, g.rm, C.moon); ctx.globalAlpha = 1; }
+    if (o.mark && o.mark[k]){ ctx.strokeStyle = o.mark[k]; ctx.lineWidth = 3.5; circle(ctx, x, y, g.rm + 7); ctx.stroke(); }
+  }
+  if (o.a != null){
+    const x = g.cx + g.Ro * Math.cos(o.a), y = g.cy - g.Ro * Math.sin(o.a);
+    ctx.strokeStyle = 'rgba(34,195,176,.55)'; ctx.setLineDash([3, 5]); ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(g.cx, g.cy); ctx.lineTo(x, y); ctx.stroke(); ctx.setLineDash([]);
+    topBody(ctx, x, y, g.rm * 1.25, C.moon);
+    // the half that faces Earth
+    const toE = Math.atan2(g.cy - y, g.cx - x);
+    ctx.strokeStyle = C.seen; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(x, y, g.rm * 1.25 + 4, toE - Math.PI / 2, toE + Math.PI / 2); ctx.stroke();
+  }
+  return { g, spots };
+}
+
+/* ---------- ECLIPSES: side view, Sun on the left ---------- */
+const E = { d:1, RE:0.12, rm:0.04, inc:22 * D2R, k:0.2 };   // inclination drawn larger than the real 5 degrees so it can be seen
+const nodeAngle = m => TAU * (m - 2.5) / 12;                 // eclipse seasons near March and September in this model
+function moonHeight(type, month, tiltOn){ const t = type === 'new' ? Math.PI : 0; return E.d * (tiltOn ? Math.sin(E.inc) : 0) * Math.sin(t - nodeAngle(month)); }
+function eclipseKind(type, h){
+  const a = Math.abs(h);
+  if (type === 'new'){ const f = a / (E.RE + E.rm); return f < 0.15 ? 'tsolar' : f < 1 ? 'psolar' : 'none'; }
+  const U = E.RE * 0.72; return a < U - E.rm ? 'tlunar' : a < U + E.rm ? 'plunar' : 'none';
+}
+const KIND = { tsolar:['Total solar eclipse','solar'], psolar:['Partial solar eclipse','solar'], tlunar:['Total lunar eclipse','lunar'], plunar:['Partial lunar eclipse','lunar'], none:['No eclipse',''] };
+
+function drawEclipse(ctx, W, H, o){
+  sky(ctx, W, H);
+  const d = Math.min(W * 0.34, H * 0.8), ex = W * 0.6, ey = H * 0.5, sc = d / E.d;
+  const RE = E.RE * sc, rm = E.rm * sc;
+  const inc = o.tilt ? E.inc : 0, Om = nodeAngle(o.month);
+  // Sun
+  const sr = Math.min(H * 0.28, W * 0.1);
+  const wash = ctx.createLinearGradient(0, 0, W, 0); wash.addColorStop(0, 'rgba(255,205,90,.13)'); wash.addColorStop(1, 'rgba(255,205,90,.06)');
+  ctx.fillStyle = wash; ctx.fillRect(0, 0, W, H);
+  sunBall(ctx, -sr * 0.25, ey, sr);
+  if (o.labels) label(ctx, 'Sun', sr * 0.35, ey, 14, '#5a3a00');
+  // flat plane of Earth's orbit
+  ctx.fillStyle = 'rgba(255,255,255,.06)'; ctx.strokeStyle = 'rgba(255,255,255,.25)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.ellipse(ex, ey, d * 1.18, d * 1.18 * E.k, 0, 0, TAU); ctx.fill(); ctx.stroke();
+  ctx.strokeStyle = 'rgba(255,255,255,.25)'; ctx.setLineDash([4, 6]); ctx.beginPath(); ctx.moveTo(sr * 0.9, ey); ctx.lineTo(W, ey); ctx.stroke(); ctx.setLineDash([]);
+  // Moon's orbit ring (back half dashed)
+  const pt = t => [ex + d * Math.cos(t), ey - d * Math.sin(inc) * Math.sin(t - Om) + d * Math.sin(t) * E.k];
+  const ringPart = front => { ctx.strokeStyle = front ? 'rgba(200,215,235,.85)' : 'rgba(200,215,235,.35)'; ctx.lineWidth = front ? 2 : 1.5; ctx.setLineDash(front ? [] : [4, 5]);
+    ctx.beginPath(); for (let i = 0; i <= 90; i++){ const t = (front ? 0 : Math.PI) + i / 90 * Math.PI; const p = pt(t); i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); } ctx.stroke(); ctx.setLineDash([]); };
+  ringPart(false);
+  const h = moonHeight(o.type, o.month, o.tilt) * sc, mx = o.type === 'new' ? ex - d : ex + d, my = ey - h;
+  // Earth's shadow (to the right)
+  const U = RE * 0.72;
+  ctx.fillStyle = 'rgba(5,10,20,.45)'; ctx.beginPath(); ctx.moveTo(ex, ey - RE); ctx.lineTo(W, ey - RE - (W - ex) * 0.06); ctx.lineTo(W, ey + RE + (W - ex) * 0.06); ctx.lineTo(ex, ey + RE); ctx.fill();
+  ctx.fillStyle = 'rgba(5,10,20,.85)'; ctx.beginPath(); ctx.moveTo(ex, ey - RE); ctx.lineTo(ex + d, ey - U); ctx.lineTo(W, ey - U + (W - ex - d) * (U - RE) / d); ctx.lineTo(W, ey + U - (W - ex - d) * (U - RE) / d); ctx.lineTo(ex + d, ey + U); ctx.lineTo(ex, ey + RE); ctx.fill();
+  // Earth (lit on the left)
+  ctx.fillStyle = '#16345e'; circle(ctx, ex, ey, RE); ctx.fill();
+  ctx.fillStyle = C.earth; ctx.beginPath(); ctx.arc(ex, ey, RE, Math.PI / 2, 3 * Math.PI / 2); ctx.closePath(); ctx.fill();
+  // Moon and its shadow
+  if (o.type === 'new'){
+    // the Moon's shadow stops where it lands on Earth, or runs on past Earth when it misses
+    const dy = Math.abs(my - ey), xs = dy < RE ? ex - Math.sqrt(RE * RE - dy * dy) : ex + RE * 1.6;
+    ctx.fillStyle = 'rgba(5,10,20,.45)'; ctx.beginPath(); ctx.moveTo(mx, my - rm); ctx.lineTo(xs, my - rm * 1.9); ctx.lineTo(xs, my + rm * 1.9); ctx.lineTo(mx, my + rm); ctx.fill();
+    ctx.fillStyle = 'rgba(5,10,20,.85)'; ctx.beginPath(); ctx.moveTo(mx, my - rm); ctx.lineTo(xs, my - rm * 0.2); ctx.lineTo(xs, my + rm * 0.2); ctx.lineTo(mx, my + rm); ctx.fill();
+    const kind = eclipseKind('new', moonHeight(o.type, o.month, o.tilt));
+    if (kind !== 'none'){ ctx.save(); circle(ctx, ex, ey, RE); ctx.clip(); ctx.fillStyle = 'rgba(0,0,0,.55)'; circle(ctx, ex - RE * 0.75, my, rm * 1.6); ctx.fill();
+      if (kind === 'tsolar'){ ctx.fillStyle = '#000'; circle(ctx, ex - RE * 0.85, my, rm * 0.5); ctx.fill(); } ctx.restore(); }
+  }
+  ringPart(true);
+  ctx.fillStyle = '#3a4250'; circle(ctx, mx, my, rm); ctx.fill();
+  const inUmbra = o.type === 'full' && eclipseKind('full', moonHeight(o.type, o.month, o.tilt)) === 'tlunar';
+  ctx.fillStyle = inUmbra ? '#b4553e' : C.moon; ctx.beginPath(); ctx.arc(mx, my, rm, Math.PI / 2, 3 * Math.PI / 2); ctx.closePath(); ctx.fill();
+  if (inUmbra){ ctx.fillStyle = '#9a4430'; ctx.beginPath(); ctx.arc(mx, my, rm, -Math.PI / 2, Math.PI / 2); ctx.closePath(); ctx.fill(); }
+  if (o.labels){ label(ctx, 'Earth', ex, ey + RE + 16, 13, 'rgba(255,255,255,.8)'); label(ctx, 'Moon', mx, my - rm - 13, 13, 'rgba(255,255,255,.8)'); }
+}
+
+/* What the eclipse looks like from Earth */
+function drawEclView(ctx, W, H, type, h){
+  const kind = eclipseKind(type, h), rd = Math.min(W, H) * 0.26, x = W / 2, y = H / 2;
+  if (type === 'new'){
+    ctx.fillStyle = kind === 'tsolar' ? '#05080e' : kind === 'psolar' ? '#3c5578' : '#5d93cf'; ctx.fillRect(0, 0, W, H);
+    if (kind === 'tsolar'){ const g = ctx.createRadialGradient(x, y, rd, x, y, rd * 2.3); g.addColorStop(0, 'rgba(255,255,255,.85)'); g.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = g; circle(ctx, x, y, rd * 2.3); ctx.fill(); }
+    ctx.fillStyle = C.sun; circle(ctx, x, y, rd); ctx.fill();
+    if (kind !== 'none'){ const f = Math.abs(h) / (E.RE + E.rm), off = f < 0.15 ? 0 : (f - 0.15) / 0.85 * 2.05 * rd;
+      ctx.fillStyle = '#10151d'; circle(ctx, x, y - Math.sign(h) * off, rd * 1.04); ctx.fill(); }
+  } else {
+    sky(ctx, W, H); ctx.fillStyle = C.moon; circle(ctx, x, y, rd); ctx.fill();
+    if (kind !== 'none'){
+      const U = E.RE * 0.72, g = Math.abs(h) / (U + E.rm), g0 = (U - E.rm) / (U + E.rm), Rs = rd * 2.6;
+      const off = g < g0 ? (Rs - rd) * g / g0 : (Rs - rd) + (g - g0) / (1 - g0) * 2 * rd;
+      ctx.save(); circle(ctx, x, y, rd); ctx.clip(); ctx.fillStyle = 'rgba(150,50,30,.9)'; circle(ctx, x, y - Math.sign(h) * off, Rs); ctx.fill(); ctx.restore();
+    }
+  }
+}
+
+/* ---------- state to screen ---------- */
+const cv = $('cv');
+let hit = null;   // geometry of the last main drawing, for pointer hits
+function render(){
+  readColors();
+  const { ctx, W, H } = fit(cv);
+  if (S.view === 'seasons'){
+    hit = drawSeasons(ctx, W, H, { day:S.day, tilt:S.tilt, labels:true, ghosts:true });
+    const sd = fit($('cvSide')); drawSide(sd.ctx, sd.W, sd.H, S.day, S.tilt);
+    const dec = declination(S.day, S.tilt), alt = noonAlt(dec), hrs = dayHours(dec);
+    const nb = fit($('cvNoon')); drawNoon(nb.ctx, nb.W, nb.H, alt);
+    $('dayOut').textContent = dateOf(S.day);
+    $('hoursOut').textContent = hrs.toFixed(1) + ' h';
+    $('dayFill').style.width = (hrs / 24 * 100) + '%';
+    const n = S.tilt ? seasonNorth(S.day) : 'none', s = S.tilt ? OPP[n] : 'none';
+    $('bNorth').className = 'badge s-' + n; $('bNorth').querySelector('b').textContent = SNAME[n];
+    $('bSouth').className = 'badge s-' + s; $('bSouth').querySelector('b').textContent = SNAME[s];
+  } else if (S.view === 'moon'){
+    const a = moonAngle(S.age);
+    hit = drawMoonTop(ctx, W, H, { a, ghosts:true });
+    const vb = fit($('cvView')); sky(vb.ctx, vb.W, vb.H); phaseDisc(vb.ctx, vb.W / 2, vb.H / 2, Math.min(vb.W, vb.H) * 0.36, a, C.seen);
+    const k = phaseIndex(a);
+    $('phaseOut').textContent = PHASES[k];
+    $('ageOut').textContent = 'Day ' + Math.round(S.age);
+    stripBtns.forEach((b, i) => b.setAttribute('aria-pressed', i === k));
+  } else if (S.view === 'eclipse'){
+    drawEclipse(ctx, W, H, { type:S.eType, month:S.month, tilt:S.eTilt, labels:true });
+    const h = moonHeight(S.eType, S.month, S.eTilt), kind = eclipseKind(S.eType, h);
+    const eb = fit($('cvEcl')); drawEclView(eb.ctx, eb.W, eb.H, S.eType, h);
+    $('eclOut').textContent = KIND[kind][0]; $('eclOut').className = 'ecl-badge ' + KIND[kind][1];
+    $('monOut').textContent = MONTHS[Math.min(11, Math.floor(S.month))];
+  } else {
+    hit = P.draw(ctx, W, H);
+  }
+}
+let queued = false;
+const redraw = () => { if (!queued){ queued = true; requestAnimationFrame(() => { queued = false; render(); }); } };
+
+/* ---------- playback ---------- */
+let last = 0;
+function tick(ts){
+  if (!S.playing) return;
+  const dt = Math.min(0.05, (ts - (last || ts)) / 1000); last = ts;
+  if (S.view === 'seasons'){ S.day = (S.day + dt * 30) % 365; $('dayIn').value = Math.floor(S.day); }
+  if (S.view === 'moon'){ S.age = (S.age + dt * 3) % MOON_DAYS; $('ageIn').value = Math.round(S.age * 10); }
+  if (S.view === 'eclipse'){ S.month = (S.month + dt * 0.8) % 12; $('monIn').value = Math.round(S.month * 100); }
+  render(); requestAnimationFrame(tick);
+}
+function setPlay(on){
+  S.playing = on; last = 0;
+  document.querySelectorAll('.play').forEach(b => b.textContent = on ? '❚❚ Pause' : '▶ Play');
+  if (on) requestAnimationFrame(tick);
+}
+document.querySelectorAll('.play').forEach(b => b.addEventListener('click', () => setPlay(!S.playing)));
+
+/* ---------- controls ---------- */
+function radio(segId, onPick){
+  const seg = $(segId);
+  seg.addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return;
+    seg.querySelectorAll('button').forEach(x => x.setAttribute('aria-checked', x === b)); onPick(b.dataset.v ?? b.dataset.view); });
+}
+radio('tiltSeg', v => { S.tilt = v === '1'; redraw(); });
+radio('eTiltSeg', v => { S.eTilt = v === '1'; redraw(); });
+radio('eTypeSeg', v => { S.eType = v; redraw(); });
+radio('viewSeg', v => setView(v));
+$('dayIn').addEventListener('input', e => { S.day = +e.target.value; setPlay(false); redraw(); });
+$('ageIn').addEventListener('input', e => { S.age = e.target.value / 10; setPlay(false); redraw(); });
+$('monIn').addEventListener('input', e => { S.month = e.target.value / 100; setPlay(false); redraw(); });
+
+const stripBtns = PHASES.map((name, k) => { const b = document.createElement('button'); b.type = 'button'; b.title = name; b.setAttribute('aria-label', name);
+  b.appendChild(document.createElement('canvas')); b.addEventListener('click', () => { S.age = k * MOON_DAYS / 8; $('ageIn').value = Math.round(S.age * 10); setPlay(false); redraw(); });
+  $('strip').appendChild(b); return b; });
+function drawStrip(){ readColors(); stripBtns.forEach((b, k) => { const f = fit(b.firstChild); phaseDisc(f.ctx, f.W / 2, f.H / 2, Math.min(f.W, f.H) * 0.4, k * TAU / 8); }); }
+
+const GUIDE = {
+  seasons:`<h2>Seasons</h2><ol>
+    <li><span class="n">1</span><span>Drag <b>Earth</b> around the Sun, or press <b>Play</b>.</span></li>
+    <li><span class="n">2</span><span>The axis always leans the <b>same way</b> in space.</span></li>
+    <li><span class="n">3</span><span>North Pole leans toward the Sun: <b>summer</b> in Canada. The Sun is higher, light is concentrated and days are long.</span></li>
+    <li><span class="n">4</span><span>Side view: the <b>yellow</b> part of Edmonton's line is in daylight.</span></li>
+    <li><span class="n">5</span><span>Set tilt to <b>0°</b>. The seasons stop.</span></li></ol>
+    <p class="tip">Earth is closest to the Sun in early January. Distance does not cause the seasons.</p>
+    <p class="tip">Sizes and distances are not to scale.</p>`,
+  moon:`<h2>Moon phases</h2><ol>
+    <li><span class="n">1</span><span>Drag the <b>Moon</b>, tap a phase, or press <b>Play</b>.</span></li>
+    <li><span class="n">2</span><span>The Sun always lights <b>half</b> of the Moon.</span></li>
+    <li><span class="n">3</span><span>The <b style="color:var(--seen)">teal</b> half faces Earth. The phase is the lit part of that half.</span></li></ol>
+    <p class="tip">One full cycle takes about 29.5 days. Views are for the Northern Hemisphere.</p>`,
+  eclipse:`<h2>Eclipses</h2><ol>
+    <li><span class="n">1</span><span>Pick <b>New Moon</b> or <b>Full Moon</b>.</span></li>
+    <li><span class="n">2</span><span>Slide the <b>month</b>. Watch the Moon move above and below the Sun–Earth line.</span></li>
+    <li><span class="n">3</span><span><b>Solar</b>: the Moon's shadow lands on Earth. <b>Lunar</b>: the Moon moves into Earth's shadow.</span></li>
+    <li><span class="n">4</span><span>Set the Moon tilt to <b>0°</b>. Now there is an eclipse every month.</span></li></ol>
+    <p class="tip">The real tilt is 5°. It is drawn larger here so you can see it.</p>
+    <p class="tip">Eclipse seasons come about every 6 months, and their dates shift each year. Never look straight at the Sun.</p>`,
+  practice:`<h2>Practice</h2><ol>
+    <li><span class="n">1</span><span>Answer 8 quick questions.</span></li>
+    <li><span class="n">2</span><span>Tap an answer. Green is correct.</span></li></ol>
+    <p class="tip">Stuck? Go back to Seasons, Moon or Eclipses and try it.</p>`
+};
+const guideBtn = $('guideBtn'), guidePop = $('guidePop');
+guideBtn.addEventListener('click', () => { const open = guidePop.hidden; guidePop.hidden = !open; guideBtn.setAttribute('aria-expanded', open); });
+document.addEventListener('click', e => { if (!guidePop.hidden && !e.target.closest('.guide-wrap')){ guidePop.hidden = true; guideBtn.setAttribute('aria-expanded', false); } });
+
+function setView(v){
+  S.view = v; setPlay(false);
+  document.querySelectorAll('[data-for]').forEach(el => el.hidden = el.dataset.for !== v);
+  document.querySelectorAll('#viewSeg button').forEach(b => b.setAttribute('aria-checked', b.dataset.view === v));
+  guidePop.innerHTML = GUIDE[v];
+  if (v === 'practice' && !P.qs.length) P.start();
+  if (v === 'moon') requestAnimationFrame(drawStrip);
+  try { localStorage.setItem('smp-view', v); } catch (e) {}
+  redraw();
+}
+
+/* ---------- dragging on the main canvas ---------- */
+function ptr(e){ const r = cv.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; }
+cv.addEventListener('pointerdown', e => {
+  const [x, y] = ptr(e);
+  if (S.view === 'seasons' && hit){ const { p, g } = hit; if (Math.hypot(x - p.x, y - p.y) < g.re * 2.4){ S.drag = 'earth'; cv.setPointerCapture(e.pointerId); setPlay(false); } }
+  if (S.view === 'moon' && hit){ const { g, spots } = hit; const a = moonAngle(S.age), mx = g.cx + g.Ro * Math.cos(a), my = g.cy - g.Ro * Math.sin(a);
+    if (Math.hypot(x - mx, y - my) < g.rm * 2.6){ S.drag = 'moon'; cv.setPointerCapture(e.pointerId); setPlay(false); }
+    else { const s = spots.find(q => Math.hypot(x - q.x, y - q.y) < g.rm * 2); if (s){ S.age = s.k * MOON_DAYS / 8; $('ageIn').value = Math.round(S.age * 10); setPlay(false); redraw(); } } }
+  if (S.view === 'practice') P.tap(x, y);
+});
+cv.addEventListener('pointermove', e => {
+  const [x, y] = ptr(e);
+  if (S.drag === 'earth'){ const { g } = hit; const a = Math.atan2((y - g.cy) / g.ry, (x - g.cx) / g.rx);
+    S.day = Math.round((((SOLSTICE + (Math.PI - a) / TAU * 365) % 365) + 365) % 365) % 365; $('dayIn').value = S.day; redraw(); }
+  if (S.drag === 'moon'){ const { g } = hit; let a = Math.atan2(g.cy - y, x - g.cx); if (a < 0) a += TAU;
+    S.age = a / TAU * MOON_DAYS; $('ageIn').value = Math.round(S.age * 10); redraw(); }
+  if (!S.drag && hit && (S.view === 'seasons' || S.view === 'moon' || S.view === 'practice')){
+    let over = false;
+    if (S.view === 'seasons') over = Math.hypot(x - hit.p.x, y - hit.p.y) < hit.g.re * 2.4;
+    else if (hit.spots) over = hit.spots.some(q => Math.hypot(x - q.x, y - q.y) < hit.g.rm * 2.6) && (S.view === 'moon' || P.cur()?.type === 'where');
+    cv.style.cursor = over ? 'pointer' : '';
+  }
+});
+['pointerup','pointercancel'].forEach(t => cv.addEventListener(t, () => S.drag = null));
+
+/* ---------- PRACTICE ---------- */
+const rnd = n => Math.floor(Math.random() * n);
+const shuffle = a => { for (let i = a.length - 1; i > 0; i--){ const j = rnd(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const P = {
+  qs:[], i:0, done:false, answered:false,
+  cur(){ return this.qs[this.i]; },
+  make(type){
+    if (type === 'season'){ const day = [171, 354][rnd(2)], south = rnd(2) === 1; const n = day === 171 ? 'sum' : 'win';
+      return { type, day, south, answer: south ? OPP[n] : n }; }
+    if (type === 'see'){ const k = rnd(8), opts = new Set([k]); const mirror = (8 - k) % 8; if (mirror !== k) opts.add(mirror);
+      while (opts.size < 4) opts.add(rnd(8)); return { type, k, opts:shuffle([...opts]) }; }
+    if (type === 'where') return { type, k:rnd(8) };
+    const kind = ['solar', 'lunar', 'none'][rnd(3)];
+    const eType = kind === 'solar' ? 'new' : kind === 'lunar' ? 'full' : ['new', 'full'][rnd(2)];
+    const month = kind === 'none' ? [5.5, 11.5][rnd(2)] + (Math.random() - 0.5) : [2.5, 8.5][rnd(2)];
+    return { type:'eclipse', kind, eType, month };
+  },
+  start(){
+    this.qs = shuffle(['season','season','see','see','where','where','eclipse','eclipse']).map(t => this.make(t));
+    this.i = 0; this.done = false; this.show();
+  },
+  dots(){ $('dots').innerHTML = this.qs.map((q, j) => `<i class="${q.result ? q.result : j === this.i && !this.done ? 'now' : ''}"></i>`).join(''); },
+  show(){
+    this.answered = false; this.dots();
+    const q = this.cur(), ch = $('pChoices'); ch.innerHTML = ''; $('pFb').textContent = ''; $('pFb').className = 'fb'; $('pNext').hidden = true; $('pPicBox').hidden = true;
+    if (this.done){
+      const right = this.qs.filter(q => q.result === 'ok').length;
+      $('pQ').textContent = 'Done!';
+      ch.innerHTML = `<div class="score" style="grid-column:1 / -1">${right} of ${this.qs.length}</div>`;
+      $('pNext').hidden = false; $('pNext').textContent = '↺ Play again'; redraw(); return;
+    }
+    $('pNext').textContent = this.i === this.qs.length - 1 ? 'Finish ▶' : 'Next ▶';
+    const btn = (html, val, pic) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'choice' + (pic ? ' pic' : ''); b.innerHTML = html; b.dataset.v = val; b.addEventListener('click', () => this.answer(val)); ch.appendChild(b); return b; };
+    if (q.type === 'season'){
+      $('pQ').textContent = q.south ? 'Season in Australia?' : 'Season in Canada?';
+      [['win','❄ Winter'],['spr','🌱 Spring'],['sum','☀ Summer'],['fal','🍂 Fall']].forEach(([v, t]) => btn(t, v));
+    } else if (q.type === 'see'){
+      $('pQ').textContent = 'What do we see from Earth?';
+      q.opts.forEach(k => { const b = btn('<canvas></canvas>', k, true); b.setAttribute('aria-label', PHASES[k]); });
+      requestAnimationFrame(() => { readColors(); ch.querySelectorAll('canvas').forEach((c, j) => { const f = fit(c); sky(f.ctx, f.W, f.H, false); phaseDisc(f.ctx, f.W / 2, f.H / 2, f.W * 0.38, q.opts[j] * TAU / 8); }); });
+    } else if (q.type === 'where'){
+      $('pQ').textContent = 'Tap where the Moon is.';
+      $('pPicBox').hidden = false;
+      requestAnimationFrame(() => { readColors(); const f = fit($('cvP')); sky(f.ctx, f.W, f.H, false); phaseDisc(f.ctx, f.W / 2, f.H / 2, f.H * 0.36, q.k * TAU / 8, C.seen); });
+    } else {
+      $('pQ').textContent = 'What happens?';
+      [['solar','Solar eclipse'],['lunar','Lunar eclipse'],['none','No eclipse']].forEach(([v, t]) => btn(t, v));
+    }
+    redraw();
+  },
+  answer(v){
+    if (this.answered || this.done) return;
+    const q = this.cur(); this.answered = true;
+    const correct = q.type === 'season' ? q.answer : q.type === 'see' || q.type === 'where' ? q.k : q.kind;
+    q.result = String(v) === String(correct) ? 'ok' : 'bad'; q.picked = v;
+    $('pChoices').querySelectorAll('.choice').forEach(b => { b.disabled = true;
+      if (b.dataset.v === String(correct)) b.classList.add('ok'); else if (b.dataset.v === String(v)) b.classList.add('bad'); });
+    const fb = $('pFb'); fb.className = 'fb ' + q.result;
+    fb.textContent = q.result === 'ok' ? '✓ Correct' : '✗ Not quite. The green one is right.';
+    $('pNext').hidden = false; this.dots(); redraw();
+  },
+  next(){ if (this.done){ this.start(); return; } if (this.i < this.qs.length - 1){ this.i++; } else { this.done = true; } this.show(); },
+  tap(x, y){ const q = this.cur(); if (!q || this.done || q.type !== 'where' || this.answered || !hit?.spots) return;
+    const s = hit.spots.find(p => Math.hypot(x - p.x, y - p.y) < hit.g.rm * 2.6); if (s) this.answer(s.k); },
+  draw(ctx, W, H){
+    const q = this.cur();
+    if (this.done || !q){ sky(ctx, W, H); return null; }
+    if (q.type === 'season') return drawSeasons(ctx, W, H, { day:q.day, tilt:true, labels:false, ghosts:false });
+    if (q.type === 'see') return drawMoonTop(ctx, W, H, { a:q.k * TAU / 8, ghosts:false });
+    if (q.type === 'where'){ const mark = {}; if (this.answered){ mark[q.k] = C.ok; if (+q.picked !== q.k) mark[q.picked] = C.bad; }
+      return drawMoonTop(ctx, W, H, { a:this.answered ? q.k * TAU / 8 : null, ghosts:true, ghostAlpha:0.75, mark }); }
+    drawEclipse(ctx, W, H, { type:q.eType, month:q.month, tilt:true, labels:true }); return null;
+  }
+};
+$('pNext').addEventListener('click', () => P.next());
+$('restartBtn').addEventListener('click', () => P.start());
+
+/* ---------- start ---------- */
+new ResizeObserver(() => { redraw(); if (S.view === 'moon') drawStrip(); }).observe(document.body);
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { redraw(); drawStrip(); });
+let startView = 'seasons'; try { startView = localStorage.getItem('smp-view') || 'seasons'; } catch (e) {}
+setView(GUIDE[startView] ? startView : 'seasons');
+if (document.fonts) document.fonts.ready.then(redraw);
+</script>
+</body>
+</html>
