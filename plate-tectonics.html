@@ -1,0 +1,994 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<script data-goatcounter="https://shawnlemko.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
+</head>
+<body>
+<title>Plate Tectonics and the Rock Cycle</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Atkinson+Hyperlegible:wght@400;700&family=Spline+Sans+Mono:wght@500;700&display=swap">
+<style>
+/* MathBoard look (shared with the math visuals site).
+   Three screens, picked by the tabs in the header:
+   Plates = a cross-section (side view) of two plates; drag a plate or press Play and the landforms grow. Slide past switches to a view from above.
+   Rock cycle = a landscape; each process button sends the rock to the place where that process happens.
+   Practice = 10 picture questions.
+   Process colours are the same everywhere: melt red, cool blue, weather teal, compact amber, heat and pressure purple. */
+:root{
+  --bg:#f5f8fb; --surface:#ffffff; --surface-2:#eaf0f6; --ink:#1b2733; --muted:#5b6b7a; --line:#dbe5ee; --line-strong:#b9c9d8; --pt:#2f5fd0;
+  --sky1:#9fd3f0; --sky2:#e2f3fb;
+  --melt:#d93a22; --cool:#2f72d0; --weather:#11897a; --compact:#b97a00; --heat:#7f45c9;
+  --good:#13874b; --bad:#d1293f;
+  --btn:#2f5fd0; --btn-ink:#ffffff;
+  --font-ui:'Atkinson Hyperlegible', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-display:'Bricolage Grotesque', 'Segoe UI', system-ui, sans-serif;
+  --font-num:'Spline Sans Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0f161d; --surface:#151f29; --surface-2:#1d2935; --ink:#e6edf3; --muted:#9aabbb; --line:#1f2c38; --line-strong:#2e3f50; --pt:#7aa2ff;
+  --sky1:#1b3550; --sky2:#2f5373;
+  --melt:#ff6a4d; --cool:#6ea4ff; --weather:#35cfbd; --compact:#f3b13f; --heat:#b98cff;
+  --good:#45c985; --bad:#ff6b7d;
+  --btn:#7aa2ff; --btn-ink:#0f161d; color-scheme:dark; } }
+:root[data-theme="dark"]{
+  --bg:#0f161d; --surface:#151f29; --surface-2:#1d2935; --ink:#e6edf3; --muted:#9aabbb; --line:#1f2c38; --line-strong:#2e3f50; --pt:#7aa2ff;
+  --sky1:#1b3550; --sky2:#2f5373;
+  --melt:#ff6a4d; --cool:#6ea4ff; --weather:#35cfbd; --compact:#f3b13f; --heat:#b98cff;
+  --good:#45c985; --bad:#ff6b7d;
+  --btn:#7aa2ff; --btn-ink:#0f161d; color-scheme:dark; }
+
+*,*::before,*::after{box-sizing:border-box}
+h1,h2,p,ol{margin:0} ol{padding:0; list-style:none}
+button,select,input{font:inherit; color:inherit}
+button{border:0; background:none; cursor:pointer}
+button:disabled{cursor:default}
+html,body{height:100%}
+body{background:var(--bg); color:var(--ink); font-family:var(--font-ui); font-size:14px;
+  padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); padding-block:0}
+#app{display:flex; flex-direction:column; gap:8px; min-height:100%; padding-block:8px}
+@media (min-width:1024px){ #app{height:100%} }
+
+/* Header */
+.topbar{display:flex; flex-wrap:wrap; align-items:center; gap:10px 20px; justify-content:space-between}
+.brand{display:flex; flex-wrap:wrap; align-items:center; gap:8px 20px}
+.brand h1{font-family:var(--font-display); font-weight:800; font-size:clamp(20px, 2vw, 26px); line-height:1.1; letter-spacing:-.01em; text-wrap:balance}
+a.main-btn{display:inline-flex; align-items:center; gap:8px; padding:8px 16px; min-height:42px; background:var(--pt); color:#fff; font-family:var(--font-display); font-weight:800; font-size:16px; text-decoration:none; border-radius:10px; border:2px solid var(--pt); flex:none}
+a.main-btn span{font-size:19px; line-height:1}
+a.main-btn:hover{background:var(--surface); color:var(--pt)}
+a.main-btn:focus-visible{outline:3px solid var(--pt); outline-offset:3px}
+.top-right{display:flex; flex-wrap:wrap; align-items:center; gap:10px}
+.mode{display:flex; align-items:center; gap:4px; background:var(--surface); border:1px solid var(--line); border-radius:999px; padding:4px}
+.mode button{border-radius:999px; padding:6px 16px; font-weight:700; font-size:15px; color:var(--muted); line-height:1.1}
+.mode button[aria-checked="true"]{background:var(--btn); color:var(--btn-ink)}
+.guide-wrap{position:relative}
+.btn-outline{border:1.5px solid var(--ink); border-radius:8px; padding:7px 12px; font-weight:700; font-size:14px; background:var(--surface)}
+.pop{position:absolute; right:0; top:calc(100% + 8px); width:min(340px, calc(100vw - 32px)); z-index:20; background:var(--surface);
+  border:1px solid var(--line); border-radius:10px; box-shadow:0 12px 32px rgba(10,20,30,.18); padding:14px 16px}
+.pop h2{font-weight:700; font-size:15px; margin-bottom:8px}
+.pop ol{display:flex; flex-direction:column; gap:10px}
+.pop li{display:grid; grid-template-columns:24px 1fr; gap:8px; line-height:1.4}
+.pop .n{width:22px; height:22px; border-radius:50%; background:var(--btn); color:var(--btn-ink); font-weight:700; font-size:12px; display:grid; place-items:center}
+.pop .tip{margin-top:12px; padding-top:10px; border-top:1px solid var(--line); line-height:1.45; color:var(--muted)}
+.pop .tip b{color:var(--ink)}
+
+.panel{background:var(--surface); border:1px solid var(--line-strong); border-radius:10px; min-width:0}
+button:focus-visible{outline:2.5px solid var(--pt); outline-offset:2px}
+.view{display:flex; flex-direction:column; gap:8px; flex:1; min-height:0}
+
+/* Controls */
+.controls{display:flex; flex-wrap:wrap; gap:8px 22px; padding:8px 14px; align-items:end}
+.ctl{display:flex; flex-direction:column; gap:4px}
+.lab{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.07em; font-weight:700}
+.seg{display:flex; flex-wrap:wrap; gap:3px; background:var(--surface-2); border-radius:9px; padding:3px}
+.seg button{display:inline-flex; align-items:center; gap:7px; padding:6px 12px; min-height:40px; border-radius:7px; font-weight:700; font-size:15px; color:var(--muted); white-space:nowrap}
+.seg button[aria-checked="true"]{background:var(--surface); color:var(--ink); box-shadow:0 0 0 1.5px var(--ink)}
+.seg svg{width:34px; height:20px; flex:none}
+.sw{display:inline-block; width:14px; height:14px; border-radius:3px; vertical-align:middle}
+.sw.oc{background:#4c5a70} .sw.co{background:#c9a36b}
+.sw + .sw{margin-left:-4px}
+.go{flex-direction:row; gap:8px; margin-left:auto}
+.btn-primary{background:var(--btn); color:var(--btn-ink); border-radius:8px; padding:9px 18px; min-height:42px; font-weight:700; font-size:15px; white-space:nowrap; min-width:110px}
+.btn-icon{border:1.5px solid var(--ink); border-radius:8px; min-width:44px; min-height:42px; font-size:20px; font-weight:700; background:var(--surface)}
+
+/* Stage */
+.stage{position:relative; min-height:420px; flex:1; overflow:hidden; touch-action:none}
+@media (min-width:1024px){ .stage{min-height:0} }
+.stage canvas{position:absolute; inset:0; width:100%; height:100%; display:block}
+#plateCv{cursor:grab} #plateCv.dragging{cursor:grabbing}
+.badge{position:absolute; left:12px; top:10px; z-index:2; display:flex; flex-direction:column; gap:1px; padding:6px 14px 7px; border-radius:10px;
+  border:2.5px solid var(--ink); background:var(--surface); max-width:calc(100% - 24px)}
+.badge .b-main{font-family:var(--font-display); font-weight:800; font-size:clamp(17px, 1.7vw, 22px); line-height:1.15}
+.badge .b-sub{font-size:14px; color:var(--muted)}
+.badge .b-sub b{color:var(--ink)}
+.chip{position:absolute; z-index:2; display:inline-flex; align-items:center; gap:6px; background:var(--surface); border:1px solid var(--line-strong); border-radius:999px; padding:4px 12px; font-weight:700; font-size:14px}
+.chip.clock{left:12px; bottom:10px; font-family:var(--font-num); font-variant-numeric:tabular-nums}
+.chip.above{right:12px; top:12px}
+
+/* Rock cycle */
+.rock-layout{display:grid; grid-template-columns:1fr; gap:10px; flex:1; min-height:0}
+@media (min-width:1024px){ .rock-layout{grid-template-columns:1fr 330px; grid-template-rows:minmax(0,1fr)} }
+.side{display:flex; flex-direction:column; gap:10px; padding:10px 14px; overflow:auto; min-height:0}
+.side > *{flex-shrink:0}
+.you{display:flex; align-items:center; gap:14px}
+.you canvas{width:96px; height:96px; flex:none}
+.rname{font-family:var(--font-display); font-weight:800; font-size:22px; line-height:1.1}
+.rsub{color:var(--muted); font-size:14px}
+.acts{display:grid; grid-template-columns:1fr 1fr; gap:6px}
+.act{display:flex; align-items:center; gap:8px; padding:7px 10px; min-height:46px; border-radius:9px; border:2px solid var(--pc); background:var(--surface); font-weight:700; font-size:14px; line-height:1.15; text-align:left}
+.act svg{width:24px; height:24px; flex:none; color:var(--pc)}
+.act:hover:not(:disabled){background:var(--surface-2)}
+.act:disabled{opacity:.3; border-style:dashed}
+.act.on{background:var(--pc); color:var(--btn-ink)} .act.on svg{color:var(--btn-ink)}
+.found{display:flex; justify-content:space-between; align-items:baseline}
+.found b{font-family:var(--font-num); font-size:15px}
+#cycleCv{width:100%; height:230px; display:block}
+
+/* Practice */
+.dots{display:flex; gap:5px; position:absolute; right:12px; top:14px; z-index:2}
+.dots i{width:13px; height:13px; border-radius:50%; background:var(--surface-2); border:1.5px solid var(--line-strong)}
+.dots i.now{border-color:var(--ink); border-width:2.5px}
+.dots i.ok{background:var(--good); border-color:var(--good)} .dots i.no{background:var(--bad); border-color:var(--bad)}
+.qtext{position:absolute; left:12px; top:10px; z-index:2; max-width:calc(100% - 200px); padding:6px 14px; border-radius:10px; border:2.5px solid var(--ink); background:var(--surface);
+  font-family:var(--font-display); font-weight:800; font-size:clamp(17px, 1.8vw, 23px); line-height:1.2}
+@media (max-width:640px){ .qtext{max-width:calc(100% - 24px); top:40px} }
+.answers{display:flex; flex-wrap:wrap; gap:8px; padding:10px 14px; align-items:center}
+.ans{display:inline-flex; align-items:center; gap:8px; padding:8px 16px; min-height:52px; border-radius:10px; border:2px solid var(--line-strong); background:var(--surface); font-weight:700; font-size:17px; flex:1 1 180px; justify-content:center}
+.ans svg{width:38px; height:22px; flex:none}
+.ans .sw{width:18px; height:18px}
+.ans:hover:not(:disabled){border-color:var(--ink)}
+.ans.ok{border-color:var(--good); background:color-mix(in srgb, var(--good) 16%, var(--surface))}
+.ans.no{border-color:var(--bad); background:color-mix(in srgb, var(--bad) 14%, var(--surface))}
+.ans:disabled:not(.ok):not(.no){opacity:.45}
+.feedback{flex:1 1 100%; display:flex; align-items:center; gap:12px; flex-wrap:wrap; min-height:44px}
+.feedback .why{font-size:16px; font-weight:700}
+.feedback .why.ok{color:var(--good)} .feedback .why.no{color:var(--bad)}
+.feedback .btn-primary{margin-left:auto}
+.score{font-family:var(--font-display); font-weight:800; font-size:clamp(28px, 4vw, 44px)}
+@media (prefers-reduced-motion: reduce){ *{transition:none !important} }
+</style>
+
+<div id="app">
+  <header class="topbar">
+    <div class="brand">
+      <a class="main-btn" href="index.html"><span aria-hidden="true">←</span> Return to Main Page</a>
+      <h1>Plate Tectonics and the Rock Cycle</h1>
+    </div>
+    <div class="top-right">
+      <div class="mode" role="radiogroup" aria-label="Screen">
+        <button type="button" data-tab="plates" role="radio" aria-checked="true">Plates</button>
+        <button type="button" data-tab="rock" role="radio" aria-checked="false">Rock cycle</button>
+        <button type="button" data-tab="prac" role="radio" aria-checked="false">Practice</button>
+      </div>
+      <div class="guide-wrap">
+        <button type="button" id="guideBtn" class="btn-outline" aria-expanded="false" aria-controls="guidePop">Guide</button>
+        <div id="guidePop" class="pop" hidden>
+          <h2>How to use this</h2>
+          <ol id="guideList"></ol>
+          <p class="tip" id="guideTip"></p>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- PLATES -->
+  <div class="view" id="platesView">
+    <section class="panel controls" aria-label="Plate controls">
+      <div class="ctl">
+        <span class="lab" id="motionLab">Plates move</span>
+        <div class="seg" role="radiogroup" aria-labelledby="motionLab">
+          <button type="button" data-motion="apart" role="radio" aria-checked="false"><svg viewBox="0 0 34 20" aria-hidden="true"><path d="M15 10H3M8 4L2 10L8 16M19 10H31M26 4L32 10L26 16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>Apart</button>
+          <button type="button" data-motion="together" role="radio" aria-checked="true"><svg viewBox="0 0 34 20" aria-hidden="true"><path d="M2 10H14M9 4L15 10L9 16M32 10H20M25 4L19 10L25 16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>Together</button>
+          <button type="button" data-motion="slide" role="radio" aria-checked="false"><svg viewBox="0 0 34 20" aria-hidden="true"><path d="M11 18V3M5 8L11 2L17 8M23 2V17M17 12L23 18L29 12" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>Slide past</button>
+        </div>
+      </div>
+      <div class="ctl" id="pairCtl">
+        <span class="lab" id="pairLab">Plate types</span>
+        <div class="seg" role="radiogroup" aria-labelledby="pairLab">
+          <button type="button" data-pair="OO" role="radio" aria-checked="false"><span><i class="sw oc"></i><i class="sw oc"></i></span>Ocean + Ocean</button>
+          <button type="button" data-pair="OC" role="radio" aria-checked="true"><span><i class="sw oc"></i><i class="sw co"></i></span>Ocean + Continent</button>
+          <button type="button" data-pair="CC" role="radio" aria-checked="false"><span><i class="sw co"></i><i class="sw co"></i></span>Continent + Continent</button>
+        </div>
+      </div>
+      <div class="ctl go">
+        <button type="button" id="playBtn" class="btn-primary">▶ Play</button>
+        <button type="button" id="resetBtn" class="btn-icon" aria-label="Start over">↺</button>
+      </div>
+    </section>
+    <section class="panel stage" id="plateStage" aria-label="Cross-section of two plates. Drag a plate to move it.">
+      <canvas id="plateCv"></canvas>
+      <div class="badge"><span class="b-main" id="bMain"></span><span class="b-sub" id="bSub"></span></div>
+      <span class="chip clock" id="clock"></span>
+      <span class="chip above" id="aboveChip" hidden><svg width="18" height="12" viewBox="0 0 18 12" aria-hidden="true"><path d="M1 6C4 1 14 1 17 6C14 11 4 11 1 6Z" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="9" cy="6" r="2.4" fill="currentColor"/></svg>View from above</span>
+    </section>
+  </div>
+
+  <!-- ROCK CYCLE -->
+  <div class="view" id="rockView" hidden>
+    <div class="rock-layout">
+      <section class="panel stage" aria-label="Landscape showing where each rock cycle process happens"><canvas id="rockCv"></canvas></section>
+      <aside class="panel side">
+        <div class="you"><canvas id="rockBig" width="96" height="96"></canvas><div><div class="rname" id="rName"></div><div class="rsub" id="rSub"></div></div></div>
+        <div class="acts" id="acts"></div>
+        <div class="found"><span class="lab">Arrows found</span><b id="foundOut"></b></div>
+        <canvas id="cycleCv"></canvas>
+      </aside>
+    </div>
+  </div>
+
+  <!-- PRACTICE -->
+  <div class="view" id="pracView" hidden>
+    <section class="panel stage" aria-live="polite">
+      <canvas id="pracCv"></canvas>
+      <div class="qtext" id="qText"></div>
+      <div class="dots" id="dots"></div>
+    </section>
+    <section class="panel answers" id="answers"></section>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
+const ss = (a, b, x) => { const t = clamp((x - a) / (b - a)); return t * t * (3 - 2 * t); };
+const gauss = (x, c, w) => Math.exp(-(((x - c) / w) ** 2));
+const lerp = (a, b, t) => a + (b - a) * t;
+function rng(seed){ return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* Scene colours. The scene is a picture, so rock and water colours stay the same in dark mode; only the sky and text follow the theme. */
+const SC = { water:'rgba(36,112,196,.62)', oc:'#4c5a70', ocLith:'#6f6a64', co:'#c9a36b', co2:'#d4b27d', coLine:'#9c7a49', coLith:'#8a7562',
+  mantle1:'#f2b462', mantle2:'#d5602b', magma:'#ff5a1f', glow:'#ffd35a', volc:'#6b574d', snow:'#f3f7fb', grass:'#8fbf6e', grass2:'#a5cc85' };
+let K = {};
+function readColors(){ const cs = getComputedStyle(document.documentElement); K = {};
+  for (const n of ['ink','muted','surface','surface-2','line-strong','pt','sky1','sky2','melt','cool','weather','compact','heat','good','bad']) K[n] = cs.getPropertyValue('--' + n).trim(); }
+
+function fit(cv){
+  const r = cv.getBoundingClientRect(), d = window.devicePixelRatio || 1;
+  const W = Math.max(1, Math.round(r.width)), H = Math.max(1, Math.round(r.height));
+  if (cv.width !== Math.round(W * d) || cv.height !== Math.round(H * d)){ cv.width = Math.round(W * d); cv.height = Math.round(H * d); }
+  const ctx = cv.getContext('2d'); ctx.setTransform(d, 0, 0, d, 0, 0); return { ctx, W, H };
+}
+
+/* ---------- Shared drawing helpers ---------- */
+function poly(ctx, pts){ ctx.beginPath(); pts.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.closePath(); }
+function bigArrow(ctx, x, y, dx, dy, len, col){
+  // Thick arrow pointing along (dx, dy), centred on (x, y)
+  const hx = dx * len / 2, hy = dy * len / 2, px = -dy, py = dx, w = 7, hw = 15, hl = 18;
+  const tipX = x + hx, tipY = y + hy, bx = tipX - dx * hl, by = tipY - dy * hl;
+  ctx.beginPath();
+  ctx.moveTo(x - hx + px * w, y - hy + py * w); ctx.lineTo(bx + px * w, by + py * w); ctx.lineTo(bx + px * hw, by + py * hw);
+  ctx.lineTo(tipX, tipY); ctx.lineTo(bx - px * hw, by - py * hw); ctx.lineTo(bx - px * w, by - py * w); ctx.lineTo(x - hx - px * w, y - hy - py * w); ctx.closePath();
+  ctx.fillStyle = col; ctx.strokeStyle = '#fff'; ctx.lineWidth = 2.5; ctx.lineJoin = 'round'; ctx.stroke(); ctx.fill();
+}
+function label(ctx, text, x, y, ax, ay, alpha = 1){
+  // Label box at (x, y) with a leader line to the feature at (ax, ay)
+  if (alpha <= 0.01) return;
+  ctx.save(); ctx.globalAlpha = alpha;
+  ctx.font = '700 15px "Atkinson Hyperlegible", system-ui, sans-serif';
+  const w = ctx.measureText(text).width + 16, h = 26;
+  if (ax != null){ ctx.strokeStyle = '#1b2733'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(ax, ay); ctx.stroke();
+    ctx.fillStyle = '#1b2733'; ctx.beginPath(); ctx.arc(ax, ay, 3.2, 0, 7); ctx.fill(); }
+  ctx.fillStyle = '#ffffff'; ctx.strokeStyle = '#1b2733'; ctx.lineWidth = 1.6;
+  ctx.beginPath(); ctx.roundRect(x - w / 2, y - h / 2, w, h, 7); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#1b2733'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(text, x, y + 1);
+  ctx.restore();
+}
+function quakeStar(ctx, x, y, age){
+  // A flash at the focus plus a spreading ring; age runs 0 to 1
+  const a = 1 - age, r = 7 + 5 * (1 - age);
+  ctx.save(); ctx.globalAlpha = a;
+  ctx.strokeStyle = '#ffe066'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(x, y, 8 + age * 34, 0, 7); ctx.stroke();
+  ctx.beginPath();
+  for (let i = 0; i < 16; i++){ const an = i * Math.PI / 8, rr = i % 2 ? r * 0.45 : r; ctx.lineTo(x + Math.cos(an) * rr, y + Math.sin(an) * rr); }
+  ctx.closePath(); ctx.fillStyle = '#ffd400'; ctx.fill(); ctx.strokeStyle = '#c4161c'; ctx.lineWidth = 1.5; ctx.stroke();
+  ctx.restore();
+}
+function cone(ctx, x, base, h, hw, col){
+  ctx.beginPath(); ctx.moveTo(x - hw, base); ctx.lineTo(x - hw * 0.12, base - h); ctx.lineTo(x + hw * 0.12, base - h); ctx.lineTo(x + hw, base); ctx.closePath();
+  ctx.fillStyle = col; ctx.fill(); ctx.strokeStyle = 'rgba(0,0,0,.35)'; ctx.lineWidth = 1.2; ctx.stroke();
+}
+function eruption(ctx, x, y, t, s = 1){
+  ctx.save();
+  ctx.fillStyle = SC.magma; ctx.beginPath(); ctx.ellipse(x, y, 7 * s, 3.5 * s, 0, 0, 7); ctx.fill();
+  for (let i = 0; i < 4; i++){ const ph = (t * 0.35 + i / 4) % 1;
+    ctx.globalAlpha = 0.55 * (1 - ph); ctx.fillStyle = '#8a8f96';
+    ctx.beginPath(); ctx.arc(x + Math.sin(ph * 5 + i) * 6 + ph * 14, y - 8 - ph * 50 * s, (5 + ph * 12) * s, 0, 7); ctx.fill(); }
+  ctx.restore();
+}
+function magmaBlobs(ctx, x0, y0, x1, y1, t, n = 4){
+  ctx.save(); ctx.strokeStyle = 'rgba(255,90,31,.45)'; ctx.lineWidth = 4; ctx.setLineDash([3, 6]);
+  ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke(); ctx.setLineDash([]);
+  for (let i = 0; i < n; i++){ const ph = (t * 0.22 + i / n) % 1;
+    const x = lerp(x0, x1, ph) + Math.sin(ph * 9 + i) * 3, y = lerp(y0, y1, ph);
+    ctx.fillStyle = SC.glow; ctx.beginPath(); ctx.ellipse(x, y, 7, 9, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = SC.magma; ctx.beginPath(); ctx.ellipse(x, y, 5, 7, 0, 0, 7); ctx.fill(); }
+  ctx.restore();
+}
+
+/* ---------- Plates: cross-section and map view ----------
+   One drawing function per boundary. Each takes a state { motion, pair, p (0 to 1 progress), t (time for animation), labels, arrows }
+   and returns anchor points for labels and practice markers. */
+function geo(W, H){ return { seaY:.27 * H, floorY:.40 * H, cT:.045 * H, lT:.075 * H, landY:.20 * H, ccBase:.50 * H, clBase:.585 * H, mTop:.43 * H }; }
+
+function background(ctx, W, H, g, st){
+  let gr = ctx.createLinearGradient(0, 0, 0, g.seaY); gr.addColorStop(0, K.sky1); gr.addColorStop(1, K.sky2);
+  ctx.fillStyle = gr; ctx.fillRect(0, 0, W, g.seaY + 1);
+  ctx.fillStyle = SC.water; ctx.fillRect(0, g.seaY, W, H - g.seaY);
+  ctx.fillStyle = 'rgba(255,255,255,.65)'; ctx.fillRect(0, g.seaY - 1, W, 2);
+  gr = ctx.createLinearGradient(0, g.mTop, 0, H); gr.addColorStop(0, SC.mantle1); gr.addColorStop(1, SC.mantle2);
+  ctx.fillStyle = gr; ctx.fillRect(0, g.mTop, W, H - g.mTop);
+  // Convection: slow loops of hot mantle rock that carry the plates (top of each loop flows the way its plate moves)
+  if (st.arrows === false) return;
+  const dirL = st.motion === 'apart' ? -1 : 1;
+  [[W * .25, dirL], [W * .75, -dirL]].forEach(([cx, dir]) => {
+    const cy = H * .80, rx = W * .2, ry = H * .12;
+    ctx.save(); ctx.strokeStyle = 'rgba(120,30,0,.35)'; ctx.lineWidth = 3; ctx.setLineDash([10, 9]);
+    ctx.lineDashOffset = -dir * st.t * 18;
+    ctx.beginPath(); ctx.ellipse(cx, cy, rx, ry, 0, 0, 7); ctx.stroke(); ctx.setLineDash([]);
+    for (const base of [-Math.PI / 2, Math.PI / 2]){
+      const phi = base, x = cx + rx * Math.cos(phi), y = cy + ry * Math.sin(phi);
+      const sx = base < 0 ? dir : -dir;
+      ctx.fillStyle = 'rgba(120,30,0,.5)'; ctx.beginPath(); ctx.moveTo(x + sx * 9, y); ctx.lineTo(x - sx * 5, y - 7); ctx.lineTo(x - sx * 5, y + 7); ctx.closePath(); ctx.fill();
+    }
+    ctx.restore();
+  });
+}
+function plateArrows(ctx, W, H, st, g){
+  // Each arrow sits on its own plate
+  if (st.arrows === false) return;
+  const yO = g.floorY + (g.cT + g.lT) / 2, yC = (g.landY + g.ccBase) / 2;
+  const left = st.pair === 'CC' ? yC : yO, right = st.pair === 'OO' ? yO : yC;
+  const s = st.motion === 'apart' ? -1 : 1;
+  bigArrow(ctx, W * .2, left, s, 0, 80, '#1b2733');
+  bigArrow(ctx, W * .8, right, -s, 0, 80, '#1b2733');
+}
+function snowCap(ctx, surf, W, snowY, depth){
+  const top = [], bot = [];
+  for (let x = -10; x <= W + 10; x += 3){ const y = surf(x); top.push([x, Math.min(y, snowY)]); bot.push([x, Math.min(snowY, y + depth)]); }
+  poly(ctx, top.concat(bot.reverse())); ctx.fillStyle = SC.snow; ctx.fill();
+}
+function mantleUnder(ctx, line, H){
+  // Hot mantle fills right up to the underside of a thinned plate
+  poly(ctx, line.concat([[line[line.length - 1][0], H], [line[0][0], H]])); ctx.fillStyle = SC.mantle1; ctx.fill();
+}
+function marks(ctx, xs, yf){ ctx.fillStyle = 'rgba(255,255,255,.55)'; for (const x of xs){ const y = yf(x); if (y == null) continue; ctx.beginPath(); ctx.arc(x, y, 3, 0, 7); ctx.fill(); } }
+function markXs(start, sp, shift, x0, x1){ const out = []; const off = ((shift % sp) + sp) % sp; for (let x = start + off - sp; x <= x1 + sp; x += sp) if (x >= x0 && x <= x1) out.push(x); return out; }
+
+function interpY(line, x){
+  if (x < line[0][0] || x > line[line.length - 1][0]) return null;
+  for (let i = 1; i < line.length; i++) if (line[i][0] >= x){ const a = line[i - 1], b = line[i]; const t = (x - a[0]) / ((b[0] - a[0]) || 1); return lerp(a[1], b[1], t); }
+  return null;
+}
+
+/* Together, with an ocean plate on the left diving (subducting) under the right plate */
+function drawSubduction(ctx, W, H, g, st){
+  const p = st.p, over = st.pair === 'OC' ? 'C' : 'O';
+  const xT = .40 * W, T = g.cT + g.lT, yc = g.floorY + T / 2, R = .16 * H, thMax = .75, step = 3;
+  const x0 = -.05 * W, xb = xT - .02 * W, Lb = .10 * W + p * .34 * W, total = (xb - x0) + Lb;
+  const cl = [];
+  for (let x = x0, y = yc, th = 0, s = 0; s <= total; s += step){
+    cl.push([x, y, th, s]); const sb = s - (xb - x0); th = sb > 0 ? Math.min(thMax, sb / R) : 0; x += Math.cos(th) * step; y += Math.sin(th) * step; }
+  const top = cl.map(([x, y, th]) => [x + Math.sin(th) * T / 2, y - Math.cos(th) * T / 2]);
+  const bot = cl.map(([x, y, th]) => [x - Math.sin(th) * T / 2, y + Math.cos(th) * T / 2]);
+  const crustB = cl.map(([x, y, th], i) => [top[i][0] - Math.sin(th) * g.cT, top[i][1] + Math.cos(th) * g.cT]);
+  poly(ctx, top.concat(bot.slice().reverse())); ctx.fillStyle = SC.ocLith; ctx.fill();
+  poly(ctx, top.concat(crustB.slice().reverse())); ctx.fillStyle = SC.oc; ctx.fill();
+  // Moving marks ride along the sinking plate
+  ctx.fillStyle = 'rgba(255,255,255,.55)';
+  const shift = p * .34 * W, sp = 46;
+  for (let s = (shift % sp); s < total; s += sp){ const i = Math.min(cl.length - 1, Math.round(s / step)); const [, , th] = cl[i];
+    const mx = top[i][0] - Math.sin(th) * g.cT / 2, my = top[i][1] + Math.cos(th) * g.cT / 2; ctx.beginPath(); ctx.arc(mx, my, 3, 0, 7); ctx.fill(); }
+  // Over-riding plate: its underside follows the top of the sinking plate
+  const xC0 = xT + .05 * W, yC0 = interpY(top, xC0);
+  const topLevel = over === 'C' ? g.landY : g.floorY, base = over === 'C' ? g.clBase : g.floorY + T, crustBase = over === 'C' ? g.ccBase : g.floorY + g.cT;
+  const xM = xT + .14 * W, xV = xT + .15 * W;
+  const mh = over === 'C' ? p * .12 * H : 0;
+  const mtn = x => mh * (0.75 * gauss(x, xM, .06 * W) + 0.5 * gauss(x, xM + .08 * W, .045 * W) + 0.3 * gauss(x, xM - .06 * W, .03 * W));
+  const vh = ss(.22, .75, p) * (over === 'C' ? .08 * H : (g.floorY - g.seaY) + .07 * H);
+  const vhw = over === 'C' ? .045 * W : .06 * W;
+  const surf = x => lerp(yC0, topLevel, ss(xC0, xC0 + (over === 'C' ? .10 : .05) * W, x)) - mtn(x);
+  const upTop = [], upBot = [];
+  for (let x = xC0; x <= W + 10; x += 4){ upTop.push([x, surf(x)]); const sy = interpY(top, x); upBot.push([x, sy == null ? base : Math.min(base, sy)]); }
+  ctx.save(); poly(ctx, upTop.concat(upBot.slice().reverse())); ctx.clip();
+  ctx.fillStyle = over === 'C' ? SC.coLith : SC.ocLith; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = over === 'C' ? SC.co : SC.oc; ctx.fillRect(0, 0, W, crustBase);
+  if (over === 'C'){ ctx.strokeStyle = SC.coLine; ctx.lineWidth = 1.3;
+    for (const f of [.35, .62]){ ctx.beginPath(); for (let x = xC0; x <= W; x += 6){ const y = lerp(surf(x), crustBase, f) + Math.sin(x * .05) * 1.5; x === xC0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y); } ctx.stroke(); }
+    snowCap(ctx, surf, W, g.landY - .07 * H, .03 * H); }
+  marks(ctx, markXs(0, 46, -p * .12 * W, xC0 + .08 * W, W), x => over === 'C' ? (surf(x) + crustBase) / 2 : g.floorY + g.cT / 2);
+  ctx.restore();
+  // Volcanoes form where the sinking plate is deep enough to melt rock above it
+  const anchors = {};
+  const vBase = over === 'C' ? surf(xV) + 4 : g.floorY + 2;
+  if (vh > 1){
+    cone(ctx, xV, vBase, vh, vhw, SC.volc);
+    if (over === 'O'){ cone(ctx, xV + .09 * W, vBase, vh * .8, vhw * .8, SC.volc);
+      // Green tops where the islands stick out of the sea
+      ctx.save(); ctx.beginPath(); ctx.rect(0, 0, W, g.seaY); ctx.clip();
+      cone(ctx, xV, vBase, vh, vhw, '#6f8f4e'); cone(ctx, xV + .09 * W, vBase, vh * .8, vhw * .8, '#6f8f4e'); ctx.restore(); }
+    const src = interpY(top, xV);
+    if (src != null && p > .3){ magmaBlobs(ctx, xV, src - 4, xV, vBase - vh * .2, st.t); anchors.magma = [xV, lerp(src, vBase, .45)]; }
+    if (p > .35) eruption(ctx, xV, vBase - vh, st.t, over === 'C' ? 1 : .8);
+    anchors.volcano = [xV, vBase - vh * .7];
+  }
+  anchors.trench = [xC0 - .015 * W, yC0 - 6];
+  if (over === 'C' && mh > 4) anchors.mountains = [xM - .05 * W, surf(xM - .05 * W) + 6];
+  const iS = Math.min(cl.length - 1, Math.round(((xb - x0) + Lb * .55) / step));
+  anchors.subduction = [cl[iS][0], cl[iS][1]];
+  anchors.quake = () => { const s = (xb - x0) + Math.random() * Lb * .95; const i = Math.min(cl.length - 1, Math.round(s / step)); return [top[i][0], top[i][1] + 6]; };
+  if (st.labels){
+    label(ctx, 'Trench', anchors.trench[0] - .07 * W, g.floorY + .1 * H, anchors.trench[0], anchors.trench[1]);
+    label(ctx, 'Plate sinks (subduction)', anchors.subduction[0] - .12 * W, anchors.subduction[1] + .08 * H, anchors.subduction[0], anchors.subduction[1], ss(.05, .25, p));
+    if (anchors.volcano) label(ctx, over === 'C' ? 'Volcano' : 'Volcanic islands', xV + .11 * W, g.seaY - .1 * H - (over === 'C' ? .06 * H : 0), xV + vhw * .3, vBase - vh * .8, ss(.3, .45, p));
+    if (anchors.mountains) label(ctx, 'Mountains', W * .93 - 40, g.landY - .08 * H, xM + .07 * W, surf(xM + .07 * W) + 4, ss(.3, .5, p));
+    if (anchors.magma) label(ctx, 'Magma', xV + .1 * W, anchors.magma[1] + .03 * H, xV + 6, anchors.magma[1], ss(.35, .5, p));
+  }
+  return anchors;
+}
+
+/* Together, continent hitting continent: the crust crumples and stacks up into tall mountains */
+function drawCollision(ctx, W, H, g, st){
+  const p = st.p, c = W / 2, wz = (.10 + p * .06) * W;
+  const mtn = x => p * .14 * H * (gauss(x, c, wz) * (.9 + .1 * Math.cos((x - c) / (.035 * W))) + .25 * gauss(x, c - .05 * W, .025 * W) + .2 * gauss(x, c + .05 * W, .022 * W));
+  const surf = x => g.landY - mtn(x);
+  const cBase = x => g.ccBase + p * .13 * H * gauss(x, c, wz * 1.1);
+  const lBase = x => g.clBase + p * .1 * H * gauss(x, c, wz * 1.2);
+  const topL = [], botL = [], crL = [];
+  for (let x = -10; x <= W + 10; x += 4){ topL.push([x, surf(x)]); botL.push([x, lBase(x)]); crL.push([x, cBase(x)]); }
+  poly(ctx, topL.concat(botL.slice().reverse())); ctx.fillStyle = SC.coLith; ctx.fill();
+  ctx.save(); poly(ctx, topL.concat(crL.slice().reverse())); ctx.clip();
+  ctx.fillStyle = SC.co; ctx.fillRect(0, 0, c, H); ctx.fillStyle = SC.co2; ctx.fillRect(c, 0, W - c, H);
+  // Rock layers fold as the plates push together
+  ctx.strokeStyle = SC.coLine; ctx.lineWidth = 1.6;
+  for (const f of [.25, .5, .75]){ ctx.beginPath();
+    for (let x = -10; x <= W + 10; x += 4){ const y = lerp(surf(x), cBase(x), f) + p * .03 * H * gauss(x, c, wz) * Math.sin((x - c) / (.022 * W)); x < -6 ? ctx.moveTo(x, y) : ctx.lineTo(x, y); }
+    ctx.stroke(); }
+  snowCap(ctx, surf, W, g.landY - .09 * H, .035 * H);
+  const shift = p * .2 * W;
+  marks(ctx, markXs(0, 46, shift, 0, c - wz * 1.1), x => (surf(x) + cBase(x)) / 2);
+  marks(ctx, markXs(0, 46, -shift, c + wz * 1.1, W), x => (surf(x) + cBase(x)) / 2);
+  ctx.restore();
+  ctx.save(); ctx.setLineDash([5, 5]); ctx.strokeStyle = 'rgba(60,30,10,.55)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(c, surf(c) + 4); ctx.lineTo(c, lBase(c)); ctx.stroke(); ctx.restore();
+  const anchors = { mountains:[c, surf(c) + 8], folds:[c - wz * .45, lerp(surf(c - wz * .45), cBase(c - wz * .45), .5)] };
+  anchors.quake = () => { const x = c + (Math.random() - .5) * wz * 1.4; return [x, lerp(surf(x), cBase(x), .2 + Math.random() * .6)]; };
+  if (st.labels){
+    label(ctx, 'Tall mountains', c + .18 * W, g.landY - .13 * H, c + .03 * W, surf(c + .03 * W) + 6, ss(.2, .4, p));
+    label(ctx, 'Folded rock layers', c - .2 * W, g.ccBase + .14 * H, anchors.folds[0], anchors.folds[1], ss(.3, .5, p));
+  }
+  return anchors;
+}
+
+/* Apart, two ocean plates: magma rises and freezes into new sea floor at a ridge */
+function drawRidge(ctx, W, H, g, st){
+  const p = st.p, c = W / 2, spread = .30 * W;
+  const rb = ss(0, .3, p) * .07 * H;
+  const floor = x => g.floorY - rb * gauss(x, c, .16 * W) + rb * .25 * gauss(x, c, .012 * W);
+  const Tt = g.cT + g.lT, thick = x => Tt * (.3 + .7 * ss(0, .2 * W, Math.abs(x - c)));
+  const topL = [], botL = [];
+  for (let x = -10; x <= W + 10; x += 3){ topL.push([x, floor(x)]); botL.push([x, floor(x) + thick(x)]); }
+  // Magma chamber under the ridge
+  const yb = floor(c) + thick(c);
+  const gr = ctx.createRadialGradient(c, yb + 6, 4, c, yb + 6, .09 * W); gr.addColorStop(0, SC.glow); gr.addColorStop(.4, SC.magma); gr.addColorStop(1, 'rgba(255,90,31,0)');
+  mantleUnder(ctx, botL, H);
+  ctx.save(); ctx.fillStyle = gr; ctx.beginPath(); ctx.ellipse(c, yb + 10, .09 * W, .07 * H, 0, 0, 7); ctx.fill(); ctx.restore();
+  poly(ctx, topL.concat(botL.slice().reverse())); ctx.fillStyle = SC.ocLith; ctx.fill();
+  // Crust: stripes record when each strip of new rock formed (youngest and hottest in the middle)
+  for (let x = 0; x <= W; x += 2){
+    const tau = p - Math.abs(x - c) / spread; let col = SC.oc;
+    if (tau >= 0 && p > 0){ const k = Math.floor(tau * 12); col = k % 2 ? '#5d6c84' : '#3f4c61'; if (p - tau < .035) col = '#b8442f'; }
+    ctx.fillStyle = col; ctx.fillRect(x, floor(x) - 1, 2.4, Math.min(g.cT, thick(x)) + 1); }
+  marks(ctx, markXs(0, 46, -p * spread, 0, c - p * spread - 6), x => floor(x) + g.cT / 2);
+  marks(ctx, markXs(0, 46, p * spread, c + p * spread + 6, W), x => floor(x) + g.cT / 2);
+  ctx.save(); ctx.strokeStyle = 'rgba(255,90,31,.8)'; ctx.lineWidth = 2; ctx.setLineDash([4, 4]); ctx.beginPath(); ctx.moveTo(c, floor(c)); ctx.lineTo(c, yb + 4); ctx.stroke(); ctx.restore();
+  if (p > .05){ magmaBlobs(ctx, c, yb + 26, c, floor(c) + 4, st.t, 3);
+    // Hot water vents on the ridge
+    ctx.fillStyle = '#2b2b2b'; ctx.fillRect(c - 12, floor(c - 10) - 12, 6, 13); ctx.fillRect(c + 8, floor(c + 10) - 9, 5, 10);
+    for (let i = 0; i < 3; i++){ const ph = (st.t * .4 + i / 3) % 1; ctx.fillStyle = `rgba(40,40,40,${.45 * (1 - ph)})`;
+      ctx.beginPath(); ctx.arc(c - 9 + ph * 6, floor(c - 10) - 14 - ph * 30, 3 + ph * 7, 0, 7); ctx.fill(); } }
+  const anchors = { ridge:[c + .05 * W, floor(c + .05 * W) + 2], newcrust:[c - Math.max(.02 * W, p * spread * .6), floor(c - p * spread * .6) + g.cT / 2], magma:[c, yb + 12] };
+  anchors.quake = () => [c + (Math.random() - .5) * .08 * W, floor(c) + Math.random() * g.cT * 1.2];
+  if (st.labels){
+    label(ctx, 'Ocean ridge', c + .17 * W, g.seaY + .04 * H, anchors.ridge[0], anchors.ridge[1], ss(.1, .25, p));
+    label(ctx, 'New sea floor', c - .22 * W, g.floorY + .13 * H, anchors.newcrust[0], anchors.newcrust[1] + 4, ss(.25, .4, p));
+    label(ctx, 'Magma', c + .14 * W, yb + .1 * H, c + 10, yb + 14, ss(.05, .2, p));
+  }
+  return anchors;
+}
+
+/* Apart, inside a continent: the middle drops down into a rift valley; at the end the sea floods in */
+function drawRift(ctx, W, H, g, st){
+  const p = st.p, c = W / 2, wR = (.03 + p * .12) * W, drop = p * .1 * H, s1 = p * .012 * W;
+  const L = g.landY;
+  const sPts = [[-10, L], [c - wR, L], [c - wR + s1, L + drop * .45], [c - wR * .45, L + drop * .45], [c - wR * .45 + s1, L + drop], [c + wR * .45 - s1, L + drop],
+    [c + wR * .45, L + drop * .45], [c + wR - s1, L + drop * .45], [c + wR, L], [W + 10, L]];
+  const cBase = x => g.ccBase - p * .16 * H * gauss(x, c, .12 * W);
+  const lBase = x => g.clBase - p * .2 * H * gauss(x, c, .1 * W);
+  const botL = [], crL = [];
+  for (let x = -10; x <= W + 10; x += 4){ botL.push([x, lBase(x)]); crL.push([x, cBase(x)]); }
+  const yb = lBase(c);
+  mantleUnder(ctx, botL, H);
+  if (p > .05){ ctx.save(); const gr = ctx.createRadialGradient(c, yb, 4, c, yb, .1 * W); gr.addColorStop(0, SC.glow); gr.addColorStop(.4, SC.magma); gr.addColorStop(1, 'rgba(255,90,31,0)');
+    ctx.fillStyle = gr; ctx.beginPath(); ctx.ellipse(c, yb + 6, .1 * W, .07 * H, 0, 0, 7); ctx.fill(); ctx.restore(); }
+  poly(ctx, sPts.concat(botL.slice().reverse())); ctx.fillStyle = SC.coLith; ctx.fill();
+  ctx.save(); poly(ctx, sPts.concat(crL.slice().reverse())); ctx.clip();
+  ctx.fillStyle = SC.co; ctx.fillRect(0, 0, W, H);
+  const off = x => { const d = Math.abs(x - c); return d < wR * .45 ? drop : d < wR ? drop * .45 : 0; };
+  ctx.strokeStyle = SC.coLine; ctx.lineWidth = 1.4;
+  for (const k of [1, 2, 3, 4]){ ctx.beginPath(); for (let x = -10; x <= W + 10; x += 3){ const y = L + k * .055 * H + off(x); x < -8 ? ctx.moveTo(x, y) : ctx.lineTo(x, y); } ctx.stroke(); }
+  marks(ctx, markXs(0, 46, -p * .2 * W, 0, c - wR - 8), () => L + .03 * H);
+  marks(ctx, markXs(0, 46, p * .2 * W, c + wR + 8, W), () => L + .03 * H);
+  ctx.restore();
+  // Faults along the valley walls
+  if (p > .03){ ctx.strokeStyle = '#3d2a17'; ctx.lineWidth = 2;
+    for (const sx of [-1, 1]) for (const [xx, yy] of [[wR, L], [wR * .45, L + drop * .45]]){ const x = c + sx * xx; ctx.beginPath(); ctx.moveTo(x - sx * s1 * .5, yy); ctx.lineTo(x - sx * .03 * W, cBase(x)); ctx.stroke(); } }
+  const anchors = { rift:[c, L + drop + 3], magma:[c, yb + 6] };
+  const vh = ss(.3, .8, p) * .06 * H;
+  if (vh > 1){ for (const sx of [-1, 1]) cone(ctx, c + sx * (wR + .05 * W), L + 2, vh, .035 * W, SC.volc);
+    if (p > .4) eruption(ctx, c - (wR + .05 * W), L + 2 - vh, st.t, .7);
+    magmaBlobs(ctx, c - .02 * W, yb - 4, c - (wR + .05 * W), L - vh * .3, st.t, 3);
+    anchors.volcano = [c + wR + .05 * W, L - vh * .6]; }
+  anchors.quake = () => { const sx = Math.random() < .5 ? -1 : 1; const x = c + sx * wR * (Math.random() < .5 ? 1 : .45); return [x - sx * .015 * W, L + drop * .5 + Math.random() * .08 * H]; };
+  if (st.labels){
+    label(ctx, L + drop > g.seaY + 2 ? 'Sea floods in' : 'Rift valley', c, g.landY - .12 * H, c, L + drop - 2, ss(.1, .25, p));
+    if (anchors.volcano) label(ctx, 'Volcano', c + wR + .17 * W, g.landY - .06 * H, anchors.volcano[0] + 6, anchors.volcano[1], ss(.4, .55, p));
+    if (p > .05) label(ctx, 'Magma', c - .2 * W, yb + .05 * H, c - .05 * W, yb + 6, ss(.1, .25, p));
+  }
+  return anchors;
+}
+
+/* Slide past, seen from above: a fault cuts a road, a river and a fence.
+   The rock bends near the fault while it is stuck, then snaps (an earthquake). d = total slide, slip = how much the fault has already slipped. */
+function drawFaultMap(ctx, W, H, st){
+  const c = W / 2, Dt = .24 * H, d = st.p * Dt, slip = Math.min(st.slip ?? st.p, st.p) * Dt, e = d - slip, lam = .12 * W;
+  const off = x => { const s = x < c ? -1 : 1; return s * (d / 2 - (e / 2) * Math.exp(-Math.abs(x - c) / lam)); };
+  ctx.fillStyle = SC.grass; ctx.fillRect(0, 0, c, H); ctx.fillStyle = SC.grass2; ctx.fillRect(c, 0, W - c, H);
+  const R = rng(7);
+  for (let i = 0; i < 60; i++){ const x = R() * W, y = R() * H * 1.3 - .15 * H; if (Math.abs(x - c) < 14) continue;
+    if ([.32, .62, .86].some(f => Math.abs(y - f * H) < 26)) continue;
+    const yy = y + off(x); ctx.fillStyle = '#3f7a3a'; ctx.beginPath(); ctx.arc(x, yy, 7 + R() * 5, 0, 7); ctx.fill(); ctx.fillStyle = 'rgba(255,255,255,.18)'; ctx.beginPath(); ctx.arc(x - 2, yy - 2, 3, 0, 7); ctx.fill(); }
+  const path = (yf, x0, x1) => { ctx.beginPath(); for (let x = x0; x <= x1; x += 3){ const y = yf(x) + off(x); x === x0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y); } };
+  for (const [x0, x1] of [[0, c - 1], [c + 1, W]]){
+    // River
+    path(x => .62 * H + .035 * H * Math.sin(x / W * 9), x0, x1); ctx.strokeStyle = '#2f7fd0'; ctx.lineWidth = 11; ctx.lineCap = 'butt'; ctx.stroke();
+    // Road
+    path(() => .32 * H, x0, x1); ctx.strokeStyle = '#5b5f66'; ctx.lineWidth = 18; ctx.stroke();
+    path(() => .32 * H, x0, x1); ctx.strokeStyle = '#ffd34d'; ctx.lineWidth = 2.5; ctx.setLineDash([12, 10]); ctx.stroke(); ctx.setLineDash([]);
+    // Fence
+    path(() => .86 * H, x0, x1); ctx.strokeStyle = '#7a5230'; ctx.lineWidth = 2.5; ctx.stroke();
+    ctx.fillStyle = '#7a5230'; for (let x = x0 + 8; x < x1; x += 20){ ctx.fillRect(x - 2.5, .86 * H + off(x) - 5, 5, 10); }
+  }
+  // The fault
+  ctx.strokeStyle = '#4a2d14'; ctx.lineWidth = 3; ctx.beginPath();
+  for (let y = 0; y <= H; y += 12){ const x = c + (Math.floor(y / 12) % 2 ? 2.5 : -2.5); y ? ctx.lineTo(x, y) : ctx.moveTo(x, y); } ctx.stroke();
+  if (st.arrows !== false){ bigArrow(ctx, W * .2, H * .48, 0, -1, 80, '#1b2733'); bigArrow(ctx, W * .8, H * .48, 0, 1, 80, '#1b2733'); }
+  const anchors = { fault:[c, .13 * H] };
+  anchors.quake = () => [c, (.15 + Math.random() * .7) * H];
+  if (st.labels){ label(ctx, 'Fault', c + 52, .14 * H, c + 3, .14 * H, 1);
+    if (st.flash > 0) label(ctx, 'Earthquake!', c + 80, st.flashY, c + 6, st.flashY, Math.min(1, st.flash * 2)); }
+  return anchors;
+}
+
+function drawPlates(ctx, W, H, st){
+  ctx.clearRect(0, 0, W, H);
+  if (st.motion === 'slide') return drawFaultMap(ctx, W, H, st);
+  const g = geo(W, H);
+  background(ctx, W, H, g, st);
+  let a;
+  if (st.motion === 'apart') a = st.pair === 'CC' ? drawRift(ctx, W, H, g, st) : drawRidge(ctx, W, H, g, st);
+  else a = st.pair === 'CC' ? drawCollision(ctx, W, H, g, st) : drawSubduction(ctx, W, H, g, st);
+  plateArrows(ctx, W, H, st, g);
+  return a;
+}
+
+const CASES = {
+  'apart-OO':   { main:'Divergent: plates pull apart', ex:'Mid-Atlantic Ridge, Iceland', form:'Ocean ridge' },
+  'apart-CC':   { main:'Divergent: plates pull apart', ex:'East African Rift', form:'Rift valley' },
+  'together-OC':{ main:'Convergent: plates push together', ex:'Andes, BC coast volcanoes', form:'Trench + volcanoes' },
+  'together-OO':{ main:'Convergent: plates push together', ex:'Japan, Aleutian Islands', form:'Trench + volcanic islands' },
+  'together-CC':{ main:'Convergent: plates push together', ex:'Himalayas, Mount Everest', form:'Tall mountains, no volcanoes' },
+  'slide':      { main:'Transform: plates slide past', ex:'San Andreas Fault', form:'Fault and earthquakes' },
+};
+const caseKey = (m, pr) => m === 'slide' ? 'slide' : m + '-' + pr;
+
+/* ---------- Plates screen state ---------- */
+const S = { tab:'plates', motion:'together', pair:'OC', p:0, slip:0, playing:false, t:0, moveT:0, quakes:[], qTimer:0, shake:0, flash:0, flashY:0 };
+let plateAnchors = {}, plateSize = { W:1, H:1 };
+
+function advance(dp){
+  const before = S.p; S.p = clamp(S.p + dp);
+  if (S.p > before){ S.moveT = .15; }
+  if (S.p < S.slip) S.slip = S.p;
+  if (S.motion === 'slide' && S.p - S.slip > .19){ // stuck rock snaps: an earthquake
+    S.slip = S.p; const y = (.2 + Math.random() * .6) * plateSize.H; S.quakes.push({ x:plateSize.W / 2, y, age:0 }); S.shake = .45; S.flash = 1.2; S.flashY = y; }
+}
+function stepPlates(dt){
+  if (S.playing){ advance(dt / 9); if (S.p >= 1){ S.playing = false; syncPlay(); } }
+  S.moveT -= dt; S.shake = Math.max(0, S.shake - dt); S.flash = Math.max(0, S.flash - dt);
+  S.quakes.forEach(q => q.age += dt * 1.1); S.quakes = S.quakes.filter(q => q.age < 1);
+  if (S.motion !== 'slide' && S.moveT > 0){ S.qTimer -= dt;
+    if (S.qTimer <= 0 && plateAnchors.quake){ const [x, y] = plateAnchors.quake(); S.quakes.push({ x, y, age:0 }); S.qTimer = .35 + Math.random() * .5; if (Math.random() < .35) S.shake = .2; } }
+}
+function drawPlateStage(){
+  const { ctx, W, H } = fit($('plateCv')); plateSize = { W, H };
+  ctx.save();
+  if (S.shake > 0 && !REDUCED) ctx.translate((Math.random() - .5) * 6 * S.shake * 2, (Math.random() - .5) * 4 * S.shake * 2);
+  plateAnchors = drawPlates(ctx, W, H, { motion:S.motion, pair:S.pair, p:S.p, slip:S.slip, t:S.t, labels:true, flash:S.flash, flashY:S.flashY });
+  S.quakes.forEach(q => quakeStar(ctx, q.x, q.y, q.age));
+  // Hint: a pulsing hand on the left plate until the student starts
+  if (S.p === 0 && !S.playing){
+    const hx = W * .2, hy = S.motion === 'slide' ? H * .7 : geo(W, H).floorY + .12 * H;
+    const k = REDUCED ? 0 : Math.sin(S.t * 3) * 8;
+    const dx = S.motion === 'slide' ? 0 : (S.motion === 'apart' ? -k : k), dy = S.motion === 'slide' ? -k : 0;
+    ctx.font = '34px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('👆', hx + dx, hy + dy);
+  }
+  ctx.restore();
+  const yrs = S.motion === 'slide' ? Math.round(S.p * 600) + ' years' : Math.round(S.p * 20) + ' million years';
+  $('clock').textContent = '⏱ ' + yrs;
+}
+function syncPlay(){ $('playBtn').textContent = S.playing ? '❚❚ Pause' : '▶ Play'; }
+function syncPlatesUI(){
+  if (S.motion === 'apart' && S.pair === 'OC') S.pair = 'OO';
+  document.querySelectorAll('[data-motion]').forEach(b => b.setAttribute('aria-checked', String(b.dataset.motion === S.motion)));
+  document.querySelectorAll('[data-pair]').forEach(b => { b.setAttribute('aria-checked', String(b.dataset.pair === S.pair)); b.hidden = S.motion === 'apart' && b.dataset.pair === 'OC'; });
+  $('pairCtl').hidden = S.motion === 'slide';
+  $('aboveChip').hidden = S.motion !== 'slide';
+  const info = CASES[caseKey(S.motion, S.pair)];
+  $('bMain').textContent = info.main; $('bSub').innerHTML = 'Real example: <b>' + info.ex + '</b>';
+  syncPlay();
+}
+function resetPlates(){ S.p = 0; S.slip = 0; S.quakes = []; S.playing = false; syncPlay(); }
+
+// Dragging a plate: moving it the way its arrow points runs time forward, the other way runs it back
+(() => {
+  const cv = $('plateCv'); let drag = null;
+  cv.addEventListener('pointerdown', e => { const r = cv.getBoundingClientRect(); drag = { x:e.clientX, y:e.clientY, left:(e.clientX - r.left) < r.width / 2 };
+    cv.setPointerCapture(e.pointerId); cv.classList.add('dragging'); S.playing = false; syncPlay(); });
+  cv.addEventListener('pointermove', e => { if (!drag) return;
+    const dx = e.clientX - drag.x, dy = e.clientY - drag.y; drag.x = e.clientX; drag.y = e.clientY;
+    let along;
+    if (S.motion === 'slide') along = drag.left ? -dy : dy;
+    else along = (S.motion === 'apart' ? -1 : 1) * (drag.left ? dx : -dx);
+    advance(along / (S.motion === 'slide' ? plateSize.H * .7 : plateSize.W * .35)); });
+  const end = () => { drag = null; cv.classList.remove('dragging'); };
+  cv.addEventListener('pointerup', end); cv.addEventListener('pointercancel', end);
+})();
+
+/* ---------- Rocks ---------- */
+const ROCKS = {
+  magma:      { name:'Magma', sub:'melted rock' },
+  basalt:     { name:'Igneous', sub:'basalt · tiny crystals', type:'igneous' },
+  granite:    { name:'Igneous', sub:'granite · big crystals', type:'igneous' },
+  sediment:   { name:'Sediment', sub:'loose bits of rock' },
+  sedimentary:{ name:'Sedimentary', sub:'sandstone · layers' },
+  metamorphic:{ name:'Metamorphic', sub:'gneiss · squeezed bands' },
+};
+const typeOf = k => ROCKS[k].type || k;
+
+function drawRock(ctx, cx, cy, r, kind, seed = 3, square = false){
+  ctx.save(); ctx.beginPath();
+  if (square) ctx.roundRect(cx - r, cy - r, 2 * r, 2 * r, r * .18); else ctx.arc(cx, cy, r, 0, 7);
+  ctx.clip();
+  const R = rng(seed), x0 = cx - r, y0 = cy - r, S2 = 2 * r;
+  if (kind === 'magma'){
+    const g = ctx.createRadialGradient(cx - r * .2, cy - r * .2, r * .1, cx, cy, r * 1.2); g.addColorStop(0, '#fff2a8'); g.addColorStop(.35, '#ffb02e'); g.addColorStop(.75, '#ff4d1a'); g.addColorStop(1, '#a3200c');
+    ctx.fillStyle = g; ctx.fillRect(x0, y0, S2, S2);
+    ctx.strokeStyle = 'rgba(90,20,5,.55)'; ctx.lineWidth = Math.max(1, r * .05);
+    for (let i = 0; i < 5; i++){ ctx.beginPath(); let x = x0 + R() * S2, y = y0 + R() * S2; ctx.moveTo(x, y); for (let j = 0; j < 4; j++){ x += (R() - .5) * r * .7; y += (R() - .5) * r * .7; ctx.lineTo(x, y); } ctx.stroke(); }
+    ctx.fillStyle = 'rgba(255,255,220,.7)'; for (let i = 0; i < 6; i++){ ctx.beginPath(); ctx.arc(x0 + R() * S2, y0 + R() * S2, r * (.04 + R() * .05), 0, 7); ctx.fill(); }
+  } else if (kind === 'granite'){
+    ctx.fillStyle = '#e8ddd3'; ctx.fillRect(x0, y0, S2, S2);
+    const cols = ['#e2a29b', '#f7f3ef', '#b8b2ab', '#2a2a2e', '#e2a29b', '#d98c84'];
+    for (let i = 0; i < 70; i++){ const x = x0 + R() * S2, y = y0 + R() * S2, s = r * (.07 + R() * .13); ctx.fillStyle = cols[Math.floor(R() * cols.length)];
+      ctx.beginPath(); for (let j = 0; j < 5; j++){ const a = j / 5 * 6.283 + R() * .6, rr = s * (.6 + R() * .5); ctx.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); } ctx.closePath(); ctx.fill(); }
+  } else if (kind === 'basalt'){
+    ctx.fillStyle = '#4a4d53'; ctx.fillRect(x0, y0, S2, S2);
+    for (let i = 0; i < 260; i++){ ctx.fillStyle = R() < .5 ? 'rgba(255,255,255,.18)' : 'rgba(0,0,0,.25)'; ctx.fillRect(x0 + R() * S2, y0 + R() * S2, r * .035 + 1, r * .035 + 1); }
+    for (let i = 0; i < 5; i++){ const x = x0 + R() * S2, y = y0 + R() * S2, s = r * (.05 + R() * .06); ctx.fillStyle = '#25272b'; ctx.beginPath(); ctx.arc(x, y, s, 0, 7); ctx.fill(); ctx.fillStyle = 'rgba(255,255,255,.2)'; ctx.beginPath(); ctx.arc(x + s * .3, y + s * .3, s * .4, 0, 7); ctx.fill(); }
+  } else if (kind === 'sediment'){
+    ctx.fillStyle = '#e7d4a6'; ctx.fillRect(x0, y0, S2, S2);
+    const cols = ['#9a9590', '#c6a576', '#7d6a58', '#d9c08f', '#b3aaa0', '#6d7178'];
+    for (let i = 0; i < 26; i++){ const x = x0 + R() * S2, y = y0 + R() * S2, s = r * (.07 + R() * .13); ctx.fillStyle = cols[Math.floor(R() * cols.length)];
+      ctx.beginPath(); ctx.ellipse(x, y, s, s * (.6 + R() * .4), R() * 3, 0, 7); ctx.fill(); ctx.strokeStyle = 'rgba(0,0,0,.25)'; ctx.lineWidth = 1; ctx.stroke(); }
+    ctx.fillStyle = 'rgba(120,90,50,.45)'; for (let i = 0; i < 120; i++) ctx.fillRect(x0 + R() * S2, y0 + R() * S2, 1.5, 1.5);
+  } else if (kind === 'sedimentary'){
+    const cols = ['#d9b98a', '#c49a66', '#e6cfa3', '#b4875a', '#dcc196', '#a97d53'];
+    let y = y0, i = 0; while (y < y0 + S2){ const h = r * (.18 + R() * .2); ctx.fillStyle = cols[i++ % cols.length];
+      ctx.beginPath(); ctx.moveTo(x0, y); for (let x = x0; x <= x0 + S2; x += 4) ctx.lineTo(x, y + Math.sin(x * .05 + i) * r * .015); ctx.lineTo(x0 + S2, y + h); ctx.lineTo(x0, y + h); ctx.closePath(); ctx.fill(); y += h; }
+    ctx.fillStyle = 'rgba(90,60,30,.35)'; for (let k = 0; k < 160; k++) ctx.fillRect(x0 + R() * S2, y0 + R() * S2, 1.5, 1.5);
+    // A small shell fossil
+    ctx.strokeStyle = 'rgba(80,55,30,.8)'; ctx.lineWidth = Math.max(1, r * .03); ctx.beginPath();
+    for (let a = 0; a < 12; a += .2){ const rr = r * .015 * a; ctx.lineTo(cx + r * .3 + Math.cos(a) * rr, cy + r * .25 + Math.sin(a) * rr); } ctx.stroke();
+  } else if (kind === 'metamorphic'){
+    ctx.fillStyle = '#d9d2c7'; ctx.fillRect(x0, y0, S2, S2);
+    const cols = ['#34343c', '#e8e1d6', '#4a4650', '#d9a59a', '#2e2e35', '#efe9df'];
+    for (let i = -2, k = 0; i < 14; i++, k++){ const yb = y0 + i * r * .17; ctx.fillStyle = cols[k % cols.length];
+      ctx.beginPath(); for (let x = x0; x <= x0 + S2; x += 3) ctx.lineTo(x, yb + Math.sin(x / r * 4 + i * .3) * r * .12 + Math.sin(x / r * 9) * r * .03);
+      for (let x = x0 + S2; x >= x0; x -= 3) ctx.lineTo(x, yb + r * .09 + Math.sin(x / r * 4 + i * .3) * r * .12 + Math.sin(x / r * 9) * r * .03); ctx.closePath(); ctx.fill(); }
+  }
+  ctx.restore();
+  ctx.save(); ctx.beginPath(); if (square) ctx.roundRect(cx - r, cy - r, 2 * r, 2 * r, r * .18); else ctx.arc(cx, cy, r, 0, 7);
+  ctx.strokeStyle = '#1b2733'; ctx.lineWidth = 2; ctx.stroke(); ctx.restore();
+}
+
+/* Processes. "to" is the rock you get; "from" lists which rocks the process can act on. */
+const PROC = {
+  coolUp:  { label:'Cool at the surface', short:'Cool', col:'cool', from:['magma'], to:'basalt' },
+  coolDown:{ label:'Cool underground', short:'Cool', col:'cool', from:['magma'], to:'granite' },
+  weather: { label:'Weather and erode', short:'Weather and erode', col:'weather', from:['basalt', 'granite', 'sedimentary', 'metamorphic'], to:'sediment' },
+  compact: { label:'Compact and cement', short:'Compact and cement', col:'compact', from:['sediment'], to:'sedimentary' },
+  heat:    { label:'Heat and pressure', short:'Heat and pressure', col:'heat', from:['basalt', 'granite', 'sedimentary'], to:'metamorphic' },
+  melt:    { label:'Melt', short:'Melt', col:'melt', from:['basalt', 'granite', 'sedimentary', 'metamorphic'], to:'magma' },
+};
+const ICON = {
+  cool:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2V22M3.3 7L20.7 17M3.3 17L20.7 7M9 4L12 7L15 4M9 20L12 17L15 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  weather:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 13H18A4 4 0 0 0 17 5.2A5 5 0 0 0 7.5 6.5A3.3 3.3 0 0 0 6 13Z" fill="currentColor"/><path d="M8 16L7 19M12 16L11 19M16 16L15 19" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><circle cx="5" cy="22" r="1.4" fill="currentColor"/><circle cx="10" cy="22.4" r="1" fill="currentColor"/><circle cx="16" cy="22" r="1.4" fill="currentColor"/></svg>',
+  compact:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1V8M8.5 5L12 8.5L15.5 5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><rect x="3" y="11" width="18" height="3.2" rx="1" fill="currentColor"/><rect x="3" y="15.4" width="18" height="3.2" rx="1" fill="currentColor" opacity=".7"/><rect x="3" y="19.8" width="18" height="3.2" rx="1" fill="currentColor" opacity=".45"/></svg>',
+  heat:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22C8 22 6 19 6 16C6 12 10 10 10 6C13 8 13 10 13 11C14 10 15 9 15 7C17 9 18 12 18 16C18 19 16 22 12 22Z" fill="currentColor"/><path d="M1 12H4M2.5 10.5L4 12L2.5 13.5M23 12H20M21.5 10.5L20 12L21.5 13.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  melt:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 23C7.5 23 5 19.6 5 16C5 11 10 8.5 10 2C14 5 13.5 8.5 13.5 10C15 9 16 7.5 16 5.5C18.5 8 19 12 19 16C19 19.6 16.5 23 12 23Z" fill="currentColor"/></svg>',
+};
+
+/* Rock cycle scene: volcano on the left, mountains in the middle, sea on the right. Each rock waits at its own station. */
+function rockGeo(W, H){
+  const vx = .17 * W, mx = .5 * W;
+  const surf = x => .30 * H - .17 * H * Math.max(0, 1 - Math.abs(x - vx) / (.13 * W)) + .03 * H * Math.max(0, 1 - Math.abs(x - vx) / (.012 * W))
+    - .15 * H * (.7 * gauss(x, .47 * W, .065 * W) + .6 * gauss(x, .55 * W, .055 * W)) + ss(.70 * W, .80 * W, x) * .13 * H;
+  const r = Math.min(.045 * H, .035 * W, 26);
+  return { vx, mx, surf, r, seaY:.33 * H,
+    st:{ magma:[vx, .70 * H], basalt:[.26 * W, surf(.26 * W) - r * .9], granite:[.32 * W, .52 * H], sediment:[.87 * W, surf(.87 * W) - r * .9],
+      sedimentary:[.88 * W, .53 * H], metamorphic:[.5 * W, .66 * H] } };
+}
+function drawRockScene(ctx, W, H, t, tokenKind, tokenPos){
+  const G = rockGeo(W, H), surf = G.surf;
+  let gr = ctx.createLinearGradient(0, 0, 0, .35 * H); gr.addColorStop(0, K.sky1); gr.addColorStop(1, K.sky2); ctx.fillStyle = gr; ctx.fillRect(0, 0, W, H);
+  // Sea
+  ctx.fillStyle = SC.water; ctx.fillRect(.66 * W, G.seaY, W * .34, .2 * H);
+  // Ground
+  const ground = []; for (let x = -4; x <= W + 4; x += 3) ground.push([x, surf(x)]);
+  ground.push([W + 4, H], [-4, H]);
+  ctx.save(); poly(ctx, ground); ctx.clip();
+  gr = ctx.createLinearGradient(0, .25 * H, 0, H); gr.addColorStop(0, '#b78f5f'); gr.addColorStop(.6, '#8d6c50'); gr.addColorStop(1, '#6e5444'); ctx.fillStyle = gr; ctx.fillRect(0, 0, W, H);
+  // Sediment layers under the sea
+  const lc = ['#dcc095', '#c9a274', '#e3cfa4', '#b98d5f'];
+  for (let i = 0; i < 6; i++){ ctx.fillStyle = lc[i % 4]; ctx.beginPath();
+    const yAt = (x, k) => .43 * H + .028 * H * k * ss(.66 * W, .82 * W, x);
+    for (let x = .66 * W; x <= W; x += 4) ctx.lineTo(x, yAt(x, i));
+    for (let x = W; x >= .66 * W; x -= 4) ctx.lineTo(x, yAt(x, i + 1)); ctx.fill(); }
+  // Banded rock deep under the mountains
+  ctx.save(); ctx.beginPath(); ctx.ellipse(.5 * W, .66 * H, .11 * W, .075 * H, 0, 0, 7); ctx.clip();
+  for (let i = 0; i < 12; i++){ ctx.fillStyle = i % 2 ? '#3c3a42' : '#cfc7bb'; ctx.beginPath();
+    for (let x = .38 * W; x <= .62 * W; x += 4) ctx.lineTo(x, .58 * H + i * .015 * H + Math.sin(x / W * 40) * .008 * H);
+    for (let x = .62 * W; x >= .38 * W; x -= 4) ctx.lineTo(x, .58 * H + (i + 1) * .015 * H + Math.sin(x / W * 40) * .008 * H); ctx.fill(); }
+  ctx.restore();
+  // Granite body (cooled underground)
+  ctx.fillStyle = '#e1b8ab'; ctx.beginPath(); ctx.ellipse(.32 * W, .53 * H, .055 * W, .05 * H, .2, 0, 7); ctx.fill();
+  const R = rng(5); for (let i = 0; i < 40; i++){ ctx.fillStyle = ['#2a2a2e', '#f7f3ef', '#c78a80'][i % 3]; const a = R() * 6.28, rr = Math.sqrt(R()); ctx.fillRect(.32 * W + Math.cos(a) * rr * .05 * W, .53 * H + Math.sin(a) * rr * .045 * H, 3, 3); }
+  // Hot zone and magma chamber
+  gr = ctx.createLinearGradient(0, .8 * H, 0, H); gr.addColorStop(0, 'rgba(240,120,40,0)'); gr.addColorStop(.4, SC.mantle1); gr.addColorStop(1, SC.mantle2); ctx.fillStyle = gr; ctx.fillRect(0, .8 * H, W, .2 * H);
+  ctx.strokeStyle = SC.magma; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(G.vx, .70 * H); ctx.lineTo(G.vx, surf(G.vx)); ctx.stroke();
+  ctx.lineWidth = 9; ctx.beginPath(); ctx.moveTo(G.vx, .7 * H); ctx.lineTo(G.vx - .02 * W, .9 * H); ctx.stroke();
+  gr = ctx.createRadialGradient(G.vx, .7 * H, 2, G.vx, .7 * H, .07 * W); gr.addColorStop(0, SC.glow); gr.addColorStop(.5, SC.magma); gr.addColorStop(1, '#b0300f');
+  ctx.fillStyle = gr; ctx.beginPath(); ctx.ellipse(G.vx, .7 * H, .07 * W, .05 * H, 0, 0, 7); ctx.fill();
+  // Snow on the peaks
+  ctx.fillStyle = SC.snow; ctx.fillRect(.4 * W, 0, .25 * W, .19 * H);
+  ctx.restore();
+  // Volcano cap darker
+  ctx.save(); poly(ctx, ground); ctx.clip(); ctx.fillStyle = 'rgba(70,55,48,.55)'; ctx.beginPath(); ctx.moveTo(G.vx - .13 * W, .30 * H); ctx.lineTo(G.vx, .12 * H); ctx.lineTo(G.vx + .13 * W, .30 * H); ctx.fill(); ctx.restore();
+  eruption(ctx, G.vx, surf(G.vx) + 2, t, .9);
+  // River from the mountains to the sea
+  ctx.strokeStyle = '#2f7fd0'; ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.beginPath();
+  for (let x = .565 * W; x <= .76 * W; x += 3){ const y = surf(x) - 1.5 + Math.sin(x * .2) * .6; x === .565 * W ? ctx.moveTo(x, y) : ctx.lineTo(x, y); } ctx.stroke();
+  // Rain cloud
+  const cx = .52 * W, cy = .07 * H;
+  ctx.fillStyle = '#9aa6b2'; for (const [dx, dy, rr] of [[-22, 4, 14], [0, -4, 18], [22, 4, 14], [8, 8, 14]]){ ctx.beginPath(); ctx.arc(cx + dx, cy + dy, rr, 0, 7); ctx.fill(); }
+  ctx.strokeStyle = '#2f7fd0'; ctx.lineWidth = 2; for (let i = 0; i < 6; i++){ const ph = REDUCED ? .5 : (t * 1.2 + i * .37) % 1; const x = cx - 28 + i * 11 - ph * 6, y = cy + 18 + ph * 30; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - 3, y + 7); ctx.stroke(); }
+  // Station labels
+  const lbl = [['Magma', 'magma', 0, 1], ['Igneous', 'basalt', -1, 0], ['Igneous', 'granite', 1, 0], ['Sediment', 'sediment', 0, -1], ['Sedimentary', 'sedimentary', 0, 1], ['Metamorphic', 'metamorphic', 0, 1]];
+  for (const [txt, k, sx, sy] of lbl){ const [x, y] = G.st[k]; label(ctx, txt, x + sx * (G.r + 52), y + sy * (G.r + 22), null, null, .95); }
+  ctx.save(); ctx.globalAlpha = .45; for (const k of Object.keys(G.st)){ const [x, y] = G.st[k]; ctx.setLineDash([4, 4]); ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y, G.r, 0, 7); ctx.stroke(); } ctx.restore();
+  if (tokenKind){ const [x, y] = tokenPos || G.st[tokenKind];
+    ctx.save(); ctx.shadowColor = 'rgba(0,0,0,.4)'; ctx.shadowBlur = 10; ctx.beginPath(); ctx.arc(x, y, G.r, 0, 7); ctx.fillStyle = '#fff'; ctx.fill(); ctx.restore();
+    drawRock(ctx, x, y, G.r, tokenKind, 11); ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(x, y, G.r + 3, 0, 7); ctx.stroke(); }
+  return G;
+}
+
+const RK = { kind:'magma', travel:null, used:new Set(), last:null, flash:0 };
+function edgeKey(a, b){ return typeOf(a) + '>' + typeOf(b); }
+const EDGES = [['magma', 'igneous', 'cool'], ['igneous', 'sediment', 'weather'], ['sediment', 'sedimentary', 'compact'], ['sedimentary', 'metamorphic', 'heat'], ['metamorphic', 'magma', 'melt'],
+  ['igneous', 'magma', 'melt'], ['igneous', 'metamorphic', 'heat'], ['sedimentary', 'sediment', 'weather'], ['sedimentary', 'magma', 'melt'], ['metamorphic', 'sediment', 'weather']];
+
+function routeFor(proc, from, to, G, W, H){
+  const a = G.st[from], b = G.st[to], top = [G.mx, G.surf(G.mx) - G.r];
+  if (proc === 'coolUp') return [a, [G.vx, G.surf(G.vx) - G.r], b];
+  if (proc === 'weather'){ const pts = [a, top]; for (let x = .57 * W; x <= .77 * W; x += .03 * W) pts.push([x, G.surf(x) - G.r * .8]); pts.push(b); return pts; }
+  if (proc === 'melt') return [a, [a[0], .88 * H], [G.vx, .88 * H], b];
+  return [a, b];
+}
+function doProcess(key){
+  if (RK.travel) return;
+  const P = PROC[key]; if (!P.from.includes(RK.kind)) return;
+  const { W, H } = rockSize, G = rockGeo(W, H);
+  const pts = routeFor(key, RK.kind, P.to, G, W, H);
+  let L = 0; const segs = []; for (let i = 1; i < pts.length; i++){ const l = Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]); segs.push(l); L += l; }
+  RK.travel = { pts, segs, L, s:0, to:P.to, from:RK.kind, key, dur:REDUCED ? .01 : clamp(L / (H * .55), 1, 3.2) };
+  syncRockUI();
+}
+function stepRock(dt){
+  RK.flash = Math.max(0, RK.flash - dt);
+  const tr = RK.travel; if (!tr) return;
+  tr.s += dt / tr.dur;
+  if (tr.s >= 1){ RK.used.add(edgeKey(tr.from, tr.to)); RK.last = edgeKey(tr.from, tr.to); RK.kind = tr.to; RK.travel = null; RK.flash = .6; syncRockUI(); }
+}
+function travelPos(tr){
+  let d = ss(0, 1, tr.s) * tr.L;
+  for (let i = 0; i < tr.segs.length; i++){ if (d <= tr.segs[i] || i === tr.segs.length - 1){ const t = clamp(d / (tr.segs[i] || 1)); return [lerp(tr.pts[i][0], tr.pts[i + 1][0], t), lerp(tr.pts[i][1], tr.pts[i + 1][1], t)]; } d -= tr.segs[i]; }
+}
+let rockSize = { W:1, H:1 };
+function drawRockStage(){
+  const { ctx, W, H } = fit($('rockCv')); rockSize = { W, H };
+  const tr = RK.travel;
+  const G = drawRockScene(ctx, W, H, S.t, tr ? tr.from : RK.kind, tr ? travelPos(tr) : null);
+  if (tr){ // the route, in the process colour
+    ctx.save(); ctx.strokeStyle = K[PROC[tr.key].col]; ctx.lineWidth = 3; ctx.setLineDash([7, 6]); ctx.globalAlpha = .9;
+    ctx.beginPath(); tr.pts.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.stroke(); ctx.restore(); }
+  if (RK.flash > 0){ const [x, y] = G.st[RK.kind]; ctx.save(); ctx.globalAlpha = RK.flash / .6; ctx.strokeStyle = '#ffe066'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(x, y, G.r + 6 + (1 - RK.flash / .6) * 20, 0, 7); ctx.stroke(); ctx.restore(); }
+}
+
+/* The small rock cycle diagram: the 10 arrows light up in their process colour once the student has used them */
+const NODE = { magma:[.5, .14], igneous:[.86, .42], sediment:[.72, .84], sedimentary:[.28, .84], metamorphic:[.14, .42] };
+const NODE_ROCK = { magma:'magma', igneous:'granite', sediment:'sediment', sedimentary:'sedimentary', metamorphic:'metamorphic' };
+function drawCycle(ctx, W, H, opts = {}){
+  ctx.clearRect(0, 0, W, H);
+  const r = Math.min(20, H * .09), P = k => [NODE[k][0] * W, NODE[k][1] * (H - 16) + 2];
+  for (const [a, b, col] of EDGES){
+    const key = a + '>' + b, on = opts.used ? opts.used.has(key) : false, last = opts.last === key;
+    const [x1, y1] = P(a), [x2, y2] = P(b), dx = x2 - x1, dy = y2 - y1, d = Math.hypot(dx, dy);
+    const mx = (x1 + x2) / 2 - dy / d * d * .12, my = (y1 + y2) / 2 + dx / d * d * .12;
+    // shorten so the arrow starts and ends at the node edges
+    const sx = x1 + (mx - x1) / Math.hypot(mx - x1, my - y1) * (r + 3), sy = y1 + (my - y1) / Math.hypot(mx - x1, my - y1) * (r + 3);
+    const ex = x2 + (mx - x2) / Math.hypot(mx - x2, my - y2) * (r + 6), ey = y2 + (my - y2) / Math.hypot(mx - x2, my - y2) * (r + 6);
+    ctx.save(); ctx.strokeStyle = on ? K[col] : K['line-strong']; ctx.fillStyle = ctx.strokeStyle; ctx.lineWidth = last ? 5 : on ? 3.2 : 1.6; if (!on) ctx.setLineDash([4, 4]);
+    ctx.beginPath(); ctx.moveTo(sx, sy); ctx.quadraticCurveTo(mx, my, ex, ey); ctx.stroke(); ctx.setLineDash([]);
+    const an = Math.atan2(ey - my, ex - mx), hs = last ? 11 : 8;
+    ctx.beginPath(); ctx.moveTo(ex + Math.cos(an) * 3, ey + Math.sin(an) * 3); ctx.lineTo(ex - Math.cos(an - .45) * hs, ey - Math.sin(an - .45) * hs); ctx.lineTo(ex - Math.cos(an + .45) * hs, ey - Math.sin(an + .45) * hs); ctx.closePath(); ctx.fill(); ctx.restore();
+  }
+  ctx.font = '700 12px "Atkinson Hyperlegible", system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+  for (const k of Object.keys(NODE)){ const [x, y] = P(k);
+    if (opts.current === k){ ctx.fillStyle = K.pt; ctx.beginPath(); ctx.arc(x, y, r + 5, 0, 7); ctx.fill(); }
+    drawRock(ctx, x, y, r, NODE_ROCK[k], 9);
+    ctx.fillStyle = K.ink; ctx.fillText(ROCKS[NODE_ROCK[k]].name, x, y + r + 3); }
+}
+function syncRockUI(){
+  const R = ROCKS[RK.kind];
+  $('rName').textContent = R.name; $('rSub').textContent = R.sub;
+  const bc = $('rockBig').getContext('2d'); const d = window.devicePixelRatio || 1; $('rockBig').width = 96 * d; $('rockBig').height = 96 * d; bc.setTransform(d, 0, 0, d, 0, 0); drawRock(bc, 48, 48, 46, RK.kind, 11, true);
+  document.querySelectorAll('.act').forEach(b => { const P = PROC[b.dataset.proc]; b.disabled = !P.from.includes(RK.kind) || !!RK.travel; b.classList.toggle('on', !!RK.travel && RK.travel.key === b.dataset.proc); });
+  $('foundOut').textContent = RK.used.size + ' of 10';
+  const { ctx, W, H } = fit($('cycleCv')); drawCycle(ctx, W, H, { used:RK.used, last:RK.last, current:typeOf(RK.kind) });
+}
+$('acts').innerHTML = Object.entries(PROC).map(([k, P]) => `<button type="button" class="act" data-proc="${k}" style="--pc:var(--${P.col})">${ICON[P.col]}<span>${P.label}</span></button>`).join('');
+$('acts').addEventListener('click', e => { const b = e.target.closest('.act'); if (b && !b.disabled) doProcess(b.dataset.proc); });
+
+/* ---------- Practice ---------- */
+const MOTION_ICON = {
+  apart:'<svg viewBox="0 0 34 20" aria-hidden="true"><path d="M15 10H3M8 4L2 10L8 16M19 10H31M26 4L32 10L26 16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  together:'<svg viewBox="0 0 34 20" aria-hidden="true"><path d="M2 10H14M9 4L15 10L9 16M32 10H20M25 4L19 10L25 16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  slide:'<svg viewBox="0 0 34 20" aria-hidden="true"><path d="M11 18V3M5 8L11 2L17 8M23 2V17M17 12L23 18L29 12" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+};
+const MOTION_NAME = { apart:'Apart', together:'Together', slide:'Slide past' };
+const pick = a => a[Math.floor(Math.random() * a.length)];
+const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const ALL_CASES = [['apart', 'OO'], ['apart', 'CC'], ['together', 'OC'], ['together', 'OO'], ['together', 'CC'], ['slide', 'OO']];
+
+function qMotion(){
+  const [m, pr] = pick(ALL_CASES);
+  const why = { 'apart-OO':'A ridge of new sea floor means plates pull apart.', 'apart-CC':'A sinking valley means plates pull apart.', 'together-OC':'A trench means one plate sinks under the other.',
+    'together-OO':'A trench means one plate sinks under the other.', 'together-CC':'Crumpled, folded mountains mean plates push together.', 'slide':'The road is cut and shifted sideways.' }[caseKey(m, pr)];
+  return { prompt:'How are these plates moving?', draw:(ctx, W, H) => drawPlates(ctx, W, H, { motion:m, pair:pr, p:.9, slip:.9, t:2, labels:false, arrows:false }),
+    options:['apart', 'together', 'slide'].map(k => ({ html:MOTION_ICON[k] + MOTION_NAME[k], ok:k === m })), why };
+}
+function qForms(){
+  const [m, pr] = pick(ALL_CASES), key = caseKey(m, pr), right = CASES[key].form;
+  let pool = Object.keys(CASES).filter(k => k !== key && !(key.startsWith('together-O') && k.startsWith('together-O'))).map(k => CASES[k].form);
+  const opts = shuffle([right, ...shuffle(pool).slice(0, 2)]);
+  return { prompt:'What will form here?', draw:(ctx, W, H) => drawPlates(ctx, W, H, { motion:m, pair:pr, p:0, slip:0, t:2, labels:false, arrows:true }),
+    options:opts.map(o => ({ html:o, ok:o === right })), why:'Example: ' + CASES[key].ex + '.' };
+}
+function qRock(){
+  const k = pick(['basalt', 'granite', 'sedimentary', 'metamorphic']), t = typeOf(k);
+  const why = { igneous:'Interlocking crystals: it cooled from magma.', sedimentary:'Layers of cemented grains.', metamorphic:'Squeezed, wavy bands.' }[t];
+  return { prompt:'Which type of rock is this?', draw:(ctx, W, H) => { ctx.clearRect(0, 0, W, H); const r = Math.min(H * .36, W * .3); drawRock(ctx, W / 2, H / 2 + 14, r, k, 1 + Math.floor(Math.random() * 50), true); },
+    options:['igneous', 'sedimentary', 'metamorphic'].map(o => ({ html:o[0].toUpperCase() + o.slice(1), ok:o === t })), why };
+}
+function qProcess(){
+  const [a, b, col] = pick(EDGES);
+  const right = { cool:'Cool', weather:'Weather and erode', compact:'Compact and cement', heat:'Heat and pressure', melt:'Melt' };
+  const opts = shuffle([col, ...shuffle(Object.keys(right).filter(c => c !== col)).slice(0, 3)]);
+  return { prompt:'Which process makes this change?', draw:(ctx, W, H) => {
+      ctx.clearRect(0, 0, W, H); const r = Math.min(H * .26, W * .17), y = H / 2 + 20;
+      drawRock(ctx, W * .27, y, r, NODE_ROCK[a], 4, true); drawRock(ctx, W * .73, y, r, NODE_ROCK[b], 8, true);
+      ctx.font = '800 22px "Bricolage Grotesque", system-ui, sans-serif'; ctx.fillStyle = K.ink; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+      ctx.fillText(ROCKS[NODE_ROCK[a]].name, W * .27, y + r + 10); ctx.fillText(ROCKS[NODE_ROCK[b]].name, W * .73, y + r + 10);
+      bigArrow(ctx, W / 2, y, 1, 0, Math.min(W * .14, 120), K.ink);
+      ctx.font = '800 34px "Bricolage Grotesque", system-ui, sans-serif'; ctx.textBaseline = 'bottom'; ctx.fillText('?', W / 2, y - 22); },
+    options:opts.map(c => ({ html:`<span style="color:var(--${c}); display:inline-flex; width:24px">${ICON[c]}</span>` + right[c], ok:c === col })), why:right[col] + ' turns ' + ROCKS[NODE_ROCK[a]].name.toLowerCase() + ' into ' + ROCKS[NODE_ROCK[b]].name.toLowerCase() + '.' };
+}
+function qWhat(){
+  const scenes = [['together', 'OC', ['trench', 'volcano', 'mountains', 'magma']], ['apart', 'OO', ['ridge', 'magma']], ['apart', 'CC', ['rift', 'volcano']], ['together', 'CC', ['mountains']], ['together', 'OO', ['trench', 'volcano']]];
+  const [m, pr, feats] = pick(scenes), f = pick(feats);
+  const NAME = { trench:'Trench', volcano:'Volcano', mountains:'Mountains', magma:'Magma', ridge:'Ocean ridge', rift:'Rift valley' };
+  const opts = shuffle([f, ...shuffle(Object.keys(NAME).filter(k => k !== f)).slice(0, 3)]);
+  const why = { trench:'The deep valley where a plate sinks.', volcano:'Magma reaches the surface here.', mountains:'Crust pushed up high.', magma:'Melted rock under the plates.', ridge:'Raised sea floor where plates pull apart.', rift:'Land drops down where plates pull apart.' }[f];
+  return { prompt:'What is at the circle?', draw:(ctx, W, H) => { const a = drawPlates(ctx, W, H, { motion:m, pair:pr, p:1, slip:1, t:2, labels:false, arrows:false });
+      const [x, y] = a[f]; ctx.save(); ctx.strokeStyle = '#ffe066'; ctx.lineWidth = 6; ctx.beginPath(); ctx.arc(x, y, 24, 0, 7); ctx.stroke(); ctx.strokeStyle = '#1b2733'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y, 28, 0, 7); ctx.stroke(); ctx.restore(); },
+    options:opts.map(k => ({ html:NAME[k], ok:k === f })), why };
+}
+const PR = { qs:[], i:0, res:[] };
+function newRound(){ const kinds = shuffle([qMotion, qMotion, qForms, qForms, qWhat, qWhat, qRock, qRock, qProcess, qProcess]); PR.qs = kinds.map(f => f()); PR.i = 0; PR.res = []; showQ(); }
+function drawPrac(){
+  const { ctx, W, H } = fit($('pracCv'));
+  if (PR.i >= PR.qs.length){ ctx.clearRect(0, 0, W, H); return; }
+  PR.qs[PR.i].draw(ctx, W, H);
+}
+function showQ(){
+  $('dots').innerHTML = Array.from({ length:10 }, (_, i) => `<i class="${PR.res[i] === true ? 'ok' : PR.res[i] === false ? 'no' : i === PR.i ? 'now' : ''}"></i>`).join('');
+  if (PR.i >= PR.qs.length){
+    const n = PR.res.filter(Boolean).length;
+    $('qText').textContent = n + ' of 10 correct';
+    $('answers').innerHTML = `<div class="feedback"><span class="score">${n === 10 ? 'Perfect!' : n >= 7 ? 'Great work!' : 'Keep practising!'}</span><button type="button" class="btn-primary" id="againBtn">Play again</button></div>`;
+    $('againBtn').onclick = newRound; drawPrac(); return; }
+  const q = PR.qs[PR.i];
+  $('qText').textContent = q.prompt;
+  $('answers').innerHTML = q.options.map((o, i) => `<button type="button" class="ans" data-i="${i}">${o.html}</button>`).join('') + '<div class="feedback" id="fb"></div>';
+  drawPrac();
+}
+$('answers').addEventListener('click', e => {
+  const b = e.target.closest('.ans'); if (!b || b.disabled) return;
+  const q = PR.qs[PR.i], o = q.options[+b.dataset.i];
+  document.querySelectorAll('.ans').forEach((x, i) => { x.disabled = true; if (q.options[i].ok) x.classList.add('ok'); });
+  if (!o.ok) b.classList.add('no');
+  PR.res[PR.i] = o.ok;
+  $('fb').innerHTML = `<span class="why ${o.ok ? 'ok' : 'no'}">${o.ok ? '✓' : '✗'} ${q.why}</span><button type="button" class="btn-primary" id="nextBtn">${PR.i === 9 ? 'See score' : 'Next →'}</button>`;
+  $('nextBtn').onclick = () => { PR.i++; showQ(); }; $('nextBtn').focus();
+  $('dots').children[PR.i].className = o.ok ? 'ok' : 'no';
+});
+
+/* ---------- Guide, tabs, loop ---------- */
+const GUIDE = {
+  plates:{ steps:['Pick how the plates move.', 'Pick the plate types.', 'Drag a plate, or press Play. Watch what forms.'],
+    tip:'<b>Why do plates move?</b> Hot mantle rock flows in slow loops (convection) and carries the plates. They move about as fast as your fingernails grow. <b>Ocean plates</b> are thin and heavy, so they sink under continents.' },
+  rock:{ steps:['Pick a process to change your rock.', 'Watch where in the Earth it happens.', 'Light up all 10 arrows in the cycle.'],
+    tip:'<b>Igneous</b> rock forms when magma cools: fast at the surface gives tiny crystals, slow underground gives big crystals.' },
+  prac:{ steps:['Look at the picture.', 'Tap your answer.', '10 questions per round.'], tip:'' },
+};
+function syncGuide(){ const G = GUIDE[S.tab]; $('guideList').innerHTML = G.steps.map((t, i) => `<li><span class="n">${i + 1}</span><span>${t}</span></li>`).join(''); $('guideTip').innerHTML = G.tip; $('guideTip').hidden = !G.tip; }
+function setTab(t){
+  S.tab = t;
+  document.querySelectorAll('[data-tab]').forEach(b => b.setAttribute('aria-checked', String(b.dataset.tab === t)));
+  $('platesView').hidden = t !== 'plates'; $('rockView').hidden = t !== 'rock'; $('pracView').hidden = t !== 'prac';
+  syncGuide();
+  requestAnimationFrame(() => { if (t === 'rock') syncRockUI(); if (t === 'prac'){ if (!PR.qs.length) newRound(); else drawPrac(); } });
+}
+document.querySelectorAll('[data-tab]').forEach(b => b.addEventListener('click', () => setTab(b.dataset.tab)));
+document.querySelectorAll('[data-motion]').forEach(b => b.addEventListener('click', () => { S.motion = b.dataset.motion; resetPlates(); syncPlatesUI(); }));
+document.querySelectorAll('[data-pair]').forEach(b => b.addEventListener('click', () => { S.pair = b.dataset.pair; resetPlates(); syncPlatesUI(); }));
+$('playBtn').addEventListener('click', () => { if (S.p >= 1) resetPlates(); S.playing = !S.playing; syncPlay(); });
+$('resetBtn').addEventListener('click', resetPlates);
+$('guideBtn').addEventListener('click', () => { const p = $('guidePop'); p.hidden = !p.hidden; $('guideBtn').setAttribute('aria-expanded', String(!p.hidden)); });
+document.addEventListener('click', e => { if (!e.target.closest('.guide-wrap')){ $('guidePop').hidden = true; $('guideBtn').setAttribute('aria-expanded', 'false'); } });
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { readColors(); if (S.tab === 'rock') syncRockUI(); if (S.tab === 'prac') drawPrac(); });
+new ResizeObserver(() => { if (S.tab === 'prac') drawPrac(); if (S.tab === 'rock') syncRockUI(); }).observe($('app'));
+
+let last = performance.now();
+function frame(now){
+  const dt = Math.min(.05, (now - last) / 1000); last = now; S.t += REDUCED ? 0 : dt;
+  if (S.tab === 'plates'){ stepPlates(dt); drawPlateStage(); }
+  else if (S.tab === 'rock'){ stepRock(dt); drawRockStage(); }
+  requestAnimationFrame(frame);
+}
+readColors(); syncPlatesUI(); syncGuide(); requestAnimationFrame(frame);
+</script>
