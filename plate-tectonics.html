@@ -732,18 +732,21 @@ const ICON = {
   melt:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 23C7.5 23 5 19.6 5 16C5 11 10 8.5 10 2C14 5 13.5 8.5 13.5 10C15 9 16 7.5 16 5.5C18.5 8 19 12 19 16C19 19.6 16.5 23 12 23Z" fill="currentColor"/></svg>',
 };
 
-/* Rock cycle scene: volcano on the left, mountains in the middle, sea on the right. Each rock waits at its own station. */
+/* Rock cycle scene, read left to right like a real landscape: snowy mountains, a volcano near the coast, a river running past the volcano's foot to the sea.
+   Each rock waits at its own station. A process is a short trip in steps, and each step has a one-line caption. */
 function rockGeo(W, H){
-  const vx = .17 * W, mx = .5 * W;
-  const surf = x => .30 * H - .17 * H * Math.max(0, 1 - Math.abs(x - vx) / (.13 * W)) + .03 * H * Math.max(0, 1 - Math.abs(x - vx) / (.012 * W))
-    - .15 * H * (.7 * gauss(x, .47 * W, .065 * W) + .6 * gauss(x, .55 * W, .055 * W)) + ss(.70 * W, .80 * W, x) * .13 * H;
+  const vx = .55 * W, vh = .15 * H, vw = .085 * W;
+  // base = the land without the volcano; it only goes downhill from the mountain peak to the sea, so a river can follow it
+  const base = x => .30 * H - .045 * H * (1 - ss(.30 * W, .72 * W, x)) - .17 * H * gauss(x, .27 * W, .085 * W) - .05 * H * gauss(x, .17 * W, .04 * W) + ss(.70 * W, .80 * W, x) * .13 * H;
+  const cone = x => vh * Math.max(0, 1 - Math.abs(x - vx) / vw) - .02 * H * Math.max(0, 1 - Math.abs(x - vx) / (.012 * W));
+  const surf = x => base(x) - cone(x);
   const r = Math.min(.045 * H, .035 * W, 26);
-  return { vx, mx, surf, r, seaY:.33 * H,
-    st:{ magma:[vx, .70 * H], basalt:[.26 * W, surf(.26 * W) - r * .9], granite:[.32 * W, .52 * H], sediment:[.87 * W, surf(.87 * W) - r * .9],
-      sedimentary:[.88 * W, .53 * H], metamorphic:[.5 * W, .66 * H] } };
+  return { vx, vw, base, surf, r, seaY:.33 * H,
+    st:{ magma:[vx, .72 * H], basalt:[.61 * W, surf(.61 * W) - r * .9], granite:[.37 * W, .50 * H], sediment:[.87 * W, surf(.87 * W) - r * .9],
+      sedimentary:[.70 * W, .53 * H], metamorphic:[.27 * W, .66 * H] } };
 }
 function drawRockScene(ctx, W, H, t, tokenKind, tokenPos){
-  const G = rockGeo(W, H), surf = G.surf;
+  const G = rockGeo(W, H), surf = G.surf, base = G.base;
   let gr = ctx.createLinearGradient(0, 0, 0, .35 * H); gr.addColorStop(0, K.sky1); gr.addColorStop(1, K.sky2); ctx.fillStyle = gr; ctx.fillRect(0, 0, W, H);
   // Sea
   ctx.fillStyle = SC.water; ctx.fillRect(.66 * W, G.seaY, W * .34, .2 * H);
@@ -752,42 +755,45 @@ function drawRockScene(ctx, W, H, t, tokenKind, tokenPos){
   ground.push([W + 4, H], [-4, H]);
   ctx.save(); poly(ctx, ground); ctx.clip();
   gr = ctx.createLinearGradient(0, .25 * H, 0, H); gr.addColorStop(0, '#b78f5f'); gr.addColorStop(.6, '#8d6c50'); gr.addColorStop(1, '#6e5444'); ctx.fillStyle = gr; ctx.fillRect(0, 0, W, H);
-  // Sediment layers under the sea
+  // Layers of old sea floor under the coast and the sea
   const lc = ['#dcc095', '#c9a274', '#e3cfa4', '#b98d5f'];
   for (let i = 0; i < 6; i++){ ctx.fillStyle = lc[i % 4]; ctx.beginPath();
-    const yAt = (x, k) => .43 * H + .028 * H * k * ss(.66 * W, .82 * W, x);
-    for (let x = .66 * W; x <= W; x += 4) ctx.lineTo(x, yAt(x, i));
-    for (let x = W; x >= .66 * W; x -= 4) ctx.lineTo(x, yAt(x, i + 1)); ctx.fill(); }
+    const yAt = (x, k) => .45 * H + .028 * H * k * ss(.58 * W, .68 * W, x);
+    for (let x = .58 * W; x <= W; x += 4) ctx.lineTo(x, yAt(x, i));
+    for (let x = W; x >= .58 * W; x -= 4) ctx.lineTo(x, yAt(x, i + 1)); ctx.fill(); }
   // Banded rock deep under the mountains
-  ctx.save(); ctx.beginPath(); ctx.ellipse(.5 * W, .66 * H, .11 * W, .075 * H, 0, 0, 7); ctx.clip();
+  const mx = .27 * W;
+  ctx.save(); ctx.beginPath(); ctx.ellipse(mx, .66 * H, .11 * W, .075 * H, 0, 0, 7); ctx.clip();
   for (let i = 0; i < 12; i++){ ctx.fillStyle = i % 2 ? '#3c3a42' : '#cfc7bb'; ctx.beginPath();
-    for (let x = .38 * W; x <= .62 * W; x += 4) ctx.lineTo(x, .58 * H + i * .015 * H + Math.sin(x / W * 40) * .008 * H);
-    for (let x = .62 * W; x >= .38 * W; x -= 4) ctx.lineTo(x, .58 * H + (i + 1) * .015 * H + Math.sin(x / W * 40) * .008 * H); ctx.fill(); }
+    for (let x = mx - .12 * W; x <= mx + .12 * W; x += 4) ctx.lineTo(x, .58 * H + i * .015 * H + Math.sin(x / W * 40) * .008 * H);
+    for (let x = mx + .12 * W; x >= mx - .12 * W; x -= 4) ctx.lineTo(x, .58 * H + (i + 1) * .015 * H + Math.sin(x / W * 40) * .008 * H); ctx.fill(); }
   ctx.restore();
-  // Granite body (cooled underground)
-  ctx.fillStyle = '#e1b8ab'; ctx.beginPath(); ctx.ellipse(.32 * W, .53 * H, .055 * W, .05 * H, .2, 0, 7); ctx.fill();
-  const R = rng(5); for (let i = 0; i < 40; i++){ ctx.fillStyle = ['#2a2a2e', '#f7f3ef', '#c78a80'][i % 3]; const a = R() * 6.28, rr = Math.sqrt(R()); ctx.fillRect(.32 * W + Math.cos(a) * rr * .05 * W, .53 * H + Math.sin(a) * rr * .045 * H, 3, 3); }
+  // Granite: magma that cooled slowly inside the mountain
+  const [gx, gy] = G.st.granite;
+  ctx.fillStyle = '#e1b8ab'; ctx.beginPath(); ctx.ellipse(gx, gy, .055 * W, .05 * H, .2, 0, 7); ctx.fill();
+  const R = rng(5); for (let i = 0; i < 40; i++){ ctx.fillStyle = ['#2a2a2e', '#f7f3ef', '#c78a80'][i % 3]; const a = R() * 6.28, rr = Math.sqrt(R()); ctx.fillRect(gx + Math.cos(a) * rr * .05 * W, gy + Math.sin(a) * rr * .045 * H, 3, 3); }
   // Hot zone and magma chamber
+  const [cx0, cy0] = G.st.magma;
   gr = ctx.createLinearGradient(0, .8 * H, 0, H); gr.addColorStop(0, 'rgba(240,120,40,0)'); gr.addColorStop(.4, SC.mantle1); gr.addColorStop(1, SC.mantle2); ctx.fillStyle = gr; ctx.fillRect(0, .8 * H, W, .2 * H);
-  ctx.strokeStyle = SC.magma; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(G.vx, .70 * H); ctx.lineTo(G.vx, surf(G.vx)); ctx.stroke();
-  ctx.lineWidth = 9; ctx.beginPath(); ctx.moveTo(G.vx, .7 * H); ctx.lineTo(G.vx - .02 * W, .9 * H); ctx.stroke();
-  gr = ctx.createRadialGradient(G.vx, .7 * H, 2, G.vx, .7 * H, .07 * W); gr.addColorStop(0, SC.glow); gr.addColorStop(.5, SC.magma); gr.addColorStop(1, '#b0300f');
-  ctx.fillStyle = gr; ctx.beginPath(); ctx.ellipse(G.vx, .7 * H, .07 * W, .05 * H, 0, 0, 7); ctx.fill();
-  // Snow on the peaks
-  ctx.fillStyle = SC.snow; ctx.fillRect(.4 * W, 0, .25 * W, .19 * H);
+  ctx.strokeStyle = SC.magma; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(cx0, cy0); ctx.lineTo(cx0, surf(cx0)); ctx.stroke();
+  ctx.lineWidth = 9; ctx.beginPath(); ctx.moveTo(cx0, cy0); ctx.lineTo(cx0 + .02 * W, .9 * H); ctx.stroke();
+  gr = ctx.createRadialGradient(cx0, cy0, 2, cx0, cy0, .07 * W); gr.addColorStop(0, SC.glow); gr.addColorStop(.5, SC.magma); gr.addColorStop(1, '#b0300f');
+  ctx.fillStyle = gr; ctx.beginPath(); ctx.ellipse(cx0, cy0, .07 * W, .05 * H, 0, 0, 7); ctx.fill();
   ctx.restore();
-  // Volcano cap darker
-  ctx.save(); poly(ctx, ground); ctx.clip(); ctx.fillStyle = 'rgba(70,55,48,.55)'; ctx.beginPath(); ctx.moveTo(G.vx - .13 * W, .30 * H); ctx.lineTo(G.vx, .12 * H); ctx.lineTo(G.vx + .13 * W, .30 * H); ctx.fill(); ctx.restore();
+  snowCap(ctx, surf, W, .13 * H, .03 * H);
+  // Volcano: darker rock above the land around it
+  const vTop = [], vBot = []; for (let x = G.vx - G.vw; x <= G.vx + G.vw; x += 3){ vTop.push([x, surf(x)]); vBot.push([x, base(x)]); }
+  poly(ctx, vTop.concat(vBot.reverse())); ctx.fillStyle = SC.volc; ctx.fill();
   eruption(ctx, G.vx, surf(G.vx) + 2, t, .9);
-  // River from the mountains to the sea
-  ctx.strokeStyle = '#2f7fd0'; ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.beginPath();
-  for (let x = .565 * W; x <= .76 * W; x += 3){ const y = surf(x) - 1.5 + Math.sin(x * .2) * .6; x === .565 * W ? ctx.moveTo(x, y) : ctx.lineTo(x, y); } ctx.stroke();
-  // Rain cloud
-  const cx = .52 * W, cy = .07 * H;
-  ctx.fillStyle = '#9aa6b2'; for (const [dx, dy, rr] of [[-22, 4, 14], [0, -4, 18], [22, 4, 14], [8, 8, 14]]){ ctx.beginPath(); ctx.arc(cx + dx, cy + dy, rr, 0, 7); ctx.fill(); }
-  ctx.strokeStyle = '#2f7fd0'; ctx.lineWidth = 2; for (let i = 0; i < 6; i++){ const ph = REDUCED ? .5 : (t * 1.2 + i * .37) % 1; const x = cx - 28 + i * 11 - ph * 6, y = cy + 18 + ph * 30; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - 3, y + 7); ctx.stroke(); }
+  // River from the mountains, past the foot of the volcano, to the sea
+  ctx.strokeStyle = '#2f7fd0'; ctx.lineWidth = 5; ctx.lineCap = 'round'; ctx.beginPath();
+  for (let x = .31 * W; x <= .76 * W; x += 3){ const y = base(x) - 1.5; x === .31 * W ? ctx.moveTo(x, y) : ctx.lineTo(x, y); } ctx.stroke();
+  // Rain cloud over the mountains
+  const ccx = .40 * W, ccy = .06 * H;
+  ctx.fillStyle = '#9aa6b2'; for (const [dx, dy, rr] of [[-22, 4, 14], [0, -4, 18], [22, 4, 14], [8, 8, 14]]){ ctx.beginPath(); ctx.arc(ccx + dx, ccy + dy, rr, 0, 7); ctx.fill(); }
+  ctx.strokeStyle = '#2f7fd0'; ctx.lineWidth = 2; for (let i = 0; i < 6; i++){ const ph = REDUCED ? .5 : (t * 1.2 + i * .37) % 1; const x = ccx - 28 + i * 11 - ph * 6, y = ccy + 18 + ph * 30; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - 3, y + 7); ctx.stroke(); }
   // Station labels
-  const lbl = [['Magma', 'magma', 0, 1], ['Igneous', 'basalt', -1, 0], ['Igneous', 'granite', 1, 0], ['Sediment', 'sediment', 0, -1], ['Sedimentary', 'sedimentary', 0, 1], ['Metamorphic', 'metamorphic', 0, 1]];
+  const lbl = [['Magma', 'magma', 0, 1], ['Igneous', 'basalt', 1, 0], ['Igneous', 'granite', 1, 0], ['Sediment', 'sediment', 0, -1], ['Sedimentary', 'sedimentary', 0, 1], ['Metamorphic', 'metamorphic', 0, 1]];
   for (const [txt, k, sx, sy] of lbl){ const [x, y] = G.st[k]; label(ctx, txt, x + sx * (G.r + 52), y + sy * (G.r + 22), null, null, .95); }
   ctx.save(); ctx.globalAlpha = .45; for (const k of Object.keys(G.st)){ const [x, y] = G.st[k]; ctx.setLineDash([4, 4]); ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y, G.r, 0, 7); ctx.stroke(); } ctx.restore();
   if (tokenKind){ const [x, y] = tokenPos || G.st[tokenKind];
@@ -801,40 +807,75 @@ function edgeKey(a, b){ return typeOf(a) + '>' + typeOf(b); }
 const EDGES = [['magma', 'igneous', 'cool'], ['igneous', 'sediment', 'weather'], ['sediment', 'sedimentary', 'compact'], ['sedimentary', 'metamorphic', 'heat'], ['metamorphic', 'magma', 'melt'],
   ['igneous', 'magma', 'melt'], ['igneous', 'metamorphic', 'heat'], ['sedimentary', 'sediment', 'weather'], ['sedimentary', 'magma', 'melt'], ['metamorphic', 'sediment', 'weather']];
 
-function routeFor(proc, from, to, G, W, H){
-  const a = G.st[from], b = G.st[to], top = [G.mx, G.surf(G.mx) - G.r];
-  if (proc === 'coolUp') return [a, [G.vx, G.surf(G.vx) - G.r], b];
-  if (proc === 'weather'){ const pts = [a, top]; for (let x = .57 * W; x <= .77 * W; x += .03 * W) pts.push([x, G.surf(x) - G.r * .8]); pts.push(b); return pts; }
-  if (proc === 'melt') return [a, [a[0], .88 * H], [G.vx, .88 * H], b];
-  return [a, b];
+/* A trip is a list of steps. Each step: pts (a path to follow) or hold (seconds to stay put), the caption shown beside the rock, and the rock it looks like during that step. */
+function tripFor(proc, from, to, G, W, H){
+  const a = G.st[from], b = G.st[to], r = G.r;
+  const along = (f, x0, x1) => { const p = []; const n = 24; for (let i = 0; i <= n; i++){ const x = lerp(x0, x1, i / n); p.push([x, f(x) - r * .85]); } return p; };
+  if (proc === 'coolUp'){ const top = [G.vx, G.surf(G.vx) - r];
+    return [{ pts:[a, top], cap:'Magma rises up the volcano', kind:from }, { pts:along(G.surf, G.vx, b[0]), cap:'Lava cools fast in the air', kind:from }]; }
+  if (proc === 'coolDown') return [{ pts:[a, [lerp(a[0], b[0], .5), lerp(a[1], b[1], .2)], b], cap:'Magma cools slowly underground', kind:from }];
+  if (proc === 'weather'){
+    const steps = [];
+    let x = a[0];
+    if (from !== 'basalt') steps.push({ pts:[a, [x, G.surf(x) - r * .85]], cap:'Slowly pushed up to the surface', kind:from });
+    steps.push({ hold:1.6, cap:'Rain and ice break it into bits', kind:from, rain:true });
+    const f = from === 'basalt' ? G.surf : G.base;
+    steps.push({ pts:along(f, x, .76 * W), cap:'The river carries the bits', kind:'sediment' });
+    steps.push({ pts:[[.76 * W, f(.76 * W) - r * .85], b], cap:'The bits settle on the sea floor', kind:'sediment' });
+    return steps; }
+  if (proc === 'compact') return [{ pts:[a, [lerp(a[0], b[0], .5), b[1] - .02 * H], b], cap:'Buried under new layers and pressed into rock', kind:from }];
+  if (proc === 'heat') return [{ pts:[a, [lerp(a[0], b[0], .5), b[1] - .03 * H], b], cap:'Buried deep, where it is hot and squeezed', kind:from }];
+  // melt
+  return [{ pts:[a, [a[0], .88 * H]], cap:'Sinks deep, where it is very hot', kind:from }, { pts:[[a[0], .88 * H], [G.vx, .88 * H], b], cap:'It melts and joins the magma', kind:'magma' }];
 }
+function pathLen(pts){ let L = 0; const segs = []; for (let i = 1; i < pts.length; i++){ const l = Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]); segs.push(l); L += l; } return { segs, L }; }
 function doProcess(key){
   if (RK.travel) return;
   const P = PROC[key]; if (!P.from.includes(RK.kind)) return;
   const { W, H } = rockSize, G = rockGeo(W, H);
-  const pts = routeFor(key, RK.kind, P.to, G, W, H);
-  let L = 0; const segs = []; for (let i = 1; i < pts.length; i++){ const l = Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]); segs.push(l); L += l; }
-  RK.travel = { pts, segs, L, s:0, to:P.to, from:RK.kind, key, dur:REDUCED ? .01 : clamp(L / (H * .55), 1, 3.2) };
+  const steps = tripFor(key, RK.kind, P.to, G, W, H).map(st => {
+    if (st.hold) return { ...st, dur:REDUCED ? .01 : st.hold };
+    const { segs, L } = pathLen(st.pts); return { ...st, segs, L, dur:REDUCED ? .01 : clamp(L / (H * .4), 1, 3) }; });
+  RK.travel = { steps, i:0, s:0, pause:0, to:P.to, from:RK.kind, key };
   syncRockUI();
 }
 function stepRock(dt){
   RK.flash = Math.max(0, RK.flash - dt);
   const tr = RK.travel; if (!tr) return;
-  tr.s += dt / tr.dur;
-  if (tr.s >= 1){ RK.used.add(edgeKey(tr.from, tr.to)); RK.last = edgeKey(tr.from, tr.to); RK.kind = tr.to; RK.travel = null; RK.flash = .6; syncRockUI(); }
+  if (tr.pause > 0){ tr.pause -= dt; return; }
+  tr.s += dt / tr.steps[tr.i].dur;
+  if (tr.s < 1) return;
+  if (tr.i < tr.steps.length - 1){ tr.i++; tr.s = 0; tr.pause = REDUCED ? 0 : .35; return; }
+  RK.used.add(edgeKey(tr.from, tr.to)); RK.last = edgeKey(tr.from, tr.to); RK.kind = tr.to; RK.travel = null; RK.flash = .6; syncRockUI();
 }
-function travelPos(tr){
-  let d = ss(0, 1, tr.s) * tr.L;
-  for (let i = 0; i < tr.segs.length; i++){ if (d <= tr.segs[i] || i === tr.segs.length - 1){ const t = clamp(d / (tr.segs[i] || 1)); return [lerp(tr.pts[i][0], tr.pts[i + 1][0], t), lerp(tr.pts[i][1], tr.pts[i + 1][1], t)]; } d -= tr.segs[i]; }
+function stepPos(st, s){
+  if (st.hold) return null;
+  let d = ss(0, 1, s) * st.L;
+  for (let i = 0; i < st.segs.length; i++){ if (d <= st.segs[i] || i === st.segs.length - 1){ const t = clamp(d / (st.segs[i] || 1)); return [lerp(st.pts[i][0], st.pts[i + 1][0], t), lerp(st.pts[i][1], st.pts[i + 1][1], t)]; } d -= st.segs[i]; }
 }
 let rockSize = { W:1, H:1 };
 function drawRockStage(){
   const { ctx, W, H } = fit($('rockCv')); rockSize = { W, H };
   const tr = RK.travel;
-  const G = drawRockScene(ctx, W, H, S.t, tr ? tr.from : RK.kind, tr ? travelPos(tr) : null);
-  if (tr){ // the route, in the process colour
-    ctx.save(); ctx.strokeStyle = K[PROC[tr.key].col]; ctx.lineWidth = 3; ctx.setLineDash([7, 6]); ctx.globalAlpha = .9;
-    ctx.beginPath(); tr.pts.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.stroke(); ctx.restore(); }
+  let pos = null, kind = RK.kind, st = null;
+  if (tr){ st = tr.steps[tr.i]; kind = st.kind;
+    // A hold step stays where the step before it ended
+    pos = stepPos(st, Math.min(1, tr.s));
+    if (!pos){ const prev = tr.steps[tr.i - 1]; pos = prev ? prev.pts[prev.pts.length - 1] : rockGeo(W, H).st[tr.from]; } }
+  const G = drawRockScene(ctx, W, H, S.t, kind, pos);
+  if (tr){
+    // The whole trip, faint, in the process colour
+    ctx.save(); ctx.strokeStyle = K[PROC[tr.key].col]; ctx.lineWidth = 3; ctx.setLineDash([7, 6]); ctx.globalAlpha = .7;
+    for (const s2 of tr.steps) if (s2.pts){ ctx.beginPath(); s2.pts.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.stroke(); }
+    ctx.restore();
+    if (st.rain){ ctx.save(); ctx.strokeStyle = '#2f7fd0'; ctx.lineWidth = 2.5;
+      for (let i = 0; i < 7; i++){ const ph = (S.t * 1.6 + i * .29) % 1, x = pos[0] - G.r + i * G.r / 3, y = pos[1] - G.r * 2.6 + ph * G.r * 1.4; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - 3, y + 8); ctx.stroke(); }
+      ctx.strokeStyle = 'rgba(30,20,10,.75)'; ctx.lineWidth = 2; const k = Math.min(1, tr.s * 1.3);
+      ctx.beginPath(); ctx.moveTo(pos[0] - G.r * .2, pos[1] - G.r * .9); ctx.lineTo(pos[0] + G.r * .1 * k, pos[1] - G.r * .2 * k); ctx.lineTo(pos[0] - G.r * .3 * k, pos[1] + G.r * .6 * k); ctx.stroke(); ctx.restore(); }
+    // Caption for this step, beside the rock
+    const cw = 9 * st.cap.length + 20, lx = clamp(pos[0], cw / 2 + 8, W - cw / 2 - 8), ly = Math.max(20, pos[1] - G.r - 26);
+    label(ctx, st.cap, lx, ly, null, null, 1);
+  }
   if (RK.flash > 0){ const [x, y] = G.st[RK.kind]; ctx.save(); ctx.globalAlpha = RK.flash / .6; ctx.strokeStyle = '#ffe066'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(x, y, G.r + 6 + (1 - RK.flash / .6) * 20, 0, 7); ctx.stroke(); ctx.restore(); }
 }
 
